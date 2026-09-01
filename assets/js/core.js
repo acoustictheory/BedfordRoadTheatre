@@ -3,7 +3,7 @@ window.BRM = window.BRM || {};
 (function (BRM) {
   const CONFIG = window.BRM_CONFIG;
   BRM.context = null;
-  BRM.BUILD_ID = 'admin-context-photo-v20-20260722';
+  BRM.BUILD_ID = CONFIG.BUILD_ID || 'bedford-frontend';
   BRM.escape = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
   BRM.titleCase = value => String(value || '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   BRM.formatDate = value => value ? new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium', timeZone: 'America/Regina' }).format(new Date(value)) : '—';
@@ -66,9 +66,14 @@ window.BRM = window.BRM || {};
 
   BRM.clearSession = function () {
     ['brmToken', 'brmContext'].forEach(key => localStorage.removeItem(key));
+    sessionStorage.removeItem('brmSnapshotDisabledUntil');
     BRM.context = null;
-  BRM.BUILD_ID = 'admin-context-photo-v20-20260722';
     BRM.clearSiteCache?.();
+    if ('caches' in window) {
+      caches.keys()
+        .then(keys => Promise.all(keys.filter(key => key.startsWith('bedford-')).map(key => caches.delete(key))))
+        .catch(() => {});
+    }
   };
 
   BRM.setSession = function (token, context) {
@@ -103,12 +108,9 @@ window.BRM = window.BRM || {};
       return incoming;
     }
 
-    const permissions = [
-      ...new Set([
-        ...(stored.permissions || []),
-        ...(incoming.permissions || [])
-      ])
-    ];
+    // A live/server context is authoritative. Do not retain permissions or
+    // department access that may have been revoked since the cached context.
+    const permissions = [...new Set(incoming.permissions || [])];
 
     const storedAdmin =
       stored.isAdmin === true
@@ -132,19 +134,10 @@ window.BRM = window.BRM || {};
         ...(incoming.production || {})
       },
       permissions,
-      departmentIds: [
-        ...new Set([
-          ...(stored.departmentIds || []).map(String),
-          ...(incoming.departmentIds || []).map(String)
-        ])
-      ],
-      departments:
-        (incoming.departments || []).length >= (stored.departments || []).length
-          ? incoming.departments
-          : stored.departments,
+      departmentIds: [...new Set((incoming.departmentIds || []).map(String))],
+      departments: incoming.departments || [],
       isAdmin: Boolean(
-        storedAdmin
-        || incomingAdmin
+        incomingAdmin
         || permissions.includes('admin.all')
       )
     };
@@ -174,6 +167,21 @@ window.BRM = window.BRM || {};
     return `<a class="nav-link ${active}" href="${href}"><span>${icon}</span><span>${label}</span></a>`;
   }
 
+  function hasAnyPermission(...keys) {
+    return BRM.isAdmin() || keys.some(key => BRM.hasPermission(key));
+  }
+
+  BRM.canAccessPage = function (page = document.body.dataset.page, context = BRM.context) {
+    if (!context) return false;
+    if (page === 'admin' || page === 'recruitment-review') return BRM.isAdmin();
+    if (page === 'journal-review') return hasAnyPermission('journal.review');
+    if (page === 'blocking') return hasAnyPermission('blocking.edit', 'blocking.manage', 'blocking.audit');
+
+    const department = document.body.dataset.department;
+    if (!department || BRM.isAdmin() || BRM.hasPermission('department.manage')) return true;
+    return (context.departments || []).some(item => String(item.Slug) === String(department));
+  };
+
   BRM.setSyncStatus = function (state, message) {
     document.querySelectorAll('[data-sync-status]').forEach(element => {
       element.dataset.state = state || 'ready';
@@ -190,7 +198,15 @@ window.BRM = window.BRM || {};
     const profile = context.profile || {};
     const shell = document.querySelector('[data-app-shell]');
     if (!shell) return;
-    const departmentLinks = (context.departments || []).map(dep => navItem(`${dep.Slug}.html`, dep.Name, BRM.departmentIcon(dep.Slug), dep.Slug)).join('');
+    const departmentLinks = (context.departments || [])
+      .filter(dep => dep?.Slug && dep?.Name)
+      .map(dep => navItem(`${encodeURIComponent(dep.Slug)}.html`, dep.Name, BRM.departmentIcon(dep.Slug), dep.Slug))
+      .join('');
+    const canReviewJournals = hasAnyPermission('journal.review');
+    const canUseBlocking = hasAnyPermission('blocking.edit', 'blocking.manage', 'blocking.audit');
+    const announcementLabel = BRM.hasPermission('announcement.manage') ? 'Manage Announcements' : 'Announcements';
+    const scheduleLabel = BRM.hasPermission('event.manage') ? 'Manage Schedule' : 'Schedule & Calls';
+    const resourcesLabel = BRM.hasPermission('resources.manage') ? 'Manage Resources' : 'Resources';
     shell.innerHTML = `
       <aside class="sidebar" id="sidebar">
         <a class="brand-lockup" href="dashboard.html">
@@ -202,23 +218,30 @@ window.BRM = window.BRM || {};
             <p class="nav-label">Administrator portal</p>
             ${navItem('dashboard.html', 'Admin Dashboard', '◆', 'dashboard')}
             ${navItem('admin.html', 'People & Access', '⚙', 'admin')}
+            ${navItem('recruitment-review.html', 'Auditions & Interest', '★', 'recruitment-review')}
             ${navItem('journal-review.html', 'Journal Review', '◉', 'journal-review')}
             ${navItem('announcements.html', 'Manage Announcements', '!', 'announcements')}
             ${navItem('schedule.html', 'Manage Schedule', '◷', 'schedule')}
             ${navItem('resources.html', 'Manage Resources', '▤', 'resources')}
             <p class="nav-label">Production tools</p>
             ${navItem('tasks.html', 'All Tasks', '✓', 'tasks')}
+            ${navItem('blocking-viewer.html', 'Blocking Viewer', '▶', 'blocking-viewer')}
+            ${navItem('blocking.html', 'Blocking Studio', '⌖', 'blocking')}
+            ${navItem('journal.html', 'Private Journal', '✎', 'journal')}
             ${navItem('tracks.html', 'Music & Tracks', '♪', 'tracks')}
             ${navItem('directory.html', 'Company Directory', '◎', 'directory')}
           ` : `
             <p class="nav-label">Your portal</p>
             ${navItem('dashboard.html', 'Dashboard', '⌂', 'dashboard')}
-            ${navItem('schedule.html', 'Schedule & Calls', '◷', 'schedule')}
+            ${navItem('schedule.html', scheduleLabel, '◷', 'schedule')}
             ${navItem('tasks.html', 'My Tasks', '✓', 'tasks')}
             ${navItem('journal.html', 'Private Journal', '✎', 'journal')}
-            ${navItem('announcements.html', 'Announcements', '!', 'announcements')}
+            ${navItem('blocking-viewer.html', 'Blocking Viewer', '▶', 'blocking-viewer')}
+            ${canReviewJournals ? navItem('journal-review.html', 'Journal Review', '◉', 'journal-review') : ''}
+            ${canUseBlocking ? navItem('blocking.html', 'Blocking Studio', '⌖', 'blocking') : ''}
+            ${navItem('announcements.html', announcementLabel, '!', 'announcements')}
             ${navItem('tracks.html', 'Music & Tracks', '♪', 'tracks')}
-            ${navItem('resources.html', 'Resources', '▤', 'resources')}
+            ${navItem('resources.html', resourcesLabel, '▤', 'resources')}
             ${navItem('directory.html', 'Company Directory', '◎', 'directory')}
           `}
           ${(context.departments || []).length
@@ -241,7 +264,7 @@ window.BRM = window.BRM || {};
           <button class="icon-button mobile-menu" data-menu-toggle aria-label="Open menu">☰</button>
           <div class="topbar-production"><strong>${BRM.escape(context.production?.Title || 'Production')}</strong><span>${BRM.escape(context.production?.SchoolYear || '')}</span></div>
           <div class="topbar-actions">
-            ${BRM.isAdmin() ? '<a class="badge admin-topbar-badge" href="admin.html">◆ Full Administrator · v17.1</a>' : ''}
+            ${BRM.isAdmin() ? '<a class="badge admin-topbar-badge" href="admin.html">◆ Full Administrator</a>' : ''}
             <span class="badge portal-sync-status" data-sync-status data-state="ready">Portal ready</span>
             <div class="theme-picker"><button class="button button-quiet" data-theme-toggle><span>◐</span><span data-theme-name></span></button><div class="theme-popover">${BRM.themeMenu()}</div></div>
             <a class="avatar-link" href="profile.html">${BRM.avatar(profile.DisplayName, profile.PhotoURL, 'small')}</a>
@@ -583,6 +606,12 @@ window.BRM = window.BRM || {};
       BRM.renderShell();
       BRM.setSyncStatus('ready', 'Portal ready');
 
+      if (!BRM.canAccessPage(document.body.dataset.page, context)) {
+        BRM.toast('You do not have access to that workspace.', 'error');
+        location.href = 'dashboard.html';
+        return;
+      }
+
       await render(context);
     } catch (error) {
       const hasUsableStoredContext = Boolean(stored && localStorage.getItem('brmToken'));
@@ -640,6 +669,10 @@ window.BRM = window.BRM || {};
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!document.body.dataset.private) BRM.initPublicPage();
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('service-worker.js?v=20260722-admin171').catch(() => {});
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register(`service-worker.js?v=${encodeURIComponent(BRM.BUILD_ID)}`).catch(error => {
+        console.warn('Offline support could not start:', error);
+      });
+    }
   });
 })(window.BRM);

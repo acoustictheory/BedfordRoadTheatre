@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
         </div>
       </section>
 
+      ${renderBlockingViewerHub(data.context, data)}
+
       ${blockingAccess ? renderBlockingStudioLaunch(data.context) : ''}
 
       ${adminStats ? `<section class="stat-grid" style="margin-top:18px">
@@ -134,6 +136,26 @@ function canAccessBlockingStudio() {
     BRM.hasPermission('blocking.manage') ||
     BRM.hasPermission('blocking.audit')
   );
+}
+
+function renderBlockingViewerHub(context, data) {
+  const productionTitle = context.production?.ShortTitle || context.production?.Title || 'the production';
+  const sceneCount = Number(data.blockingViewer?.sceneCount || data.blockingSceneCount || 0);
+  return `
+    <section class="panel dashboard-viewer-hub" aria-labelledby="blocking-viewer-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Rehearsal viewer</span>
+          <h2 id="blocking-viewer-title">Watch saved blocking</h2>
+          <p>Review ${BRM.escape(productionTitle)} staging, formations, entrances, and timed movement from any device.</p>
+        </div>
+        <span class="dashboard-viewer-icon" aria-hidden="true">▶</span>
+      </div>
+      <div class="form-actions" style="justify-content:space-between;align-items:center">
+        <span class="field-hint">${sceneCount ? `${sceneCount} scene${sceneCount === 1 ? '' : 's'} available` : 'Saved scenes appear automatically'}</span>
+        <a class="button button-primary" href="blocking-viewer.html">Open Blocking Viewer</a>
+      </div>
+    </section>`;
 }
 
 function renderBlockingStudioLaunch(context) {

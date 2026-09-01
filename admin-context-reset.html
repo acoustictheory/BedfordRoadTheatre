@@ -10,8 +10,11 @@
     button,a{display:inline-block;margin:8px 8px 0 0;padding:12px 17px;border-radius:10px;border:0;font-weight:700;cursor:pointer;text-decoration:none}
     button{background:#d6aa42;color:#111} a{background:#333;color:#fff} pre{white-space:pre-wrap;background:#090909;padding:16px;border-radius:12px;overflow:auto}
   </style>
+  <script defer src="assets/config.js"></script>
+  <script defer src="assets/js/api.js"></script>
+  <script defer src="assets/js/core.js"></script>
 </head>
-<body>
+<body style="display:none">
 <main>
   <p>Administrator context repair v17.1</p>
   <h1>Repair navigation without deleting music</h1>
@@ -22,6 +25,16 @@
 </main>
 <script>
 const status = document.getElementById('status');
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const auth = await BRM.api('validateSession', {}, {noCache:true, forceNetwork:true});
+    BRM.context = auth.context;
+    if (!BRM.isAdmin()) { location.href = 'dashboard.html'; return; }
+    document.body.style.display = '';
+  } catch (error) {
+    location.href = 'login.html';
+  }
+});
 function deleteDatabase(name) {
   return new Promise(resolve => {
     if (!('indexedDB' in window)) return resolve({name, result:'unsupported'});

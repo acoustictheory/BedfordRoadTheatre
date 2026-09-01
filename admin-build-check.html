@@ -19,16 +19,24 @@
     </section>
   </main>
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       let context = null;
-      try { context = JSON.parse(localStorage.getItem('brmContext') || 'null'); } catch {}
+      try {
+        const auth = await BRM.api('validateSession', {}, { noCache: true, forceNetwork: true });
+        context = auth.context;
+        BRM.context = context;
+      } catch (error) {
+        location.href = 'login.html';
+        return;
+      }
+      if (!BRM.isAdmin()) { location.href = 'dashboard.html'; return; }
       const result = {
         loadedBuild: window.BRM?.BUILD_ID || 'OLD OR MISSING CORE.JS',
         username: context?.username || null,
         storedIsAdmin: context?.isAdmin,
         permissions: context?.permissions || [],
         computedIsAdmin: window.BRM?.isAdmin?.() ?? null,
-        expectedAdminBuild: 'admin-v13-20260722'
+        expectedAdminBuild: window.BRM_CONFIG?.BUILD_ID || null
       };
       document.querySelector('[data-result]').textContent = JSON.stringify(result, null, 2);
     });

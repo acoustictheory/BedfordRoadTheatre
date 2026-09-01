@@ -155,10 +155,19 @@ function openReview(e,onSaved){
     <form data-feedback-form class="journal-review-feedback-form journal-feedback-builder"><span class="eyebrow">Respond for growth</span><h3>Build feedback they can actually use</h3><p class="field-hint">You do not need to fill every box. The builder combines what you write into one private response.</p>
       <div class="journal-reviewer-prompts">${ideas.map(([title,copy])=>`<button type="button" data-review-idea="${BRM.escape(copy)}"><strong>${BRM.escape(title)}</strong><span>${BRM.escape(copy)}</span></button>`).join('')}</div>
       <div class="form-grid"><div class="field span-2"><label>1. What I noticed</label><textarea name="notice" placeholder="Name a specific choice, moment, strategy, contribution, or piece of evidence from their reflection."></textarea></div><div class="field span-2"><label>2. Growth I see</label><textarea name="growth" placeholder="What is becoming stronger, more independent, more intentional, more collaborative, or more resilient?"></textarea></div><div class="field span-2"><label>3. A question or next invitation</label><textarea name="invitation" placeholder="Give them something useful to try, notice, practise, or think about next."></textarea></div><div class="field"><label>Review status</label><select name="reviewStatus">${['Reviewed','Follow-up Needed','Progress Demonstrated','Excellent Reflection','Portfolio Highlight','Missing Detail'].map(v=>`<option ${status===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
-      <div class="journal-feedback-preview"><span class="eyebrow">Student will receive</span><div data-feedback-preview>Start writing above to preview the response.</div></div><div class="journal-save-status" data-feedback-status aria-live="polite"></div><div class="form-actions"><button class="button button-primary" data-save-feedback>Save private feedback</button></div>
+      <div class="journal-feedback-preview"><span class="eyebrow">Student will receive</span><div data-feedback-preview>Start writing above to preview the response.</div></div><div class="journal-save-status" data-feedback-status aria-live="polite"></div><div class="form-actions">${BRM.isAdmin()?'<button class="button button-danger" type="button" data-delete-journal>Delete journal entry</button>':''}<button class="button button-primary" data-save-feedback>Save private feedback</button></div>
     </form>`,{wide:true});
 
   modal.querySelector('[data-open-history]')?.addEventListener('click',()=>{modal.closeModal();setTimeout(()=>openStudentHistory(studentKeyFor(e)),80);});
+  modal.querySelector('[data-delete-journal]')?.addEventListener('click',async event=>{
+    const reason=prompt(`Why is this journal entry being deleted?\n\nStudent: ${e.StudentName||'Student'}\nEntry: ${e.ActivityTitle||'Reflection'}`,'');
+    if(reason===null)return;
+    if(!reason.trim()){BRM.toast('Enter a deletion reason for the audit record.','error');return;}
+    if(!confirm('Delete this journal entry? It will disappear from student and reviewer views, but remain in the protected audit history.'))return;
+    const button=event.currentTarget,original=button.textContent;button.disabled=true;button.textContent='Deleting…';
+    try{await BRM.api('deleteJournalEntry',{journalEntryId:e.JournalEntryID,reason:reason.trim()},{noCache:true});modal.closeModal();BRM.toast('Journal entry deleted.');await onSaved();}
+    catch(error){button.disabled=false;button.textContent=original;BRM.toast(error.message||'The journal entry could not be deleted.','error');}
+  });
   const form=modal.querySelector('[data-feedback-form]'),notice=form.elements.notice,growth=form.elements.growth,invitation=form.elements.invitation,preview=modal.querySelector('[data-feedback-preview]');
   function combinedFeedback(){return [[notice.value.trim(),'What I noticed'],[growth.value.trim(),'Growth I see'],[invitation.value.trim(),'For next time']].filter(x=>x[0]).map(([text,label])=>`${label}: ${text}`).join('\n\n');}
   function updatePreview(){const text=combinedFeedback();preview.textContent=text||'Start writing above to preview the response.';}

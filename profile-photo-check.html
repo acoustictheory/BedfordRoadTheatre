@@ -9,7 +9,7 @@
   <script defer src="assets/js/api.js"></script>
   <script defer src="assets/js/core.js?v=20260722-photo20"></script>
 </head>
-<body>
+<body data-private="true">
   <main style="max-width:760px;margin:40px auto;padding:24px">
     <section class="panel">
       <span class="eyebrow">Photo diagnostics</span>
@@ -21,6 +21,13 @@
   </main>
   <script>
     window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const auth = await BRM.api('validateSession', {}, { noCache: true, forceNetwork: true });
+        BRM.context = auth.context;
+      } catch (error) {
+        location.href = 'login.html';
+        return;
+      }
       const output = document.querySelector('[data-result]');
       const avatar = document.querySelector('[data-avatar]');
       let context = null;

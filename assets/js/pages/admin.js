@@ -28,10 +28,17 @@ async function copyAdminText(text){
   }
 }
 
+function readAdminPhoto(file){
+  if(!file||!file.size)return Promise.resolve('');
+  if(file.size>10*1024*1024)return Promise.reject(new Error('Choose a profile photo smaller than 10 MB.'));
+  if(!/^image\/(?:jpeg|png|webp)$/i.test(file.type||''))return Promise.reject(new Error('Use a JPG, PNG, or WebP profile photo.'));
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('The profile photo could not be read.'));reader.readAsDataURL(file)});
+}
+
 document.addEventListener('DOMContentLoaded',()=>BRM.initPrivatePage(async()=>{
   if(!BRM.isAdmin()){location.href='dashboard.html';return}
   const main=document.querySelector('#app-main');BRM.loading(main,'Loading administration centre…');
-  try{const data=await BRM.api('adminData');renderAdmin(main,data)}catch(e){main.innerHTML=`<div class="alert alert-error">${BRM.escape(e.message)}</div>`}
+  try{const data=await BRM.api('adminData');renderAdmin(main,data);const heading=main.querySelector('[data-tab-panel="users"] .section-heading');heading?.insertAdjacentHTML('beforeend','<button class="button button-primary" data-add-student>+ Add student</button>');main.querySelector('[data-add-student]')?.addEventListener('click',()=>openCreateStudent(data,()=>location.reload()))}catch(e){main.innerHTML=`<div class="alert alert-error">${BRM.escape(e.message)}</div>`}
 }));
 
 function renderAdmin(main,data){
@@ -40,6 +47,7 @@ function renderAdmin(main,data){
   main.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>activateTab(b.dataset.tab)));
   activateTab(location.hash.replace('#',''));
   main.querySelectorAll('[data-edit-user]').forEach(b=>b.addEventListener('click',()=>openUserAccess(data.users.find(u=>u.UserID===b.dataset.editUser),data,()=>location.reload())));
+  main.querySelector('[data-add-student]')?.addEventListener('click',()=>openCreateStudent(data,()=>location.reload()));
   main.querySelectorAll('[data-approve-department-request]').forEach(button=>button.addEventListener('click',async()=>{
     const card=button.closest('[data-department-request-card]');
     const roleLabel=card.querySelector('[name="roleLabel"]')?.value||'Member';
@@ -167,6 +175,35 @@ window.filterAdminUsers=function(q){document.querySelectorAll('[data-user-search
 function renderCodesTab(data){return `<div class="section-heading"><div><span class="eyebrow">Controlled registration</span><h2>Registration codes</h2><p>Create codes that automatically assign a permission group and optional department.</p></div><button class="button button-primary" data-new-code>+ New code</button></div><div class="table-wrap"><table><thead><tr><th>Code</th><th>Purpose</th><th>Default access</th><th>Uses</th><th>Status</th></tr></thead><tbody>${data.registrationCodes.map(c=>`<tr><td><code>${BRM.escape(c.Code)}</code></td><td>${BRM.escape(c.Label)}</td><td>${BRM.escape(c.PermissionGroupName)}${c.DepartmentName?` · ${BRM.escape(c.DepartmentName)}`:''}</td><td>${c.Uses}/${c.MaxUses}</td><td><span class="badge">${BRM.escape(c.Status)}</span></td></tr>`).join('')}</tbody></table></div>`}
 function renderProductionsTab(data){return `<div class="section-heading"><div><span class="eyebrow">Reusable annual platform</span><h2>Productions</h2><p>Start a new musical without rebuilding the website. Accounts and profiles can carry forward while production data remains separate.</p></div><button class="button button-primary" data-new-production>+ Start new production</button></div><div class="data-list">${data.productions.map(p=>`<article class="data-card"><span class="rating-pill">${p.Status==='Active'?'●':'○'}</span><div class="data-card-main"><div class="item-meta"><span class="badge">${BRM.escape(p.Status)}</span><span>${BRM.escape(p.SchoolYear)}</span></div><h3>${BRM.escape(p.Title)}</h3><p>${p.OpeningDate?`Opening ${BRM.formatDate(p.OpeningDate+'T12:00:00')}`:'Performance dates not set'}</p></div>${p.Status!=='Active'&&p.Status!=='Deleted'?`<button class="button button-danger button-small" data-request-delete="${p.ProductionID}">Request permanent deletion</button>`:''}</article>`).join('')}</div>${data.resetRequests.length?`<div class="alert alert-error" style="margin-top:20px"><strong>Pending deletion approvals</strong><div class="data-list" style="margin-top:12px">${data.resetRequests.map(r=>`<div class="data-card"><div class="data-card-main"><strong>${BRM.escape(data.productions.find(p=>p.ProductionID===r.ProductionID)?.Title||r.ProductionID)}</strong><p>Requested ${BRM.formatDateTime(r.RequestedAt)}. A different full administrator must approve.</p></div><button class="button button-danger button-small" data-approve-reset="${r.ResetRequestID}">Approve deletion</button></div>`).join('')}</div></div>`:''}`}
 function renderSystemTab(){return `<div class="section-heading"><div><span class="eyebrow">Deployment and maintenance</span><h2>System tools</h2></div></div><div class="grid grid-2"><div class="panel-inset"><h3>Track synchronization</h3><p style="color:var(--muted)">Upload MP3s to the production’s Drive track folders, then open Apps Script and run <code>syncTracksFromDrive()</code>.</p></div><div class="panel-inset"><h3>Session cleanup</h3><p style="color:var(--muted)">Create a daily Apps Script trigger for <code>clearExpiredSessions()</code> to remove expired login sessions.</p></div><div class="panel-inset"><h3>Database and Drive</h3><p style="color:var(--muted)">The master spreadsheet and all generated folders are stored inside the universal root folder created during installation.</p></div><div class="panel-inset"><h3>Audit protection</h3><p style="color:var(--muted)">Deleted posts remain soft-deleted with author, administrator, reason, and time in the AuditLog and NoteHistory sheets.</p></div></div>`}
+function openCreateStudent(data,onSaved){
+  const generated=generateBrowserTemporaryPassword();
+  const modal=BRM.openModal(`
+    <span class="eyebrow">Administrator-created account</span><h2>Add student</h2>
+    <p style="color:var(--muted)">Create the student login, profile, department access, and initial permissions in one step.</p>
+    <form data-create-student><div class="form-grid">
+      <div class="field"><label>First name</label><input name="firstName" required maxlength="80"></div>
+      <div class="field"><label>Last name</label><input name="lastName" required maxlength="80"></div>
+      <div class="field"><label>Display name</label><input name="displayName" maxlength="120" placeholder="Defaults to first and last name"></div>
+      <div class="field"><label>Username</label><input name="username" required minlength="3" maxlength="40" pattern="[A-Za-z0-9._-]+"></div>
+      <div class="field span-2"><label>Email</label><input name="email" type="email"></div>
+      <div class="field"><label>Pronouns</label><input name="pronouns" maxlength="80"></div>
+      <div class="field"><label>Grade</label><input name="grade" maxlength="40"></div>
+      <div class="field"><label>Phone</label><input name="phone" type="tel" maxlength="40"></div>
+      <div class="field"><label>Emergency contact</label><input name="emergencyContact" maxlength="160"></div>
+      <div class="field"><label>Profile visibility</label><select name="visibility"><option>Company</option><option>Private</option></select></div>
+      <div class="field"><label>Department role label</label><input name="roleLabel" value="Member" maxlength="120"></div>
+      <div class="field span-2"><label>Bio</label><textarea name="bio" maxlength="1000"></textarea></div>
+      <div class="field span-2"><label>Profile photo</label><input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp"><span class="field-hint">Optional JPG, PNG, or WebP up to 10 MB.</span></div>
+      <div class="field span-2"><label>Departments</label><div class="grid grid-2">${data.departments.map(d=>`<label class="checkbox-row"><input type="checkbox" name="departmentIds" value="${d.DepartmentID}"> ${BRM.escape(d.Name)}</label>`).join('')}</div></div>
+      <div class="field span-2"><label>Permission groups</label><div class="grid grid-2">${data.permissionGroups.map(g=>`<label class="checkbox-row"><input type="checkbox" name="groupIds" value="${g.PermissionGroupID}"> ${BRM.escape(g.GroupName)}</label>`).join('')||'<span class="field-hint">No permission groups configured; the account will be a standard student.</span>'}</div></div>
+      <div class="field span-2"><label>Temporary password</label><div style="display:flex;gap:8px"><input name="temporaryPassword" value="${BRM.escape(generated)}" minlength="8" required style="flex:1"><button type="button" class="button button-secondary button-small" data-create-generate>Generate</button></div></div>
+      <label class="checkbox-row span-2"><input name="requirePasswordChange" type="checkbox" checked> Require password change at first login</label>
+    </div><div class="form-actions"><button class="button button-primary" type="submit">Create student</button></div></form>`,{wide:true});
+  const form=modal.querySelector('[data-create-student]');
+  modal.querySelector('[data-create-generate]').onclick=()=>{form.elements.temporaryPassword.value=generateBrowserTemporaryPassword()};
+  form.addEventListener('submit',async event=>{event.preventDefault();const button=event.submitter,original=button.textContent;button.disabled=true;button.textContent='Creating…';try{const values=new FormData(form),photo=await readAdminPhoto(values.get('profilePhoto'));const result=await BRM.api('createManagedUser',{firstName:values.get('firstName'),lastName:values.get('lastName'),displayName:values.get('displayName'),username:values.get('username'),email:values.get('email'),pronouns:values.get('pronouns'),grade:values.get('grade'),phone:values.get('phone'),emergencyContact:values.get('emergencyContact'),visibility:values.get('visibility'),roleLabel:values.get('roleLabel'),bio:values.get('bio'),departmentIds:values.getAll('departmentIds'),groupIds:values.getAll('groupIds'),temporaryPassword:values.get('temporaryPassword'),requirePasswordChange:values.get('requirePasswordChange')==='on',profilePhotoData:photo,profilePhotoName:values.get('profilePhoto')?.name||''});modal.closeModal();const credentials=BRM.openModal(`<span class="eyebrow">Student created</span><h2>${BRM.escape(result.displayName)}</h2><div class="alert alert-info">Copy these credentials now and send them privately.</div><div class="panel-inset"><p><strong>Username:</strong> ${BRM.escape(result.username)}</p><p><strong>Temporary password:</strong> <code>${BRM.escape(result.issuedTemporaryPassword)}</code></p></div><div class="form-actions"><button class="button button-primary" data-copy-new>Copy credentials</button><button class="button button-secondary" data-close-new>Done</button></div>`);credentials.querySelector('[data-copy-new]').onclick=()=>copyAdminText(`Bedford Road Musical\nUsername: ${result.username}\nTemporary password: ${result.issuedTemporaryPassword}`);credentials.querySelector('[data-close-new]').onclick=()=>{credentials.closeModal();onSaved()};}catch(error){button.disabled=false;button.textContent=original;BRM.toast(error.message,'error')}});
+}
+
 function openUserAccess(user,data,onSaved){
   const modal=BRM.openModal(`
     <span class="eyebrow">Full administrator account management</span>
@@ -190,6 +227,18 @@ function openUserAccess(user,data,onSaved){
           <label>Email address</label>
           <input name="email" type="email" value="${BRM.escape(user.Email||'')}" placeholder="Optional">
         </div>
+
+        <div class="field"><label>First name</label><input name="firstName" value="${BRM.escape(user.FirstName||'')}" maxlength="80"></div>
+        <div class="field"><label>Last name</label><input name="lastName" value="${BRM.escape(user.LastName||'')}" maxlength="80"></div>
+        <div class="field"><label>Pronouns</label><input name="pronouns" value="${BRM.escape(user.Pronouns||'')}" maxlength="80"></div>
+        <div class="field"><label>Grade</label><input name="grade" value="${BRM.escape(user.Grade||'')}" maxlength="40"></div>
+        <div class="field"><label>Phone</label><input name="phone" type="tel" value="${BRM.escape(user.Phone||'')}" maxlength="40"></div>
+        <div class="field"><label>Emergency contact</label><input name="emergencyContact" value="${BRM.escape(user.EmergencyContact||'')}" maxlength="160"></div>
+        <div class="field"><label>Profile visibility</label><select name="visibility"><option ${user.Visibility==='Company'?'selected':''}>Company</option><option ${user.Visibility==='Private'?'selected':''}>Private</option></select></div>
+        <div class="field"><label>Department role label</label><input name="roleLabel" value="${BRM.escape(user.RoleLabel||'Member')}" maxlength="120"></div>
+        <div class="field span-2"><label>Bio</label><textarea name="bio" maxlength="1000">${BRM.escape(user.Bio||'')}</textarea></div>
+        <div class="field span-2"><label>Replace profile photo</label><input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp"><span class="field-hint">Leave blank to keep the current photo.</span></div>
+        ${user.PhotoURL?'<label class="checkbox-row span-2"><input name="removeProfilePhoto" type="checkbox"> Remove current profile photo</label>':''}
 
         <div class="field">
           <label>Account status</label>
@@ -238,6 +287,7 @@ function openUserAccess(user,data,onSaved){
       </div>
 
       <div class="form-actions">
+        ${!adminBool(user.IsFullAdmin)&&String(user.UserID)!==String(BRM.context?.userId)?'<button class="button button-danger" type="button" data-delete-student>Delete student</button>':''}
         <button class="button button-primary" type="submit">Save account</button>
       </div>
     </form>
@@ -254,6 +304,22 @@ function openUserAccess(user,data,onSaved){
     passwordInput.select();
   });
 
+  modal.querySelector('[data-delete-student]')?.addEventListener('click',()=>{
+    const confirmation=BRM.openModal(`
+      <span class="eyebrow">Permanent account deletion</span>
+      <h2>Delete ${BRM.escape(user.DisplayName||user.Username)}?</h2>
+      <div class="alert alert-error">This permanently removes the student account, profile, active sessions, and department requests. Their submitted journals, notes, and production history remain in the audit record.</div>
+      <div class="field" style="margin-top:16px"><label>Type the username <strong>${BRM.escape(user.Username)}</strong></label><input data-confirm-username autocomplete="off"></div>
+      <div class="form-actions"><button class="button button-secondary" type="button" data-cancel-delete>Cancel</button><button class="button button-danger" type="button" data-confirm-delete>Delete student permanently</button></div>`);
+    confirmation.querySelector('[data-cancel-delete]').addEventListener('click',()=>confirmation.closeModal());
+    confirmation.querySelector('[data-confirm-delete]').addEventListener('click',async event=>{
+      const button=event.currentTarget,confirmUsername=confirmation.querySelector('[data-confirm-username]').value.trim();
+      button.disabled=true;button.textContent='Deleting…';
+      try{await BRM.api('deleteManagedUser',{userId:user.UserID,confirmUsername});confirmation.closeModal();modal.closeModal();BRM.toast('Student account deleted.');onSaved();}
+      catch(error){button.disabled=false;button.textContent='Delete student permanently';BRM.toast(error.message,'error');}
+    });
+  });
+
   form.addEventListener('submit',async event=>{
     event.preventDefault();
 
@@ -266,11 +332,24 @@ function openUserAccess(user,data,onSaved){
     const temporaryPassword=String(values.get('temporaryPassword')||'').trim();
 
     try{
+      const profilePhotoData=await readAdminPhoto(values.get('profilePhoto'));
       const result=await BRM.api('saveManagedUser',{
         userId:user.UserID,
         displayName:values.get('displayName'),
         username:values.get('username'),
         email:values.get('email'),
+        firstName:values.get('firstName'),
+        lastName:values.get('lastName'),
+        pronouns:values.get('pronouns'),
+        grade:values.get('grade'),
+        phone:values.get('phone'),
+        emergencyContact:values.get('emergencyContact'),
+        visibility:values.get('visibility'),
+        roleLabel:values.get('roleLabel'),
+        bio:values.get('bio'),
+        profilePhotoData,
+        profilePhotoName:values.get('profilePhoto')?.name||'',
+        removeProfilePhoto:values.get('removeProfilePhoto')==='on',
         status:values.get('status'),
         isFullAdmin:values.get('isFullAdmin')==='on',
         mustChangePassword:values.get('requirePasswordChange')==='on',

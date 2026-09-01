@@ -1,10 +1,15 @@
-const CACHE = 'bedford-musical-admin-context-v17-1';
+const CACHE = 'bedford-frontend-20260901-2';
 
 const COMPLETE_SHELL = [
   "./",
   "404.html",
   "admin.html",
+  "book-an-audition.html",
+  "interested-in-musical.html",
+  "recruitment-review.html",
   "announcements.html",
+  "blocking.html",
+  "blocking-viewer.html",
   "costumes.html",
   "dashboard.html",
   "directing.html",
@@ -30,12 +35,25 @@ const COMPLETE_SHELL = [
   "tracks.html",
   "manifest.webmanifest",
   "assets/style.css",
+  "assets/recruitment.css",
+  "assets/blocking-hub.css",
+  "assets/blocking-viewer.css",
+  "assets/costume-hub.css",
+  "assets/dashboard.css",
+  "assets/journal.css",
+  "assets/props-hub.css",
+  "assets/scenic-hub.css",
   "assets/config.js",
   "assets/js/api.js",
   "assets/js/core.js",
   "assets/js/notes.js",
   "assets/js/pages/admin.js",
+  "assets/js/pages/recruitment.js",
+  "assets/js/pages/recruitment-review.js",
   "assets/js/pages/announcements.js",
+  "assets/js/pages/blocking-hub.js",
+  "assets/js/pages/blocking-viewer.js",
+  "assets/js/pages/costume-hub.js",
   "assets/js/pages/dashboard.js",
   "assets/js/pages/department.js",
   "assets/js/pages/directory.js",
@@ -44,6 +62,8 @@ const COMPLETE_SHELL = [
   "assets/js/pages/login.js",
   "assets/js/pages/profile.js",
   "assets/js/pages/resources.js",
+  "assets/js/pages/props-hub.js",
+  "assets/js/pages/scenic-hub.js",
   "assets/js/pages/schedule.js",
   "assets/js/pages/tasks.js",
   "assets/js/pages/tracks.js",
@@ -61,7 +81,9 @@ self.addEventListener('install', event => {
             if (response && response.ok) {
               await cache.put(path, response.clone());
             }
-          } catch (error) {}
+          } catch (error) {
+            console.warn(`Could not precache ${path}:`, error);
+          }
         }
       })
       .then(() => self.skipWaiting())

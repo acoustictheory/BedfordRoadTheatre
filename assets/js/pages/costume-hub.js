@@ -1342,6 +1342,8 @@ function hydrateCostumeImages(root=document){
 }
 
 async function compressCostumeImage(file){
+  if(file.size>25*1024*1024)throw new Error('Choose an image smaller than 25 MB.');
+  if(!/^image\/(?:jpeg|png|webp)$/i.test(file.type||''))throw new Error('Use a JPG, PNG, or WebP image.');
   if(/image\/hei[cf]/i.test(file.type||'')||/\.(heic|heif)$/i.test(file.name||''))throw new Error('Please convert HEIC/HEIF photos to JPG, PNG, or WebP first.');
   const image=await createImageBitmap(file,{imageOrientation:'from-image'}).catch(()=>null);
   if(!image)throw new Error('The picture could not be read. Use JPG, PNG, or WebP.');

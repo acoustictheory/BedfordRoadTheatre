@@ -26,11 +26,16 @@ window.BRM = window.BRM || {};
     'resources',
     'tracks',
     'adminData',
+    'recruitmentAdminData',
     'myDepartmentRequests'
   ]);
 
   const MUTATING_ACTIONS = new Set([
     'register',
+    'submitAuditionBooking',
+    'submitMusicalInterest',
+    'reviewRecruitmentSubmission',
+    'deleteRecruitmentSubmission',
     'changePassword',
     'updateProfile',
     'uploadProfilePhoto',
@@ -43,7 +48,7 @@ window.BRM = window.BRM || {};
     'editPageNote',
     'deletePageNote',
     'saveJournalEntry',
-    'saveJournalFeedback',
+    'saveJournalFeedback', 'deleteJournalEntry',
     'saveEvent',
     'saveDepartmentItem',
     'saveTask',
@@ -57,7 +62,29 @@ window.BRM = window.BRM || {};
     'createRegistrationCode',
     'startNewProduction',
     'requestProductionDeletion',
-    'approveProductionDeletion'
+    'approveProductionDeletion', 'createManagedUser', 'deleteManagedUser',
+    'savePropsItem', 'savePropsTask', 'savePropsPreset', 'savePropsDeadline',
+    'savePropsSuggestion', 'reviewPropsSuggestion', 'archivePropsItem',
+    'restorePropsItem', 'deletePropsItemPermanently', 'uploadPropsImage',
+    'deletePropsImage', 'updatePropsPresetRunStatus', 'resetPropsPresetRun',
+    'saveScenicSet', 'saveScenicElement', 'saveScenicTask', 'saveScenicTransition',
+    'saveScenicDeadline', 'saveScenicSuggestion', 'reviewScenicSuggestion',
+    'archiveScenicSet', 'restoreScenicSet', 'deleteScenicSetPermanently',
+    'archiveScenicElement', 'restoreScenicElement', 'deleteScenicElementPermanently',
+    'uploadScenicImage', 'deleteScenicImage', 'updateScenicTransitionRunStatus',
+    'resetScenicTransitionRun', 'uploadCostumeImage', 'deleteCostumeImage',
+    'reviewCostumeSuggestion', 'archiveCostumeCharacter', 'restoreCostumeCharacter',
+    'deleteCostumeCharacterPermanently', 'archiveCostumePiece', 'restoreCostumePiece',
+    'deleteCostumePiecePermanently', 'updateCostumeChangeRunStatus',
+    'resetCostumeChangeRun', 'saveCostumeCharacter', 'saveCostumeChange',
+    'saveCostumePiece', 'saveCostumeMeasurement', 'saveCostumeFitting',
+    'saveCostumeTask', 'saveCostumeDeadline', 'saveCostumeSuggestion',
+    'saveBlockingSnapshot', 'saveBlockingTimeline',
+    'saveBlockingAnchor', 'saveBlockingCast', 'deleteBlockingCast',
+    'saveBlockingEnsembleRoster', 'uploadBlockingBackground',
+    'setBlockingSnapshotStatus', 'deleteBlockingSnapshotPermanently',
+    'duplicateBlockingSnapshot', 'restoreBlockingSnapshotVersion',
+    'saveBlockingSceneRecording', 'useBlockingSceneRecording'
   ]);
 
   let responseCache = new Map();
@@ -127,25 +154,14 @@ window.BRM = window.BRM || {};
       }
     };
 
-    const permissions = new Set([
-      ...(secondary.permissions || []),
-      ...(primary.permissions || [])
-    ]);
-
-    const departmentIds = new Set([
-      ...(secondary.departmentIds || []).map(String),
-      ...(primary.departmentIds || []).map(String)
-    ]);
+    const permissions = new Set(primary.permissions || []);
+    const departmentIds = new Set((primary.departmentIds || []).map(String));
 
     merged.permissions = [...permissions];
     merged.departmentIds = [...departmentIds];
-    merged.departments = mergeDepartments(
-      primary.departments || [],
-      secondary.departments || []
-    );
+    merged.departments = clone(primary.departments || []);
     merged.isAdmin = Boolean(
       contextAdminValue(primary)
-      || contextAdminValue(secondary)
       || merged.permissions.includes('admin.all')
     );
 
@@ -288,6 +304,10 @@ window.BRM = window.BRM || {};
 
   async function rawApi(action, payload = {}, options = {}) {
     if (BRM.isDemo()) return BRM.demoApi(action, payload);
+
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:[?#].*)?$/.test(String(config.API_URL || ''))) {
+      throw new Error('The musical portal server is not configured with a valid Apps Script Web App URL.');
+    }
 
     const token = options.public ? '' : localStorage.getItem('brmToken') || '';
     let response;
@@ -653,7 +673,7 @@ window.BRM = window.BRM || {};
   BRM.api = async function api(action, payload = {}, options = {}) {
     if (BRM.isDemo()) return BRM.demoApi(action, payload);
 
-    const publicAction = options.public || ['login', 'register', 'registrationOptions'].includes(action);
+    const publicAction = options.public || ['login', 'register', 'registrationOptions', 'publicRecruitmentConfig', 'submitAuditionBooking', 'submitMusicalInterest'].includes(action);
     const neverCache = options.noCache || ['bootstrap', 'trackAudioInfo', 'trackAudioChunk', 'logout'].includes(action);
 
     if (!publicAction && !neverCache && CACHEABLE_ACTIONS.has(action) && !options.forceNetwork) {

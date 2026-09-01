@@ -5,7 +5,7 @@
   <title>Blocking Face Renderer Check | Bedford Road Musical</title>
   <link rel="stylesheet" href="assets/style.css">
   <script defer src="assets/config.js"></script><script defer src="assets/js/api.js"></script><script defer src="assets/js/core.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js" integrity="sha384-0J5jG861IV4dbTNYz2dMoeFDc1s4wgpL1jPYCFnyz1vJmVikJ3dERasAfv2Xjeo2" crossorigin="anonymous"></script>
 </head>
 <body data-private="true"><main style="max-width:1050px;margin:28px auto;padding:18px"><section class="panel" style="padding:20px">
 <span class="eyebrow">Blocking Studio v34 diagnostics</span><h1>Cast Face Renderer Check</h1>
@@ -14,6 +14,7 @@
 <p style="margin-top:18px"><a class="button button-primary" href="blocking.html?v=33">Back to Blocking Studio</a></p></section></main>
 <script>
 window.addEventListener('DOMContentLoaded',async()=>{const summary=document.querySelector('[data-summary]'),results=document.querySelector('[data-results]');
+try{const auth=await BRM.api('validateSession',{}, {noCache:true,forceNetwork:true});BRM.context=auth.context;if(!BRM.isAdmin()&&!['blocking.edit','blocking.manage','blocking.audit'].some(p=>BRM.hasPermission(p))){location.href='dashboard.html';return;}}catch(error){location.href='login.html';return;}
 function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Browser decode failed'));i.src=src;});}
 function faceCanvas(img,size=120){const c=document.createElement('canvas');c.width=size;c.height=size;const x=c.getContext('2d'),iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,side=Math.min(iw,ih),sx=(iw-side)/2,sy=(ih-side)/2;x.save();x.beginPath();x.arc(size/2,size/2,size/2,0,Math.PI*2);x.clip();x.drawImage(img,sx,sy,side,side,0,0,size,size);x.restore();return c;}
 try{const hub=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true});const cast=hub.cast||[];let apiOk=0,browserOk=0,canvasOk=0,failed=0;

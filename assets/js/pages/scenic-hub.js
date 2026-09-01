@@ -1953,6 +1953,8 @@ function blobDataUrl(blob) {
 }
 
 async function compressScenicImage(file) {
+  if (file.size > 25 * 1024 * 1024) throw new Error('Choose an image smaller than 25 MB.');
+  if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type || '')) throw new Error('Use a JPG, PNG, or WebP image.');
   const image = await decodeScenicImage(file);
 
   try {
