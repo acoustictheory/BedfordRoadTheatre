@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-theme="bedford-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Build Check | Bedford Road Musical</title>
+  <link rel="stylesheet" href="assets/style.css?v=20260722-admin13">
+  <script defer src="assets/config.js?v=20260722-admin13"></script>
+  <script defer src="assets/js/api.js?v=20260722-admin13"></script>
+  <script defer src="assets/js/core.js?v=20260722-admin13"></script>
+</head>
+<body>
+  <main style="max-width:760px;margin:50px auto;padding:24px">
+    <section class="panel">
+      <span class="eyebrow">Administrator diagnostics</span>
+      <h1>Admin Build Check</h1>
+      <pre data-result style="white-space:pre-wrap;overflow:auto">Checking…</pre>
+      <p><a class="button button-primary" href="dashboard.html">Open Dashboard</a></p>
+    </section>
+  </main>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      let context = null;
+      try { context = JSON.parse(localStorage.getItem('brmContext') || 'null'); } catch {}
+      const result = {
+        loadedBuild: window.BRM?.BUILD_ID || 'OLD OR MISSING CORE.JS',
+        username: context?.username || null,
+        storedIsAdmin: context?.isAdmin,
+        permissions: context?.permissions || [],
+        computedIsAdmin: window.BRM?.isAdmin?.() ?? null,
+        expectedAdminBuild: 'admin-v13-20260722'
+      };
+      document.querySelector('[data-result]').textContent = JSON.stringify(result, null, 2);
+    });
+  </script>
+</body>
+</html>

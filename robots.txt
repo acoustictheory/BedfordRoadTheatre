@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /dashboard.html
+Disallow: /admin.html
+Disallow: /journal.html
+Disallow: /journal-review.html
+Disallow: /profile.html
+Disallow: /schedule.html
+Disallow: /tasks.html
+Disallow: /announcements.html
+Disallow: /tracks.html
+Disallow: /resources.html
+Disallow: /directory.html

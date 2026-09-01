@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-theme="bedford-dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+  <title>Blocking Face Renderer Check | Bedford Road Musical</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/config.js"></script><script defer src="assets/js/api.js"></script><script defer src="assets/js/core.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js"></script>
+</head>
+<body data-private="true"><main style="max-width:1050px;margin:28px auto;padding:18px"><section class="panel" style="padding:20px">
+<span class="eyebrow">Blocking Studio v34 diagnostics</span><h1>Cast Face Renderer Check</h1>
+<p class="muted">This checks three separate steps: the private API result, a normal browser image, and the same Konva/canvas rendering technique used by the Blocking Studio.</p>
+<div data-summary class="alert alert-info">Checking cast assignments…</div><div data-results style="display:grid;gap:10px;margin-top:16px"></div>
+<p style="margin-top:18px"><a class="button button-primary" href="blocking.html?v=33">Back to Blocking Studio</a></p></section></main>
+<script>
+window.addEventListener('DOMContentLoaded',async()=>{const summary=document.querySelector('[data-summary]'),results=document.querySelector('[data-results]');
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Browser decode failed'));i.src=src;});}
+function faceCanvas(img,size=120){const c=document.createElement('canvas');c.width=size;c.height=size;const x=c.getContext('2d'),iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,side=Math.min(iw,ih),sx=(iw-side)/2,sy=(ih-side)/2;x.save();x.beginPath();x.arc(size/2,size/2,size/2,0,Math.PI*2);x.clip();x.drawImage(img,sx,sy,side,side,0,0,size,size);x.restore();return c;}
+try{const hub=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true});const cast=hub.cast||[];let apiOk=0,browserOk=0,canvasOk=0,failed=0;
+for(const person of cast){let photo=null,src='',browser=false,canvas=false,detail='';try{photo=await BRM.api('blockingCastPhotoData',{blockingCastId:person.BlockingCastID},{noCache:true,forceNetwork:true});src=photo?.dataUrl||photo?.externalUrl||'';if(src){apiOk++;const img=await loadImage(src);browser=true;browserOk++;const host=document.createElement('div');host.style.cssText='width:78px;height:78px';const stage=new Konva.Stage({container:host,width:78,height:78}),layer=new Konva.Layer();stage.add(layer);const circ=faceCanvas(img,140);layer.add(new Konva.Circle({x:39,y:39,radius:38,fill:'#f8b918'}));layer.add(new Konva.Image({x:7,y:7,width:64,height:64,image:circ}));layer.draw();canvas=true;canvasOk++;detail=`${photo.mimeType||'image'} · ${Math.round(Number(photo.byteLength||0)/1024)} KB`;const card=document.createElement('div');card.className='data-card';card.style.cssText='display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;align-items:center';card.appendChild(host);const info=document.createElement('div');info.className='data-card-main';info.innerHTML=`<strong>${BRM.escape(person.CharacterName||'Character')} — ${BRM.escape(person.PersonName||'Unassigned')}</strong><p style="margin:4px 0">API ✅ · Browser ${browser?'✅':'❌'} · Canvas ${canvas?'✅':'❌'}</p><small class="muted">${BRM.escape(detail)}</small>`;card.appendChild(info);results.appendChild(card);continue;}}
+catch(error){detail=error.message||String(error);failed++;}
+const card=document.createElement('div');card.className='data-card';card.innerHTML=`<div class="data-card-main"><strong>${BRM.escape(person.CharacterName||'Character')} — ${BRM.escape(person.PersonName||'Unassigned')}</strong><p>API ${src?'✅':'❌'} · Browser ${browser?'✅':'❌'} · Canvas ${canvas?'✅':'❌'}</p><small class="muted">${BRM.escape(detail||photo?.reason||'No usable profile photo')}</small></div>`;results.appendChild(card);}
+summary.className=(canvasOk===apiOk&&failed===0)?'alert alert-success':'alert alert-warning';summary.textContent=`API ${apiOk}/${cast.length} · Browser ${browserOk}/${cast.length} · Canvas ${canvasOk}/${cast.length} · ${failed} failures.`;
+}catch(error){summary.className='alert alert-error';summary.textContent='Blocking data could not load: '+(error.message||error);}});
+</script></body></html>

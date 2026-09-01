@@ -1,0 +1,196 @@
+/* =========================================================
+   BEDFORD ROAD MUSICAL — DASHBOARD BLOCKING STUDIO LAUNCH
+   v39 · frontend-only dashboard enhancement
+   ========================================================= */
+
+.dashboard-blocking-launch {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(190px, .48fr) minmax(0, 1.52fr);
+  min-height: 250px;
+  margin-top: 18px;
+  border: 1px solid color-mix(in srgb, var(--brand), var(--border) 52%);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--brand), transparent 70%), transparent 34%),
+    radial-gradient(circle at 95% 10%, rgba(248, 185, 24, .13), transparent 30%),
+    linear-gradient(135deg, color-mix(in srgb, var(--panel), #16040a 18%), var(--panel));
+  box-shadow: var(--shadow-soft);
+}
+
+.dashboard-blocking-launch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0 70%, rgba(255,255,255,.025) 70% 71%, transparent 71% 100%);
+}
+
+.dashboard-blocking-visual {
+  position: relative;
+  min-height: 250px;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+    radial-gradient(circle at 50% 35%, rgba(153,0,22,.44), transparent 48%),
+    #101722;
+  background-size: 28px 28px, 28px 28px, auto, auto;
+}
+
+.dashboard-blocking-stage-line {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 53%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #f8b918 15% 85%, transparent);
+  box-shadow: 0 0 18px rgba(248,185,24,.28);
+}
+
+.dashboard-blocking-person {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #f8b918;
+  border-radius: 50%;
+  background: #5e000f;
+  color: #fff;
+  font-size: .66rem;
+  box-shadow: 0 5px 14px rgba(0,0,0,.36);
+}
+
+.dashboard-blocking-person.p1 { left: 24%; top: 28%; }
+.dashboard-blocking-person.p2 { left: 57%; top: 36%; border-color: #fff; }
+.dashboard-blocking-person.p3 { left: 38%; top: 61%; }
+.dashboard-blocking-person.p4 { left: 70%; top: 68%; border-color: #fff; }
+
+.dashboard-blocking-path {
+  position: absolute;
+  height: 2px;
+  border-top: 2px dashed rgba(255,255,255,.38);
+  transform-origin: left center;
+}
+
+.dashboard-blocking-path.path1 { width: 42%; left: 30%; top: 39%; transform: rotate(17deg); }
+.dashboard-blocking-path.path2 { width: 35%; left: 43%; top: 68%; transform: rotate(-4deg); }
+
+.dashboard-blocking-icon {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  color: rgba(255,255,255,.3);
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.dashboard-blocking-copy {
+  position: relative;
+  z-index: 1;
+  padding: clamp(22px, 3vw, 34px);
+  align-self: center;
+}
+
+.dashboard-blocking-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dashboard-blocking-meta .eyebrow { margin: 0; }
+
+.dashboard-blocking-access {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--brand), var(--border) 45%);
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--theme-brand-heading);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+.dashboard-blocking-copy h2 {
+  margin: 9px 0 8px;
+  font-size: clamp(1.45rem, 2.3vw, 2.15rem);
+}
+
+.dashboard-blocking-copy > p {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.dashboard-blocking-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.dashboard-blocking-features span {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2), transparent 8%);
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.dashboard-blocking-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.dashboard-blocking-note {
+  color: var(--muted);
+  font-size: .76rem;
+}
+
+@media (max-width: 820px) {
+  .dashboard-blocking-launch {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-blocking-visual {
+    min-height: 150px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dashboard-blocking-person.p1 { left: 18%; top: 25%; }
+  .dashboard-blocking-person.p2 { left: 45%; top: 36%; }
+  .dashboard-blocking-person.p3 { left: 63%; top: 61%; }
+  .dashboard-blocking-person.p4 { left: 80%; top: 32%; }
+}
+
+@media (max-width: 520px) {
+  .dashboard-blocking-copy {
+    padding: 20px 17px;
+  }
+
+  .dashboard-blocking-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-blocking-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+}

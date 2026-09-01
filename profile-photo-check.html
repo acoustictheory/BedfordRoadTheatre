@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" data-theme="bedford-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profile Photo Check | Bedford Road Musical</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/config.js"></script>
+  <script defer src="assets/js/api.js"></script>
+  <script defer src="assets/js/core.js?v=20260722-photo20"></script>
+</head>
+<body>
+  <main style="max-width:760px;margin:40px auto;padding:24px">
+    <section class="panel">
+      <span class="eyebrow">Photo diagnostics</span>
+      <h1>Authenticated Profile Photo v20</h1>
+      <pre data-result style="white-space:pre-wrap;overflow:auto">Checking…</pre>
+      <div data-avatar style="margin:20px 0"></div>
+      <p><a class="button button-primary" href="profile.html">Open profile</a></p>
+    </section>
+  </main>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const output = document.querySelector('[data-result]');
+      const avatar = document.querySelector('[data-avatar]');
+      let context = null;
+
+      try {
+        context = JSON.parse(localStorage.getItem('brmContext') || 'null');
+      } catch {}
+
+      const photoUrl = context?.profile?.PhotoURL || '';
+      const fileId = context?.profile?.PhotoFileID
+        || BRM.extractProfilePhotoFileId?.(photoUrl)
+        || '';
+
+      const result = {
+        build: BRM.BUILD_ID,
+        username: context?.username || null,
+        photoUrl,
+        photoFileId: fileId,
+        authenticatedLoaderAvailable:
+          typeof BRM.hydrateProfilePhotos === 'function',
+        photoCacheAvailable:
+          typeof BRM.cacheProfilePhoto === 'function'
+      };
+
+      output.textContent = JSON.stringify(result, null, 2);
+      avatar.innerHTML = BRM.avatar(
+        context?.profile?.DisplayName || context?.username || 'User',
+        photoUrl,
+        'large'
+      );
+      BRM.hydrateProfilePhotos(avatar);
+    });
+  </script>
+</body>
+</html>

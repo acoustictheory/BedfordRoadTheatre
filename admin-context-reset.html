@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Repair Administrator Navigation | Bedford Road Musical</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#111;color:#fff;margin:0;padding:32px}
+    main{max-width:760px;margin:auto;background:#1d1d1d;border:1px solid #444;border-radius:18px;padding:28px}
+    button,a{display:inline-block;margin:8px 8px 0 0;padding:12px 17px;border-radius:10px;border:0;font-weight:700;cursor:pointer;text-decoration:none}
+    button{background:#d6aa42;color:#111} a{background:#333;color:#fff} pre{white-space:pre-wrap;background:#090909;padding:16px;border-radius:12px;overflow:auto}
+  </style>
+</head>
+<body>
+<main>
+  <p>Administrator context repair v17.1</p>
+  <h1>Repair navigation without deleting music</h1>
+  <p>This removes only the stale site snapshot and browser code caches. It does <strong>not</strong> delete the offline music database <code>bedford-musical-audio-v1</code>.</p>
+  <pre id="status">Ready.</pre>
+  <button id="repair">Repair this browser</button>
+  <a href="dashboard.html">Open dashboard</a>
+</main>
+<script>
+const status = document.getElementById('status');
+function deleteDatabase(name) {
+  return new Promise(resolve => {
+    if (!('indexedDB' in window)) return resolve({name, result:'unsupported'});
+    const request = indexedDB.deleteDatabase(name);
+    request.onsuccess = () => resolve({name, result:'deleted'});
+    request.onerror = () => resolve({name, result:'error'});
+    request.onblocked = () => resolve({name, result:'blocked — close other Bedford tabs'});
+  });
+}
+document.getElementById('repair').addEventListener('click', async event => {
+  event.currentTarget.disabled = true;
+  status.textContent = 'Repairing…';
+  const before = (() => { try { return JSON.parse(localStorage.getItem('brmContext') || 'null'); } catch { return null; } })();
+  const snapshot = await deleteDatabase('bedford-musical-site-cache-v1');
+  const cacheNames = 'caches' in window ? await caches.keys() : [];
+  if ('caches' in window) await Promise.all(cacheNames.map(name => caches.delete(name)));
+  const registrations = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistrations() : [];
+  await Promise.all(registrations.map(registration => registration.unregister()));
+  sessionStorage.removeItem('brmSnapshotDisabledUntil');
+  status.textContent = JSON.stringify({
+    username: before?.username || null,
+    storedIsAdmin: before?.isAdmin,
+    permissions: before?.permissions || [],
+    removedSiteSnapshot: snapshot,
+    deletedCodeCaches: cacheNames,
+    unregisteredServiceWorkers: registrations.length,
+    preservedLogin: Boolean(localStorage.getItem('brmToken')),
+    preservedOfflineMusicDatabase: true
+  }, null, 2);
+  event.currentTarget.textContent = 'Repaired — open dashboard';
+});
+</script>
+</body>
+</html>
