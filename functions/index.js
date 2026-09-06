@@ -344,7 +344,10 @@ export const registerCommunicationDevice = onRequest({region:'northamerica-north
     if (!/^[a-f0-9-]{20,100}$/i.test(installId)) throw new Error('Invalid app installation.');
     const ref=db.collection('communicationDevices').doc(installId);
     if (token) {
-      await ref.set({token,platform:'android',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      const platform=['android','ios'].includes(clean(request.body?.platform,20).toLowerCase())
+        ? clean(request.body?.platform,20).toLowerCase()
+        : 'unknown';
+      await ref.set({token,platform,updatedAt:FieldValue.serverTimestamp()},{merge:true});
       response.json({success:true,registered:true}); return;
     }
     const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,'');

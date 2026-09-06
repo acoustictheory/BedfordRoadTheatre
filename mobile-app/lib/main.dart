@@ -48,6 +48,7 @@ FirebaseOptions get firebaseOptions =>
     ? iosFirebaseOptions
     : androidFirebaseOptions;
 final notifications = FlutterLocalNotificationsPlugin();
+StreamSubscription<String>? pushTokenSubscription;
 
 Future<void> configureNotificationChannels() async {
   final android = notifications
@@ -887,18 +888,27 @@ class PortalLoader extends StatelessWidget {
 
   Future<void> registerDevice(User u) async {
     try {
-      await FirebaseMessaging.instance.requestPermission();
+      final permission = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (permission.authorizationStatus == AuthorizationStatus.denied) return;
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null) return;
       final prefs = await SharedPreferences.getInstance();
       var id = prefs.getString('installId');
       id ??=
-          '${DateTime.now().microsecondsSinceEpoch}-${u.uid.hashCode.abs()}-android-install';
+          '${DateTime.now().microsecondsSinceEpoch}-${u.uid.hashCode.abs()}-${defaultTargetPlatform.name}-install';
       await prefs.setString('installId', id);
       await http.post(
         Uri.parse(deviceEndpoint),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'installId': id, 'token': token}),
+        body: jsonEncode({
+          'installId': id,
+          'token': token,
+          'platform': defaultTargetPlatform.name,
+        }),
       );
       await http.post(
         Uri.parse(deviceEndpoint),
@@ -912,6 +922,11 @@ class PortalLoader extends StatelessWidget {
           'bubbles': true,
         }),
       );
+      pushTokenSubscription ??= FirebaseMessaging.instance.onTokenRefresh
+          .listen((_) {
+            final current = FirebaseAuth.instance.currentUser;
+            if (current != null) unawaited(registerDevice(current));
+          });
     } catch (_) {}
   }
 
@@ -2608,6 +2623,58 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
   }
 }
 
+const _chatBackgrounds = <(String, String, IconData)>[
+  ('midnight', 'Midnight stage', Icons.theater_comedy),
+  ('curtain', 'Red curtain', Icons.curtains),
+  ('aurora', 'Aurora', Icons.auto_awesome),
+  ('score', 'Music score', Icons.music_note),
+  ('spotlight', 'Spotlight', Icons.light_mode),
+  ('classic', 'Classic', Icons.chat_bubble_outline),
+];
+
+BoxDecoration chatBackgroundDecoration(String id, Color accent) => switch (id) {
+  'curtain' => const BoxDecoration(
+    gradient: LinearGradient(
+      colors: [Color(0xff25040b), Color(0xff710d23), Color(0xff25040b)],
+      stops: [0, .5, 1],
+    ),
+  ),
+  'aurora' => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        const Color(0xff071521),
+        accent.withValues(alpha: .42),
+        const Color(0xff22102b),
+      ],
+    ),
+  ),
+  'score' => const BoxDecoration(
+    color: Color(0xff171510),
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xff262218), Color(0xff11100d)],
+    ),
+  ),
+  'spotlight' => BoxDecoration(
+    gradient: RadialGradient(
+      center: const Alignment(0, -.85),
+      radius: 1.25,
+      colors: [accent.withValues(alpha: .38), const Color(0xff07070a)],
+    ),
+  ),
+  'classic' => const BoxDecoration(color: Color(0xff101116)),
+  _ => const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xff0b1020), Color(0xff08090d)],
+    ),
+  ),
+};
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen(this.portal, this.roomId, this.room, {super.key});
   final PortalContext portal;
@@ -2620,11 +2687,183 @@ class ChatScreen extends StatefulWidget {
 class _ChatState extends State<ChatScreen> {
   final text = TextEditingController();
   Map<String, dynamic>? replyingTo;
+  Map<String, List<Map<String, dynamic>>> messageReactions = {};
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? reactionSubscription;
   bool sending = false;
+  String background = 'midnight';
+
+  @override
+  void initState() {
+    super.initState();
+    reactionSubscription = reactions.snapshots().listen((snapshot) {
+      final grouped = <String, List<Map<String, dynamic>>>{};
+      for (final document in snapshot.docs) {
+        final value = document.data();
+        (grouped['${value['messageId'] ?? ''}'] ??= []).add(value);
+      }
+      if (mounted) setState(() => messageReactions = grouped);
+    });
+    SharedPreferences.getInstance().then((preferences) {
+      if (!mounted) return;
+      setState(
+        () => background =
+            preferences.getString('chatBackground.${widget.roomId}') ??
+            '${widget.room['chatBackground'] ?? 'midnight'}',
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    reactionSubscription?.cancel();
+    text.dispose();
+    super.dispose();
+  }
+
+  Future<void> chooseBackground() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Chat background',
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              const Text('This choice is private to this device.'),
+              const SizedBox(height: 14),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 2.65,
+                crossAxisSpacing: 9,
+                mainAxisSpacing: 9,
+                children: _chatBackgrounds.map((item) {
+                  final active = item.$1 == background;
+                  return InkWell(
+                    onTap: () => Navigator.pop(sheetContext, item.$1),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: active
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.white24,
+                          width: active ? 2 : 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Icon(item.$3, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('chatBackground.${widget.roomId}', selected);
+    if (mounted) setState(() => background = selected);
+  }
+
   CollectionReference<Map<String, dynamic>>
   get messages => FirebaseFirestore.instance.collection(
     'productions/${widget.portal.productionId}/communicationConversations/${widget.roomId}/messages',
   );
+  CollectionReference<Map<String, dynamic>> get reactions =>
+      messages.parent!.collection('reactions');
+
+  Future<void> reactToMessage(String messageId, String emoji) async {
+    final reference = reactions.doc('${messageId}_${widget.portal.userId}');
+    final prior = await reference.get();
+    if (prior.exists && prior.data()?['emoji'] == emoji) {
+      await reference.delete();
+    } else {
+      await reference.set({
+        'messageId': messageId,
+        'userId': widget.portal.userId,
+        'emoji': emoji,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  Future<void> showMessageActions(
+    Map<String, dynamic> message,
+    DocumentReference<Map<String, dynamic>> reference,
+  ) async {
+    final mine = message['senderId'] == widget.portal.userId;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Wrap(
+              spacing: 5,
+              children: ['👍', '❤️', '😂', '😮', '👏', '🎭']
+                  .map(
+                    (emoji) => IconButton.filledTonal(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        reactToMessage('${message['_id']}', emoji);
+                      },
+                      icon: Text(emoji, style: const TextStyle(fontSize: 20)),
+                    ),
+                  )
+                  .toList(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.reply),
+              title: const Text('Reply'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                setState(() => replyingTo = message);
+              },
+            ),
+            if (mine || widget.portal.admin)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit message'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  editMessage(reference, '${message['text'] ?? ''}');
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> send() async {
     final v = text.text.trim();
     if (v.isEmpty || sending) return;
@@ -2703,253 +2942,341 @@ class _ChatState extends State<ChatScreen> {
   @override
   Widget build(BuildContext c) {
     final color = hexColor('${widget.room['groupColor'] ?? '#9b1c31'}');
+    final isApple = defaultTargetPlatform == TargetPlatform.iOS;
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.room['title'] ?? 'Conversation'}')),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: messages
-                  .orderBy('createdAt', descending: true)
-                  .limit(150)
-                  .snapshots(),
-              builder: (c, s) {
-                if (s.hasError)
-                  return const Center(
-                    child: _LoadStateCard(
-                      icon: Icons.cloud_off,
-                      title: 'Messages unavailable',
-                      message: 'Check your connection and retry.',
-                    ),
-                  );
-                if (!s.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                unawaited(
-                  messages.parent!
-                      .collection('reads')
-                      .doc(widget.portal.userId)
-                      .set({
-                        'lastReadAt': FieldValue.serverTimestamp(),
-                        if (s.data!.docs.isNotEmpty)
-                          'lastMessageId': s.data!.docs.first.id,
-                      }, SetOptions(merge: true)),
-                );
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(14),
-                  itemCount: s.data!.docs.length,
-                  itemBuilder: (c, n) {
-                    final messageDocument = s.data!.docs[n],
-                        i = {
-                          ...messageDocument.data(),
-                          '_id': messageDocument.id,
-                        },
-                        mine = i['senderId'] == widget.portal.userId;
-                    final senderId = '${i['senderId'] ?? ''}';
-                    final senderName = '${i['senderName'] ?? 'Member'}';
-                    final bubble = Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.all(12),
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.sizeOf(c).width * .78,
-                      ),
-                      decoration: BoxDecoration(
-                        color: mine
-                            ? color
-                            : Color.lerp(
-                                Theme.of(c).colorScheme.surface,
-                                color,
-                                .10,
-                              ),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (i['replyTo'] is Map)
-                            Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 7),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${(i['replyTo'] as Map)['senderName'] ?? 'Member'} · ${(i['replyTo'] as Map)['text'] ?? ''}',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  senderName,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                              if (i['editedAt'] != null)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 5),
-                                  child: Text(
-                                    'edited',
-                                    style: TextStyle(fontSize: 9),
-                                  ),
-                                ),
-                              if (widget.portal.admin)
-                                PopupMenuButton<String>(
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 18,
-                                  onSelected: (action) => action == 'edit'
-                                      ? editMessage(
-                                          messageDocument.reference,
-                                          '${i['text'] ?? ''}',
-                                        )
-                                      : deleteProductionItem(
-                                          context,
-                                          messageDocument.reference,
-                                          'this message',
-                                        ),
-                                  itemBuilder: (_) => const [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Text('Edit message'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Delete permanently'),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text('${i['text'] ?? ''}'),
-                          if (mine)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                messageDocument.metadata.hasPendingWrites
-                                    ? 'Sending…'
-                                    : 'Sent',
-                                style: const TextStyle(fontSize: 9),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        mainAxisAlignment: mine
-                            ? MainAxisAlignment.end
-                            : MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (!mine) ...[
-                            UserProfileAvatar(
-                              userId: senderId,
-                              name: senderName,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Flexible(
-                            child: GestureDetector(
-                              onLongPress: () => setState(() => replyingTo = i),
-                              child: bubble,
-                            ),
-                          ),
-                          if (mine) ...[
-                            const SizedBox(width: 8),
-                            ProfileAvatar(
-                              name: widget.portal.name,
-                              fileId: widget.portal.photoFileId,
-                              url: widget.portal.photoUrl,
-                              radius: 18,
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      appBar: AppBar(
+        title: Text('${widget.room['title'] ?? 'Conversation'}'),
+        actions: [
+          IconButton(
+            onPressed: chooseBackground,
+            tooltip: 'Chat background',
+            icon: const Icon(Icons.wallpaper),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (replyingTo != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 7),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+        ],
+      ),
+      body: Container(
+        decoration: chatBackgroundDecoration(background, color),
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: messages
+                    .orderBy('createdAt', descending: true)
+                    .limit(150)
+                    .snapshots(),
+                builder: (c, s) {
+                  if (s.hasError)
+                    return const Center(
+                      child: _LoadStateCard(
+                        icon: Icons.cloud_off,
+                        title: 'Messages unavailable',
+                        message: 'Check your connection and retry.',
                       ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.reply, size: 17),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              'Replying to ${replyingTo!['senderName'] ?? 'Member'}: ${replyingTo!['text'] ?? ''}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                    );
+                  if (!s.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  unawaited(
+                    messages.parent!
+                        .collection('reads')
+                        .doc(widget.portal.userId)
+                        .set({
+                          'lastReadAt': FieldValue.serverTimestamp(),
+                          if (s.data!.docs.isNotEmpty)
+                            'lastMessageId': s.data!.docs.first.id,
+                        }, SetOptions(merge: true)),
+                  );
+                  return ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.all(14),
+                    itemCount: s.data!.docs.length,
+                    itemBuilder: (c, n) {
+                      final messageDocument = s.data!.docs[n],
+                          i = {
+                            ...messageDocument.data(),
+                            '_id': messageDocument.id,
+                          },
+                          mine = i['senderId'] == widget.portal.userId;
+                      final senderId = '${i['senderId'] ?? ''}';
+                      final senderName = '${i['senderName'] ?? 'Member'}';
+                      final bubble = Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.all(12),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.sizeOf(c).width * .78,
+                        ),
+                        decoration: BoxDecoration(
+                          color: mine
+                              ? color
+                              : Color.lerp(
+                                  Theme.of(c).colorScheme.surface,
+                                  color,
+                                  .10,
+                                ),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(isApple ? 20 : 16),
+                            topRight: Radius.circular(isApple ? 20 : 16),
+                            bottomLeft: Radius.circular(
+                              mine ? (isApple ? 20 : 16) : 5,
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => setState(() => replyingTo = null),
-                            icon: const Icon(Icons.close),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                    ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: text,
-                          maxLines: 4,
-                          minLines: 1,
-                          onSubmitted: (_) => send(),
-                          decoration: const InputDecoration(
-                            hintText: 'Message this space…',
+                            bottomRight: Radius.circular(
+                              mine ? 5 : (isApple ? 20 : 16),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: sending ? null : send,
-                        icon: Icon(sending ? Icons.hourglass_top : Icons.send),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (i['replyTo'] is Map)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 7),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black12,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${(i['replyTo'] as Map)['senderName'] ?? 'Member'} · ${(i['replyTo'] as Map)['text'] ?? ''}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    senderName,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                if (i['editedAt'] != null)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 5),
+                                    child: Text(
+                                      'edited',
+                                      style: TextStyle(fontSize: 9),
+                                    ),
+                                  ),
+                                if (widget.portal.admin)
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 18,
+                                    onSelected: (action) => action == 'edit'
+                                        ? editMessage(
+                                            messageDocument.reference,
+                                            '${i['text'] ?? ''}',
+                                          )
+                                        : deleteProductionItem(
+                                            context,
+                                            messageDocument.reference,
+                                            'this message',
+                                          ),
+                                    itemBuilder: (_) => const [
+                                      PopupMenuItem(
+                                        value: 'edit',
+                                        child: Text('Edit message'),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'delete',
+                                        child: Text('Delete permanently'),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text('${i['text'] ?? ''}'),
+                            if ((messageReactions[messageDocument.id] ?? [])
+                                .isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 7),
+                                child: Wrap(
+                                  spacing: 5,
+                                  runSpacing: 4,
+                                  children:
+                                      messageReactions[messageDocument.id]!
+                                          .fold<Map<String, int>>({}, (
+                                            counts,
+                                            item,
+                                          ) {
+                                            final emoji =
+                                                '${item['emoji'] ?? ''}';
+                                            counts[emoji] =
+                                                (counts[emoji] ?? 0) + 1;
+                                            return counts;
+                                          })
+                                          .entries
+                                          .map(
+                                            (entry) => Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 3,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black26,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                '${entry.key} ${entry.value}',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                              ),
+                            if (dateField(i, const ['createdAt']) != null)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  DateFormat.jm().format(
+                                    dateField(i, const ['createdAt'])!,
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                              ),
+                            if (mine)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  messageDocument.metadata.hasPendingWrites
+                                      ? 'Sending…'
+                                      : 'Sent',
+                                  style: const TextStyle(fontSize: 9),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisAlignment: mine
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!mine) ...[
+                              UserProfileAvatar(
+                                userId: senderId,
+                                name: senderName,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Flexible(
+                              child: GestureDetector(
+                                onLongPress: () => showMessageActions(
+                                  i,
+                                  messageDocument.reference,
+                                ),
+                                child: bubble,
+                              ),
+                            ),
+                            if (mine) ...[
+                              const SizedBox(width: 8),
+                              ProfileAvatar(
+                                name: widget.portal.name,
+                                fileId: widget.portal.photoFileId,
+                                url: widget.portal.photoUrl,
+                                radius: 18,
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            Container(
+              color: Theme.of(context).scaffoldBackgroundColor
+                  .withValues(alpha: .96),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (replyingTo != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.reply, size: 17),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  'Replying to ${replyingTo!['senderName'] ?? 'Member'}: ${replyingTo!['text'] ?? ''}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    setState(() => replyingTo = null),
+                                icon: const Icon(Icons.close),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ],
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: text,
+                              maxLines: 4,
+                              minLines: 1,
+                              onSubmitted: (_) => send(),
+                              decoration: const InputDecoration(
+                                hintText: 'Message this space…',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: sending ? null : send,
+                            icon: Icon(
+                              sending ? Icons.hourglass_top : Icons.send,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -13,7 +13,7 @@ workflows:
         bundle_identifier: ca.sk.bedfordroad.musical
       vars:
         BUNDLE_ID: ca.sk.bedfordroad.musical
-        BASE_BUILD_NUMBER: "36"
+        BASE_BUILD_NUMBER: "37"
       flutter: stable
       xcode: latest
       cocoapods: default

@@ -90,7 +90,16 @@ service cloud.firestore {
             && request.resource.data.senderId == principalId()
             && request.resource.data.text is string
             && request.resource.data.text.size() <= 4000;
-          allow update, delete: if admin();
+          allow update: if admin() || (canParticipate()
+            && resource.data.senderId == principalId()
+            && request.resource.data.senderId == resource.data.senderId
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.editedBy == principalId()
+            && request.resource.data.text is string
+            && request.resource.data.text.size() <= 4000
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['text', 'editedAt', 'editedBy']));
+          allow delete: if admin();
         }
         match /reads/{userId} {
           function parentRoom() { return get(/databases/$(database)/documents/productions/$(productionId)/communicationConversations/$(conversationId)); }
