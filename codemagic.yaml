@@ -1,6 +1,6 @@
 workflows:
   bedford-ios-testflight:
-    name: Bedford Road Musical - iOS TestFlight
+    name: Bedford Road Theatre - iOS TestFlight
     instance_type: mac_mini_m2
     max_build_duration: 120
     working_directory: mobile-app
@@ -8,8 +8,12 @@ workflows:
     environment:
       groups:
         - appstore_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: ca.sk.bedfordroad.musical
       vars:
-        BUNDLE_ID: "ca.sk.bedfordroad.musical"
+        BUNDLE_ID: ca.sk.bedfordroad.musical
+        BASE_BUILD_NUMBER: "32"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -20,27 +24,31 @@ workflows:
         - $HOME/Library/Caches/CocoaPods
 
     scripts:
-      - name: Verify required configuration
+      - name: Verify iOS release configuration
         script: |
-          set -eu
+          set -euo pipefail
           test -n "${APP_STORE_CONNECT_ISSUER_ID:-}"
           test -n "${APP_STORE_CONNECT_KEY_IDENTIFIER:-}"
           test -n "${APP_STORE_CONNECT_PRIVATE_KEY:-}"
-          test -n "${APP_STORE_APPLE_ID:-}"
           test -f ios/Runner/GoogleService-Info.plist
           test -f ios/Runner/Runner.entitlements
-          grep -q "ca.sk.bedfordroad.musical" ios/Runner.xcodeproj/project.pbxproj
+          grep -q "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID;" ios/Runner.xcodeproj/project.pbxproj
+          grep -q '<string>production</string>' ios/Runner/Runner.entitlements
+          grep -q '<string>audio</string>' ios/Runner/Info.plist
+          grep -q '<string>remote-notification</string>' ios/Runner/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :BUNDLE_ID' ios/Runner/GoogleService-Info.plist)" = "$BUNDLE_ID"
+          test "$(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png | awk '/hasAlpha/{print $2}')" = "no"
 
       - name: Get Flutter packages
         script: flutter pub get
 
       - name: Install CocoaPods dependencies when present
         script: |
+          set -euo pipefail
           if [ -f ios/Podfile ]; then
-            cd ios
-            pod install --repo-update
+            (cd ios && pod install --repo-update)
           else
-            echo "No Podfile: this Flutter project uses Swift Package Manager."
+            echo "No Podfile found; Flutter will use the configured iOS package integration."
           fi
 
       - name: Analyze Dart code
@@ -48,35 +56,32 @@ workflows:
 
       - name: Run Flutter tests when present
         script: |
-          if find test -type f -name '*_test.dart' -print -quit | grep -q .; then
+          set -euo pipefail
+          if [ -d test ] && find test -type f -name '*_test.dart' -print -quit | grep -q .; then
             flutter test
           else
             echo "No Flutter test files are currently present."
           fi
 
-      - name: Fetch App Store signing files
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
+      - name: Apply App Store signing profile
+        script: xcode-project use-profiles
 
-      - name: Determine next TestFlight build number
+      - name: Assign unique TestFlight build number
         script: |
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")
-          NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          set -euo pipefail
+          CI_SEQUENCE="${CM_BUILD_NUMBER:-1}"
+          NEXT_BUILD_NUMBER=$((BASE_BUILD_NUMBER + CI_SEQUENCE))
           echo "NEXT_BUILD_NUMBER=$NEXT_BUILD_NUMBER" >> "$CM_ENV"
-          echo "Building TestFlight build $NEXT_BUILD_NUMBER"
+          echo "Building version $(awk '/^version:/{print $2}' pubspec.yaml | cut -d+ -f1), build $NEXT_BUILD_NUMBER"
 
       - name: Build signed release IPA
         script: |
+          set -euo pipefail
           set -o pipefail
           mkdir -p build/ios
           flutter build ipa --release \
             --build-number="$NEXT_BUILD_NUMBER" \
-            --export-options-plist=/Users/builder/export_options.plist \
+            --export-options-plist="$HOME/export_options.plist" \
             2>&1 | tee build/ios/flutter-build.log
 
     artifacts:

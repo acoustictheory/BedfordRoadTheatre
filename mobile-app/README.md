@@ -1,135 +1,131 @@
-# Bedford Road Musical mobile app
+# Bedford Road Theatre mobile app
 
-This Flutter project targets Android and iOS. The production iOS bundle ID is
-`ca.sk.bedfordroad.musical`; the matching Firebase iOS app and
-`ios/Runner/GoogleService-Info.plist` are configured.
+This Flutter project builds the Bedford Road Theatre Android and iOS app. The
+production application ID and iOS bundle ID are both
+`ca.sk.bedfordroad.musical`. iOS builds run on Codemagic's hosted Mac; a local
+Mac or physical iPhone is not required to create and upload the IPA.
 
-The repository-root `codemagic.yaml` provides the
-**Bedford Road Musical - iOS TestFlight** workflow. It builds on Codemagic's
-hosted macOS/Xcode infrastructure, so the repository can be prepared and the
-build launched entirely from Windows.
+## Current release configuration
 
-## What the cloud workflow does
+- App version: `2.9.10+33`
+- iOS deployment target: 15.0
+- Firebase iOS configuration: `ios/Runner/GoogleService-Info.plist`
+- APNs entitlement: production
+- Background modes: audio and remote notifications
+- Export compliance: `ITSAppUsesNonExemptEncryption` is `false`
+- Codemagic workflow: `bedford-ios-testflight` in the repository-root
+  `codemagic.yaml`
 
-The workflow uses a `mac_mini_m2`, the stable Flutter channel, the latest
-available Xcode image, and default CocoaPods. From the `mobile-app` project it:
+The app does not capture microphone input, so it intentionally has no
+`NSMicrophoneUsageDescription`. Add that description before introducing any
+recording feature.
 
-1. validates required secrets and iOS configuration files;
-2. runs `flutter pub get`;
-3. installs pods only if a Podfile exists (this project currently uses
-   Flutter's Swift Package Manager integration);
-4. runs `flutter analyze --no-fatal-infos` and any discovered Flutter tests;
-5. asks App Store Connect for or creates App Store signing files, installs them
-   in the temporary build keychain, and applies the provisioning profile;
-6. selects one build number higher than the latest TestFlight build;
-7. builds a signed release IPA and retains the IPA, XCArchive, dSYMs, and logs;
-8. uploads the successful IPA to App Store Connect and submits it to TestFlight.
+## Windows to GitHub
 
-No automatic Git trigger is configured. A build starts only when you select
-**Start new build** in Codemagic.
-
-## One-time GitHub setup from Windows
-
-This Git repository currently has no remote. Create a new **private** GitHub
-repository without adding a README, license, or `.gitignore`. Then, from the
-repository root (`C:\NDrive\BedfordRoadTheatre`), add its URL and push:
+From `C:\NDrive\BedfordRoadTheatre`, verify and push the prepared commit:
 
 ```powershell
-git remote add origin https://github.com/YOUR_ACCOUNT/YOUR_PRIVATE_REPOSITORY.git
-git push -u origin master
+git status
+git push origin master
 ```
 
-Using GitHub CLI instead is also safe if it is already authenticated:
+The remote is `https://github.com/acoustictheory/BedfordRoadTheatre.git`.
+Never commit `.p8`, `.p12`, `.mobileprovision`, Apple passwords, or API keys.
 
-```powershell
-gh repo create YOUR_PRIVATE_REPOSITORY --private --source . --remote origin --push
-```
+## Register the Apple application
 
-Never commit an App Store Connect `.p8` key, Apple password, signing
-certificate, or provisioning profile.
+1. In Apple Developer, open **Certificates, Identifiers & Profiles >
+   Identifiers** and create an explicit App ID for
+   `ca.sk.bedfordroad.musical`.
+2. Enable **Push Notifications** on that identifier.
+3. In App Store Connect, open **My Apps > + > New App**.
+4. Choose iOS, enter **Bedford Road Theatre**, select the registered bundle ID,
+   and enter a unique SKU.
 
-## Create the App Store Connect application
+The App Store Connect app record must exist before Codemagic can upload an IPA.
 
-Apple Developer Program membership is required. In Apple Developer, ensure an
-explicit App ID exists for `ca.sk.bedfordroad.musical` with Push Notifications
-enabled. In App Store Connect, choose **My Apps > + > New App**, select iOS,
-enter **Bedford Road Musical**, select that bundle ID, and provide a unique SKU.
+## Connect GitHub and Codemagic
 
-After creation, open **General > App Information** and copy the numeric
-**Apple ID**. This is the `APP_STORE_APPLE_ID` value used below.
+1. In Codemagic choose **Add application**, connect GitHub, and select
+   `acoustictheory/BedfordRoadTheatre`.
+2. Select repository YAML configuration. `codemagic.yaml` is at the repository
+   root and sets `working_directory: mobile-app`.
+3. Select the `master` branch and use **Check for configuration file** if the
+   workflow is not displayed immediately.
 
-## Create the App Store Connect API key
+## Add the App Store Connect API key
 
-In App Store Connect open **Users and Access > Integrations > App Store Connect
-API**, create a dedicated key named for Codemagic, and assign the **App Manager**
-role. Record its Issuer ID and Key ID and download the `.p8` private key
-immediately; Apple permits downloading it only once.
+1. In App Store Connect open **Users and Access > Integrations > App Store
+   Connect API**.
+2. Generate a dedicated key with the **App Manager** role.
+3. Record the Issuer ID and Key ID and download the `.p8` immediately. Apple
+   permits only one download.
+4. In Codemagic create the environment-variable group
+   `appstore_credentials`.
+5. Add these variables and mark all three **Secure**:
 
-## Connect GitHub and credentials to Codemagic
+   - `APP_STORE_CONNECT_ISSUER_ID`
+   - `APP_STORE_CONNECT_KEY_IDENTIFIER`
+   - `APP_STORE_CONNECT_PRIVATE_KEY` — paste the complete `.p8` contents,
+     including the BEGIN/END lines
 
-1. Sign into Codemagic, choose **Add application**, connect GitHub, and select
-   the private repository.
-2. Select **Flutter App** and YAML configuration. Codemagic reads
-   `codemagic.yaml` from the repository root; the workflow itself uses
-   `mobile-app` as its working directory.
-3. In the application or team settings, create an environment-variable group
-   named exactly `appstore_credentials`.
-4. Add these four variables to that group and mark every value **Secure**:
+These variables authenticate TestFlight publishing. They never belong in Git.
 
-   - `APP_STORE_CONNECT_ISSUER_ID` — Issuer ID from App Store Connect.
-   - `APP_STORE_CONNECT_KEY_IDENTIFIER` — the API Key ID.
-   - `APP_STORE_CONNECT_PRIVATE_KEY` — the complete contents of the downloaded
-     `.p8` file, including its BEGIN/END PRIVATE KEY lines.
-   - `APP_STORE_APPLE_ID` — the app's numeric Apple ID from App Information.
+## Configure Codemagic signing identities
 
-The workflow uses those values for both automatic signing and publishing. It
-fetches or creates the matching App Store distribution certificate and
-provisioning profile at build time; no certificate or profile belongs in Git.
+The YAML uses Codemagic's current `ios_signing` configuration for an
+`app_store` distribution and `ca.sk.bedfordroad.musical`.
+
+1. In **Team settings > Team integrations > Developer Portal**, add the same
+   App Store Connect API key.
+2. In **codemagic.yaml settings > Code signing identities > iOS
+   certificates**, generate or fetch an **Apple Distribution** certificate
+   using that key.
+3. In **iOS provisioning profiles**, fetch or create an **App Store** profile
+   for `ca.sk.bedfordroad.musical`.
+4. Confirm Codemagic shows a matching certificate for the profile. If Push
+   Notifications was enabled after the profile was created, regenerate or
+   refetch the profile.
+
+Codemagic automatically attaches matching identities because the workflow
+declares `distribution_type: app_store` and the exact bundle identifier. The
+`xcode-project use-profiles` step applies them to Runner.
 
 ## Start the first TestFlight build
 
-Commit and push this configuration, then open the application in Codemagic.
-Choose **Start new build**, select the `master` branch and
-**Bedford Road Musical - iOS TestFlight**, and start it. Downloadable IPA,
-archive, dSYM, and build-log artifacts appear on the completed build page.
+1. Open the Bedford Road Theatre app in Codemagic.
+2. Choose **Start new build**.
+3. Select branch `master` and workflow **Bedford Road Theatre - iOS
+   TestFlight**.
+4. Start the build.
 
-After upload, Apple processes the build. Find it in App Store Connect under
-**My Apps > Bedford Road Musical > TestFlight**. Complete any missing beta app
-information, compliance answers, and tester-group configuration there.
+The workflow verifies the iOS configuration, restores Flutter packages,
+installs CocoaPods when applicable, analyzes the Dart code, runs tests when
+present, applies signing, assigns a unique CI build number, builds the signed
+IPA, and uploads it to TestFlight. IPA, XCArchive, dSYM, and build logs are
+retained as artifacts.
 
-`ITSAppUsesNonExemptEncryption` is set to `false` because the app only uses
-standard platform HTTPS/TLS and does not implement proprietary encryption.
-Answer App Store Connect's export-compliance questions consistently with that
-fact. Reassess this declaration if custom cryptography is ever added.
+Apple processing can take several minutes. Find the build in **App Store
+Connect > My Apps > Bedford Road Theatre > TestFlight**. Complete beta app
+information and tester groups there. For export compliance, the current app
+uses standard platform HTTPS/TLS and declares no non-exempt encryption; answer
+consistently unless custom cryptography is later added.
 
-## Enable iOS push delivery in Firebase
-
-The Xcode target includes the Push Notifications capability, a production APNs
-entitlement, and background remote notifications. Apple credentials are still
-required for delivery:
+## Enable iOS push delivery
 
 1. In Apple Developer open **Certificates, Identifiers & Profiles > Keys**.
-2. Create or select a key with **Apple Push Notifications service (APNs)**,
-   record its Key ID and Team ID, and download its `.p8` file.
-3. In Firebase Console open **Project settings > Cloud Messaging**, locate the
-   iOS app `ca.sk.bedfordroad.musical`, and upload the APNs authentication key
-   with its Key ID and Team ID.
+2. Create or select a key with **Apple Push Notifications service (APNs)**.
+3. Record its Key ID and Team ID and download its `.p8`.
+4. In Firebase Console open **Project settings > Cloud Messaging**, select the
+   iOS app `ca.sk.bedfordroad.musical`, and upload the APNs key with its Key ID
+   and Team ID.
 
-The APNs key may be separate from the App Store Connect API key. Do not add
-either key to this repository.
+The APNs key and App Store Connect key serve different purposes and may be
+separate keys. Neither should be committed.
 
-## First-build validation
+## TestFlight acceptance checks
 
-The first hosted build must confirm macOS-only integration and signing. After
-installing the TestFlight build, verify on an iPhone or iPad:
-
-- login and Firebase authentication;
-- dashboard, communications, and notification permission;
-- foreground and background push delivery;
-- ScoreFlow PDF rendering and annotation;
-- guide/practice audio download, playback, seeking, and background audio;
-- document export and sharing;
-- offline reopening of previously downloaded material.
-
-No microphone permission is declared because the app does not capture audio;
-its `PictureRecorder` usage is an in-memory graphics renderer for PDF export.
+After installing from TestFlight, verify Firebase login, notification
+permission and foreground/background pushes, ScoreFlow PDF rendering and
+annotation, rehearsal-track download/playback/seeking/background audio,
+sharing/export, and offline reopening of downloaded material.
