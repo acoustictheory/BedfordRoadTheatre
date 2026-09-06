@@ -1,1 +1,170 @@
-<!doctype html><html lang="en" data-theme="bedford-dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#990016"><title>Login | Bedford Road Musical</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/style.css?v=20260722-requests19"><script defer src="assets/config.js?v=20260722-requests19"></script><script defer src="assets/js/api.js?v=20260722-requests19"></script><script defer src="assets/js/core.js?v=20260722-requests19"></script><script defer src="assets/js/pages/login.js?v=20260722-requests19"></script></head><body data-page="login"><main class="auth-page"><section class="auth-art"><a class="brand-lockup" href="index.html"><span class="brand-mark"><b>B</b><i>R</i></span><span><strong>Bedford Road Musical</strong><small>Bedford Road Collegiate</small></span></a><div class="auth-art-copy"><span class="eyebrow" style="color:white">Production starts here</span><h1>Your role. Your work. Your dashboard.</h1><p>Sign in to see the calls, departments, tracks, tasks, notes, and private reflections connected to your production profile.</p></div><button class="button button-ghost" style="width:max-content" data-theme-cycle>◐ Change theme</button></section><section class="auth-panel"><div class="auth-card"><div class="alert alert-info hidden" data-demo-notice><strong>Preview mode:</strong> the Apps Script URL has not been connected, so any login credentials will open a demonstration dashboard.</div><div class="auth-tabs"><button class="active" data-auth-tab="login">Sign in</button><button data-auth-tab="register">Register</button></div><section data-auth-panel="login"><span class="eyebrow">Welcome back</span><h1>Sign in</h1><p style="color:var(--muted)">Use the account connected to your student profile.</p><form data-login-form><div class="field"><label>Username</label><input name="username" autocomplete="username" required></div><div class="field" style="margin-top:14px"><label>Password</label><input name="password" type="password" autocomplete="current-password" required></div><button type="submit" class="button button-primary button-block" style="margin-top:20px">Sign in</button></form></section><section class="hidden" data-auth-panel="register"><span class="eyebrow">Create your profile</span><h1>Register</h1><p style="color:var(--muted)">A registration code assigns your initial production access.</p><form data-register-form><div class="form-grid"><div class="field span-2"><label>Registration code</label><input name="registrationCode" required></div><div class="field"><label>First name</label><input name="firstName" required></div><div class="field"><label>Last name</label><input name="lastName" required></div><div class="field span-2"><label>Email (optional)</label><input name="email" type="email"></div><div class="field span-2"><label>Which production areas are you involved in?</label><p class="field-hint" style="margin:0 0 10px">Select every area that applies. These choices are requests and must be approved by an administrator before the workspaces appear.</p><div class="grid grid-2" data-department-options><div class="panel-inset"><span class="field-hint">Loading production areas…</span></div></div></div><div class="field span-2"><label>Anything administrators should know? <span class="field-hint">(optional)</span></label><textarea name="departmentRequestNote" maxlength="500" placeholder="For example: I am on lighting crew and also helping with sound."></textarea></div><div class="field span-2"><label>Username</label><input name="username" pattern="[A-Za-z0-9._-]{3,40}" required></div><div class="field"><label>Password</label><input name="password" type="password" minlength="8" required></div><div class="field"><label>Confirm password</label><input name="confirmPassword" type="password" minlength="8" required></div></div><button type="submit" class="button button-primary button-block" style="margin-top:20px">Create account</button></form></section></div></section></main></body></html>
+<!doctype html>
+<html lang="en" data-theme="bedford-dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#990016" />
+    <title>Login | Bedford Road Musical</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/style.css?v=20260722-requests19" />
+    <script defer src="assets/config.js?v=20260906-community-secure1"></script>
+    <script defer src="assets/js/api.js?v=20260722-requests19"></script>
+    <script defer src="assets/js/core.js?v=20260722-requests19"></script>
+    <script defer src="assets/js/pages/login.js?v=20260906-community-secure1"></script>
+  </head>
+  <body data-page="login">
+    <main class="auth-page">
+      <section class="auth-art">
+        <a class="brand-lockup" href="index.html"
+          ><span class="brand-mark"><img src="assets/images/bedford-road-theatre-logo-192.png" alt="" aria-hidden="true"></span
+          ><span
+            ><strong>Bedford Road Musical</strong
+            ><small>Bedford Road Collegiate</small></span
+          ></a
+        >
+        <div class="auth-art-copy">
+          <span class="eyebrow" style="color: white"
+            >Production starts here</span
+          >
+          <h1>Your role. Your work. Your dashboard.</h1>
+          <p>
+            Sign in to see the calls, departments, tracks, tasks, notes, and
+            private reflections connected to your production profile.
+          </p>
+        </div>
+        <button
+          class="button button-ghost"
+          style="width: max-content"
+          data-theme-cycle
+        >
+          ◐ Change theme
+        </button>
+      </section>
+      <section class="auth-panel">
+        <div class="auth-card">
+          <div class="alert alert-info hidden" data-demo-notice>
+            <strong>Preview mode:</strong> the Apps Script URL has not been
+            connected, so any login credentials will open a demonstration
+            dashboard.
+          </div>
+          <div class="auth-tabs">
+            <button class="active" data-auth-tab="login">Sign in</button
+            ><button data-auth-tab="register">Register</button>
+          </div>
+          <section data-auth-panel="login">
+            <span class="eyebrow">Welcome back</span>
+            <h1>Sign in</h1>
+            <p style="color: var(--muted)">
+              Use the account connected to your student profile.
+            </p>
+            <form data-login-form>
+              <div class="field">
+                <label>Username</label
+                ><input name="username" autocomplete="username" required />
+              </div>
+              <div class="field" style="margin-top: 14px">
+                <label>Password</label
+                ><input
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+              </div>
+              <label class="checkbox-row" style="margin-top:14px"><input name="trustedDevice" type="checkbox" value="true" checked /> <span><strong>Trust this device</strong><small class="field-hint" style="display:block">Stay signed in on this personal device. Do not use on a shared computer.</small></span></label>
+              <button
+                type="submit"
+                class="button button-primary button-block"
+                style="margin-top: 20px"
+              >
+                Sign in
+              </button>
+            </form>
+          </section>
+          <section class="hidden" data-auth-panel="register">
+            <span class="eyebrow">Create your profile</span>
+            <h1>Register</h1>
+            <p style="color: var(--muted)">
+              A registration code assigns your initial production access.
+            </p>
+            <form data-register-form>
+              <div class="form-grid">
+                <div class="field span-2">
+                  <label>Registration code</label
+                  ><input name="registrationCode" required />
+                </div>
+                <div class="field">
+                  <label>First name</label><input name="firstName" required />
+                </div>
+                <div class="field">
+                  <label>Last name</label><input name="lastName" required />
+                </div>
+                <div class="field span-2">
+                  <label>Email (optional)</label
+                  ><input name="email" type="email" />
+                </div>
+                <div class="field span-2">
+                  <label>Which production areas are you involved in?</label>
+                  <p class="field-hint" style="margin: 0 0 10px">
+                    Select every area that applies. These choices are requests
+                    and must be approved by an administrator before the
+                    workspaces appear.
+                  </p>
+                  <div class="grid grid-2" data-department-options>
+                    <div class="panel-inset">
+                      <span class="field-hint">Loading production areas…</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="field span-2">
+                  <label
+                    >Anything administrators should know?
+                    <span class="field-hint">(optional)</span></label
+                  ><textarea
+                    name="departmentRequestNote"
+                    maxlength="500"
+                    placeholder="For example: I am on lighting crew and also helping with sound."
+                  ></textarea>
+                </div>
+                <div class="field span-2">
+                  <label>Username</label
+                  ><input
+                    name="username"
+                    pattern="[A-Za-z0-9._-]{3,40}"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label>Password</label
+                  ><input
+                    name="password"
+                    type="password"
+                    minlength="8"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label>Confirm password</label
+                  ><input
+                    name="confirmPassword"
+                    type="password"
+                    minlength="8"
+                    required
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                class="button button-primary button-block"
+                style="margin-top: 20px"
+              >
+                Create account
+              </button>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

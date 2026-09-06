@@ -1,9 +1,13 @@
-const CACHE = 'bedford-frontend-20260901-2';
+const BUILD_ID = 'bedford-frontend-20260906-community-secure1';
+const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
+const RUNTIME_CACHE = 'bedford-runtime-v1';
 
 const COMPLETE_SHELL = [
   "./",
   "404.html",
   "admin.html",
+  "scoreflow-sync.html",
+  "casting.html",
   "book-an-audition.html",
   "interested-in-musical.html",
   "recruitment-review.html",
@@ -27,18 +31,22 @@ const COMPLETE_SHELL = [
   "props.html",
   "publicity.html",
   "resources.html",
+  "production-library.html",
   "schedule.html",
   "sets.html",
   "sound.html",
+  "storage.html",
   "stage-management.html",
   "tasks.html",
   "tracks.html",
   "manifest.webmanifest",
   "assets/style.css",
+  "assets/scoreflow-sync.css",
   "assets/recruitment.css",
   "assets/blocking-hub.css",
   "assets/blocking-viewer.css",
   "assets/costume-hub.css",
+  "assets/calendar.css",
   "assets/dashboard.css",
   "assets/journal.css",
   "assets/props-hub.css",
@@ -46,8 +54,11 @@ const COMPLETE_SHELL = [
   "assets/config.js",
   "assets/js/api.js",
   "assets/js/core.js",
+  "assets/js/firebase-auth.js",
+  "assets/js/firebase-data.js",
   "assets/js/notes.js",
   "assets/js/pages/admin.js",
+  "assets/js/pages/scoreflow-sync.js",
   "assets/js/pages/recruitment.js",
   "assets/js/pages/recruitment-review.js",
   "assets/js/pages/announcements.js",
@@ -62,18 +73,28 @@ const COMPLETE_SHELL = [
   "assets/js/pages/login.js",
   "assets/js/pages/profile.js",
   "assets/js/pages/resources.js",
+  "assets/js/pages/production-library.js",
   "assets/js/pages/props-hub.js",
   "assets/js/pages/scenic-hub.js",
   "assets/js/pages/schedule.js",
+  "assets/js/pages/storage.js",
   "assets/js/pages/tasks.js",
   "assets/js/pages/tracks.js",
   "assets/images/favicon.svg",
-  "assets/images/descendants-banner.png"
+  "assets/images/favicon.png",
+  "assets/images/bedford-road-theatre-logo.png",
+  "assets/images/bedford-road-theatre-logo-192.png",
+  "assets/images/icons/icon-192.png",
+  "assets/images/icons/icon-512.png",
+  "assets/images/icons/maskable-192.png",
+  "assets/images/icons/maskable-512.png",
+  "assets/images/icons/apple-touch-icon.png",
+  "assets/vendor/fflate.min.js"
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE)
+    caches.open(SHELL_CACHE)
       .then(async cache => {
         for (const path of COMPLETE_SHELL) {
           try {
@@ -93,17 +114,15 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(key => key !== CACHE)
-          .map(key => caches.delete(key))
-      ))
+      .then(keys => Promise.all(keys
+        .filter(key => (key.startsWith('bedford-shell-') || key.startsWith('bedford-frontend-')) && key !== SHELL_CACHE)
+        .map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
 
 async function networkFirst(request) {
-  const cache = await caches.open(CACHE);
+  const cache = await caches.open(SHELL_CACHE);
 
   try {
     const response = await fetch(request, { cache: 'no-store' });
@@ -130,7 +149,7 @@ async function networkFirst(request) {
 }
 
 async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE);
+  const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(request);
 
   const networkPromise = fetch(request)
@@ -162,6 +181,10 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Installers are large streaming downloads. Let the browser handle them
+  // directly instead of cloning them into the runtime cache first.
+  if (/\.apk$/i.test(url.pathname)) return;
+
   const isCodeOrPage =
     request.mode === 'navigate'
     || /\.(?:html|js|css|webmanifest)$/i.test(url.pathname);
@@ -182,5 +205,15 @@ self.addEventListener('message', event => {
     event.waitUntil(
       caches.keys().then(keys => Promise.all(keys.map(key => caches.delete(key))))
     );
+  }
+
+  if (event.data === 'CLEAR_SHELL_CACHE') {
+    event.waitUntil(caches.keys().then(keys => Promise.all(
+      keys.filter(key => key.startsWith('bedford-shell-') || key.startsWith('bedford-frontend-')).map(key => caches.delete(key))
+    )));
+  }
+
+  if (event.data === 'CLEAR_RUNTIME_CACHE') {
+    event.waitUntil(caches.delete(RUNTIME_CACHE));
   }
 });

@@ -547,6 +547,7 @@ class _LoginState extends State<LoginScreen> {
 
 class PortalContext {
   const PortalContext(
+    this.userId,
     this.productionId,
     this.title,
     this.name,
@@ -556,7 +557,7 @@ class PortalContext {
     this.themeId,
     this.themePreferences,
   );
-  final String productionId, title, name;
+  final String userId, productionId, title, name;
   final String photoFileId, photoUrl, themeId;
   final Map<String, dynamic> themePreferences;
   final bool admin;
@@ -796,9 +797,11 @@ String initials(String name) => name
 class PortalLoader extends StatelessWidget {
   const PortalLoader({super.key});
   Future<PortalContext> load() async {
-    final a = FirebaseAuth.instance.currentUser!,
-        db = FirebaseFirestore.instance,
-        u = (await db.collection('users').doc(a.uid).get()).data() ?? {};
+    final a = FirebaseAuth.instance.currentUser!;
+    final token = await a.getIdTokenResult();
+    final userId = '${token.claims?['legacyUserId'] ?? a.uid}';
+    final db = FirebaseFirestore.instance;
+    final u = (await db.collection('users').doc(userId).get()).data() ?? {};
     DocumentSnapshot<Map<String, dynamic>>? production;
     final preferredProductionId =
         '${u['activeProductionId'] ?? u['ActiveProductionID'] ?? ''}'.trim();
@@ -862,6 +865,7 @@ class PortalLoader extends StatelessWidget {
     final av = u['isFullAdmin'] ?? u['IsFullAdmin'];
     unawaited(registerDevice(a));
     return PortalContext(
+      userId,
       productionId,
       '${d['title'] ?? d['Title'] ?? 'Descendants: The Musical'}',
       '${profile['displayName'] ?? profile['DisplayName'] ?? a.displayName ?? u['username'] ?? 'Member'}',
@@ -948,8 +952,8 @@ class _ShellState extends State<PortalShell> {
     super.initState();
     themeId = widget.portal.themeId;
     themePreferences = Map.of(widget.portal.themePreferences);
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
+    final uid = widget.portal.userId;
+    if (uid.isNotEmpty) {
       themeSubscription = FirebaseFirestore.instance
           .collection('profiles')
           .doc(uid)
@@ -973,8 +977,8 @@ class _ShellState extends State<PortalShell> {
   }
 
   Future<void> saveTheme(String id, Map<String, dynamic> preferences) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final uid = widget.portal.userId;
+    if (uid.isEmpty) return;
     await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
       'theme': id,
       'themePreferences': preferences,
@@ -1347,10 +1351,7 @@ class _CommunityPreview extends StatelessWidget {
         )
         .limit(12);
     if (!portal.admin)
-      query = query.where(
-        'memberIds',
-        arrayContains: FirebaseAuth.instance.currentUser!.uid,
-      );
+      query = query.where('memberIds', arrayContains: portal.userId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1843,6 +1844,7 @@ class _LoadStateCard extends StatelessWidget {
 Future<void> editConversation(
   BuildContext context,
   Object reference, {
+  required String userId,
   Map<String, dynamic>? existing,
 }) async {
   final title = TextEditingController(text: '${existing?['title'] ?? ''}');
@@ -1962,7 +1964,7 @@ Future<void> editConversation(
   if (saved != true || title.text.trim().isEmpty) return;
   String colorHex(Color value) =>
       '#${value.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final uid = userId;
   final values = <String, dynamic>{
     'title': title.text.trim(),
     'description': description.text.trim(),
@@ -2010,10 +2012,7 @@ class CommunityScreen extends StatelessWidget {
                 .collection(
                   'productions/${portal.productionId}/communicationConversations',
                 )
-                .where(
-                  'memberIds',
-                  arrayContains: FirebaseAuth.instance.currentUser!.uid,
-                )
+                .where('memberIds', arrayContains: portal.userId)
                 .snapshots(),
       builder: (c, s) {
         if (!s.hasData) return const Center(child: CircularProgressIndicator());
@@ -2054,6 +2053,7 @@ class CommunityScreen extends StatelessWidget {
                     FirebaseFirestore.instance.collection(
                       'productions/${portal.productionId}/communicationConversations',
                     ),
+                    userId: portal.userId,
                   ),
                 ),
               );
@@ -2080,7 +2080,12 @@ class CommunityScreen extends StatelessWidget {
                 trailing: portal.admin
                     ? PopupMenuButton<String>(
                         onSelected: (action) => action == 'edit'
-                            ? editConversation(c, x.reference, existing: r)
+                            ? editConversation(
+                                c,
+                                x.reference,
+                                userId: portal.userId,
+                                existing: r,
+                              )
                             : deleteProductionItem(
                                 c,
                                 x.reference,
@@ -2162,10 +2167,7 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
         stream: widget.portal.admin
             ? collection.snapshots()
             : collection
-                  .where(
-                    'memberIds',
-                    arrayContains: FirebaseAuth.instance.currentUser!.uid,
-                  )
+                  .where('memberIds', arrayContains: widget.portal.userId)
                   .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError)
@@ -2229,7 +2231,11 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                     if (widget.portal.admin) ...[
                       const SizedBox(width: 5),
                       IconButton.filled(
-                        onPressed: () => editConversation(context, collection),
+                        onPressed: () => editConversation(
+                          context,
+                          collection,
+                          userId: widget.portal.userId,
+                        ),
                         tooltip: 'Create conversation',
                         icon: const Icon(Icons.add_comment),
                       ),
@@ -2364,6 +2370,7 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                                           ? editConversation(
                                               context,
                                               doc.reference,
+                                              userId: widget.portal.userId,
                                               existing: room,
                                             )
                                           : deleteProductionItem(
@@ -2442,7 +2449,7 @@ class _ChatState extends State<ChatScreen> {
     });
     try {
       await messages.add({
-        'senderId': FirebaseAuth.instance.currentUser!.uid,
+        'senderId': widget.portal.userId,
         'senderName': widget.portal.name,
         'text': v,
         'createdAt': FieldValue.serverTimestamp(),
@@ -2502,7 +2509,7 @@ class _ChatState extends State<ChatScreen> {
       await reference.update({
         'text': input.text.trim(),
         'editedAt': FieldValue.serverTimestamp(),
-        'editedBy': FirebaseAuth.instance.currentUser!.uid,
+        'editedBy': widget.portal.userId,
       });
   }
 
@@ -2534,7 +2541,7 @@ class _ChatState extends State<ChatScreen> {
                 unawaited(
                   messages.parent!
                       .collection('reads')
-                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .doc(widget.portal.userId)
                       .set({
                         'lastReadAt': FieldValue.serverTimestamp(),
                         if (s.data!.docs.isNotEmpty)
@@ -2551,9 +2558,7 @@ class _ChatState extends State<ChatScreen> {
                           ...messageDocument.data(),
                           '_id': messageDocument.id,
                         },
-                        mine =
-                            i['senderId'] ==
-                            FirebaseAuth.instance.currentUser!.uid;
+                        mine = i['senderId'] == widget.portal.userId;
                     final senderId = '${i['senderId'] ?? ''}';
                     final senderName = '${i['senderName'] ?? 'Member'}';
                     final bubble = Container(

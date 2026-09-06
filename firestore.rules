@@ -1,0 +1,150 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function principalId() { return request.auth.token.get('legacyUserId', request.auth.uid); }
+    function userRecord() { return get(/databases/$(database)/documents/users/$(principalId())); }
+    function activeMember() {
+      return signedIn()
+        && (userRecord().data.get('status', '') == 'Active'
+          || userRecord().data.get('Status', '') == 'Active');
+    }
+    function admin() {
+      return activeMember()
+        && (userRecord().data.get('isFullAdmin', false) == true
+          || userRecord().data.get('IsFullAdmin', false) == true
+          || userRecord().data.get('isFullAdmin', '') == 'TRUE'
+          || userRecord().data.get('IsFullAdmin', '') == 'TRUE');
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (principalId() == userId || admin());
+      allow write: if admin();
+    }
+    match /profiles/{userId} {
+      allow read: if activeMember();
+      allow write: if admin();
+      allow update: if activeMember() && principalId() == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['theme', 'Theme', 'themePreferences', 'photoFileId',
+            'photoFileID', 'photoURL', 'updatedAt']);
+    }
+    match /productions/{productionId} {
+      allow read: if activeMember();
+      allow write: if admin();
+
+      // Low-risk shared information can be read by active production members.
+      match /announcements/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /announcementAudiences/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /events/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /resources/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /tracks/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /storageAssets/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /productionDocuments/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scoreFlowSync/{document} { allow read: if activeMember(); allow write: if admin(); }
+
+      // Operational workspace records used by the fast mobile/web readers.
+      // Measurements, fitting notes, suggestions, activity and other private
+      // collections intentionally remain restricted to administrators.
+      match /propsInventory/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /propsPresets/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /propsDeadlines/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /propsImages/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scenicSets/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scenicElements/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scenicTransitions/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scenicDeadlines/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /scenicImages/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /costumeCharacters/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /costumeChanges/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /costumePieces/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /costumeDeadlines/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /costumeImages/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingSections/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingCast/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingSnapshots/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingPlacements/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingObjects/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingTimelineMedia/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingTimelineMarkers/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingTimelineKeyframes/{document} { allow read: if activeMember(); allow write: if admin(); }
+      match /blockingTimelineMotions/{document} { allow read: if activeMember(); allow write: if admin(); }
+
+      // App conversations: administrators control the room and membership;
+      // members may only participate in rooms to which they were assigned.
+      match /communicationConversations/{conversationId} {
+        function room() { return resource.data; }
+        function joiningRoom() { return request.resource.data; }
+        function isRoomMember() { return activeMember() && principalId() in room().memberIds; }
+        allow read: if admin() || isRoomMember();
+        allow create: if admin() && principalId() in joiningRoom().adminIds
+          && joiningRoom().adminIds.size() > 0;
+        allow update, delete: if admin();
+
+        match /messages/{messageId} {
+          function parentRoom() { return get(/databases/$(database)/documents/productions/$(productionId)/communicationConversations/$(conversationId)); }
+          function canParticipate() { return activeMember() && principalId() in parentRoom().data.memberIds; }
+          allow read: if admin() || canParticipate();
+          allow create: if canParticipate()
+            && request.resource.data.senderId == principalId()
+            && request.resource.data.text is string
+            && request.resource.data.text.size() <= 4000;
+          allow update, delete: if admin();
+        }
+        match /reads/{userId} {
+          function parentRoom() { return get(/databases/$(database)/documents/productions/$(productionId)/communicationConversations/$(conversationId)); }
+          allow read: if admin() || (activeMember() && principalId() in parentRoom().data.memberIds);
+          allow create, update: if activeMember() && principalId() == userId
+            && principalId() in parentRoom().data.memberIds;
+          allow delete: if admin();
+        }
+        match /reactions/{reactionId} {
+          function parentRoom() { return get(/databases/$(database)/documents/productions/$(productionId)/communicationConversations/$(conversationId)); }
+          function canParticipate() { return activeMember() && principalId() in parentRoom().data.memberIds; }
+          allow read: if canParticipate() || admin();
+          allow create, update: if canParticipate()
+            && request.resource.data.userId == principalId()
+            && request.resource.data.messageId is string
+            && request.resource.data.emoji is string
+            && request.resource.data.emoji.size() <= 8;
+          allow delete: if admin() || (canParticipate() && resource.data.userId == principalId());
+        }
+        match /typing/{userId} {
+          function parentRoom() { return get(/databases/$(database)/documents/productions/$(productionId)/communicationConversations/$(conversationId)); }
+          function canParticipate() { return activeMember() && principalId() in parentRoom().data.memberIds; }
+          allow read: if canParticipate() || admin();
+          allow create, update: if canParticipate()
+            && principalId() == userId
+            && request.resource.data.userId == principalId();
+          allow delete: if admin() || (canParticipate() && principalId() == userId);
+        }
+      }
+      match /communicationSettings/{userId} {
+        allow read, create, update: if activeMember() && (principalId() == userId || admin());
+        allow delete: if admin();
+      }
+      match /communicationAssignments/{userId} {
+        allow read: if admin() || (activeMember() && principalId() == userId);
+        allow write: if admin();
+      }
+
+      // Reads, acknowledgements, journals, recruitment, measurements, audit data,
+      // and department workspaces stay private until their per-feature rules ship.
+      match /{collection}/{document=**} {
+        allow read: if admin();
+        allow write: if admin();
+      }
+    }
+    match /departments/{document} { allow read: if activeMember(); allow write: if admin(); }
+    match /permissions/{document} { allow read: if activeMember(); allow write: if admin(); }
+    match /permissionGroups/{document} { allow read: if activeMember(); allow write: if admin(); }
+    match /groupPermissions/{document} { allow read: if activeMember(); allow write: if admin(); }
+    match /settings/{document} { allow read, write: if admin(); }
+    match /registrationCodes/{document} { allow read, write: if admin(); }
+    match /migrationRuns/{document=**} { allow read, write: if false; }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
