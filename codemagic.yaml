@@ -1,0 +1,95 @@
+workflows:
+  bedford-ios-testflight:
+    name: Bedford Road Musical - iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    working_directory: mobile-app
+
+    environment:
+      groups:
+        - appstore_credentials
+      vars:
+        BUNDLE_ID: "ca.sk.bedfordroad.musical"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    scripts:
+      - name: Verify required configuration
+        script: |
+          set -eu
+          test -n "${APP_STORE_CONNECT_ISSUER_ID:-}"
+          test -n "${APP_STORE_CONNECT_KEY_IDENTIFIER:-}"
+          test -n "${APP_STORE_CONNECT_PRIVATE_KEY:-}"
+          test -n "${APP_STORE_APPLE_ID:-}"
+          test -f ios/Runner/GoogleService-Info.plist
+          test -f ios/Runner/Runner.entitlements
+          grep -q "ca.sk.bedfordroad.musical" ios/Runner.xcodeproj/project.pbxproj
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies when present
+        script: |
+          if [ -f ios/Podfile ]; then
+            cd ios
+            pod install --repo-update
+          else
+            echo "No Podfile: this Flutter project uses Swift Package Manager."
+          fi
+
+      - name: Analyze Dart code
+        script: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter tests when present
+        script: |
+          if find test -type f -name '*_test.dart' -print -quit | grep -q .; then
+            flutter test
+          else
+            echo "No Flutter test files are currently present."
+          fi
+
+      - name: Fetch App Store signing files
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Determine next TestFlight build number
+        script: |
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")
+          NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "NEXT_BUILD_NUMBER=$NEXT_BUILD_NUMBER" >> "$CM_ENV"
+          echo "Building TestFlight build $NEXT_BUILD_NUMBER"
+
+      - name: Build signed release IPA
+        script: |
+          set -o pipefail
+          mkdir -p build/ios
+          flutter build ipa --release \
+            --build-number="$NEXT_BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist \
+            2>&1 | tee build/ios/flutter-build.log
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - build/ios/flutter-build.log
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: false
