@@ -4479,24 +4479,21 @@ class BrandMark extends StatelessWidget {
   const BrandMark({super.key, required this.size});
   final double size;
   @override
-  Widget build(BuildContext c) => Container(
-    width: size,
-    height: size,
+  Widget build(BuildContext c) => DecoratedBox(
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(size * .28),
-      gradient: const LinearGradient(
-        colors: [Color(0xffff3155), Color(0xff750018)],
-      ),
+      borderRadius: BorderRadius.circular(size * .24),
+      color: const Color(0xff09090b),
+      border: Border.all(color: const Color(0x66ff3155)),
       boxShadow: const [BoxShadow(color: Color(0x66d0002a), blurRadius: 18)],
     ),
-    child: Center(
-      child: Text(
-        'BR',
-        style: TextStyle(
-          fontSize: size * .3,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-        ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(size * .24),
+      child: Image.asset(
+        'assets/images/bedford-road-theatre-logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       ),
     ),
   );

@@ -7,7 +7,7 @@ Mac or physical iPhone is not required to create and upload the IPA.
 
 ## Current release configuration
 
-- App version: `2.9.10+33`
+- App version: `2.9.11+34`
 - iOS deployment target: 15.0
 - Firebase iOS configuration: `ios/Runner/GoogleService-Info.plist`
 - APNs entitlement: production
