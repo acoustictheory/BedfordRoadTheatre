@@ -1,4 +1,30 @@
-const BUILD_ID = 'bedford-frontend-20260906-pit-orchestra1';
+importScripts('https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: 'AIzaSyCj9z5BuDIWW0JcuK2k7EwiWpe8xRI4vRY', authDomain: 'brpa-digital-hub-dev.firebaseapp.com',
+  projectId: 'brpa-digital-hub-dev', storageBucket: 'brpa-digital-hub-dev.firebasestorage.app',
+  messagingSenderId: '499470162310', appId: '1:499470162310:web:34dcd8a4a54e501137b407'
+});
+const messaging = firebase.messaging();
+messaging.onBackgroundMessage(payload => {
+  const data = payload.data || {};
+  return self.registration.showNotification(data.senderName || 'Bedford Community', {
+    body: data.body || 'You have a new message.', icon: '/assets/images/icons/icon-192.png',
+    badge: '/assets/images/icons/icon-192.png', tag: `bedford-community-${data.conversationId || 'message'}`,
+    data: { url: `/communications.html?conversation=${encodeURIComponent(data.conversationId || '')}` }
+  });
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/communications.html', self.location.origin).href;
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windows => {
+    const existing = windows.find(client => client.url.startsWith(self.location.origin));
+    return existing ? existing.navigate(target).then(client => client.focus()) : clients.openWindow(target);
+  }));
+});
+
+const BUILD_ID = 'bedford-frontend-20260906-desktop-community1';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 

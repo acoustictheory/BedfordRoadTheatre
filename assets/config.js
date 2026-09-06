@@ -1,5 +1,5 @@
 window.BRM_CONFIG = {
-  BUILD_ID: 'bedford-frontend-20260906-pit-orchestra1',
+  BUILD_ID: 'bedford-frontend-20260906-desktop-community1',
   API_URL: 'https://script.google.com/macros/s/AKfycbw2hM9wqpgvlRlQVEUr-h19GpTeXoVe3fwZb2CsR0bjIDdi9idHEEUtgLPne0YJ0HtHMQ/exec',
   SITE_NAME: 'Bedford Road Musical',
   SCHOOL_NAME: 'Bedford Road Collegiate',
@@ -9,6 +9,7 @@ window.BRM_CONFIG = {
   FIREBASE_APP_SIGN_IN_URL: 'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/legacyAppSignIn',
   FIREBASE_COMMUNICATION_DEVICE_URL: 'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/registerCommunicationDevice',
   FIREBASE_COMMUNICATION_GROUPS_URL: 'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/reconcileCommunicationGroups',
+  FIREBASE_WEB_PUSH_VAPID_KEY: '',
   SITE_SNAPSHOT_MODE: 'page-first',
   FIREBASE: {
     apiKey: 'AIzaSyCj9z5BuDIWW0JcuK2k7EwiWpe8xRI4vRY',

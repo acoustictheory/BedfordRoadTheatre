@@ -4,6 +4,7 @@ import {
   initializeApp,
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { getMessaging, getToken, isSupported as isMessagingSupported, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 import {
   getFirestore,
   collection,
@@ -43,6 +44,8 @@ let productionId,
   messageSearch = "",
   typingTimer,
   lastTypingWrite = 0;
+let foregroundMessagingStarted = false;
+const chatBackgrounds = [["room", "Space theme"], ["midnight", "Midnight"], ["curtain", "Red curtain"], ["aurora", "Aurora"], ["score", "Music score"], ["spotlight", "Spotlight"], ["classic", "Classic"]];
 const esc = (v) => BRM.escape(String(v ?? "")),
   roomPalette = [
     "#9b1c31",
@@ -149,6 +152,41 @@ async function attachDevice() {
     },
     body: JSON.stringify({ installId: id }),
   }).catch(() => {});
+}
+function webInstallId() {
+  let id = localStorage.getItem("brmWebInstallId");
+  if (!/^[a-f0-9-]{20,100}$/i.test(id || "")) {
+    id = crypto.randomUUID();
+    localStorage.setItem("brmWebInstallId", id);
+  }
+  return id;
+}
+async function enableDesktopNotifications() {
+  if (!(await isMessagingSupported()) || !("Notification" in window) || !("serviceWorker" in navigator)) throw new Error("Desktop notifications are not supported by this browser.");
+  if (await Notification.requestPermission() !== "granted") throw new Error("Notifications were not allowed. Enable them in this site's browser settings, then try again.");
+  const registration = await navigator.serviceWorker.ready, messaging = getMessaging(app), options = { serviceWorkerRegistration: registration }, vapidKey = String(BRM_CONFIG.FIREBASE_WEB_PUSH_VAPID_KEY || "").trim();
+  if (vapidKey) options.vapidKey = vapidKey;
+  const token = await getToken(messaging, options);
+  if (!token) throw new Error("The browser did not return a notification token. Try refreshing this page.");
+  const installId = webInstallId(), endpoint = BRM_CONFIG.FIREBASE_COMMUNICATION_DEVICE_URL;
+  let response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ installId, token, platform: "web" }) });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Could not register this browser.");
+  response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser.getIdToken()}` }, body: JSON.stringify({ installId, notifications: true, bubbles: false }) });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Could not connect notifications to your account.");
+  if (!foregroundMessagingStarted) {
+    foregroundMessagingStarted = true;
+    onMessage(messaging, payload => BRM.toast(`${payload.data?.senderName || "New message"}: ${payload.data?.body || "Open Community to read it."}`, "info"));
+  }
+}
+function backgroundKey() { return `brmChatBackground.${activeRoom?.id || "default"}`; }
+function applyChatBackground() {
+  const host = document.querySelector("[data-communications]");
+  if (host) host.dataset.chatBackground = localStorage.getItem(backgroundKey()) || "room";
+}
+function chooseChatBackground() {
+  if (!activeRoom) return BRM.toast("Choose a conversation first.", "info");
+  const selected = localStorage.getItem(backgroundKey()) || "room", modal = BRM.openModal(`<span class="eyebrow">Chat appearance</span><h2>Choose a background</h2><div class="chat-background-grid">${chatBackgrounds.map(([id, label]) => `<button type="button" class="chat-background-choice ${id === selected ? "selected" : ""}" data-background="${id}"><span data-preview="${id}"></span><strong>${label}</strong></button>`).join("")}</div>`);
+  modal.querySelectorAll("[data-background]").forEach(button => button.onclick = () => { localStorage.setItem(backgroundKey(), button.dataset.background); applyChatBackground(); modal.closeModal(); });
 }
 function roomTile(r) {
   return `<button class="conversation-row ${r.id === activeRoom?.id ? "active" : ""}" data-group-theme="${esc(r.groupTheme || "aurora")}" style="--room-accent:${roomColor(r)};--room-secondary:${roomSecondaryColor(r)}" data-room="${esc(r.id)}">${roomAvatar(r)}<span><strong>${esc(r.title || "Conversation")}</strong><small style="display:block">${esc(r.lastMessage || r.description || "Official group space")}</small></span>${r.unreadCount ? `<span class="unread-pill">${r.unreadCount}</span>` : '<span class="room-chevron">›</span>'}</button>`;
@@ -407,6 +445,7 @@ function openRoom(room) {
     roomSecondaryColor(room),
   );
   communications.dataset.groupTheme = room.groupTheme || "aurora";
+  applyChatBackground();
   renderRooms();
   document.querySelector("[data-chat-avatar]").outerHTML = roomAvatar(
     room,
@@ -853,8 +892,21 @@ async function settings() {
     ),
     current = (await getDoc(ref)).data() || {},
     modal = BRM.openModal(
-      `<span class="eyebrow">App notifications</span><h2>Conversation settings</h2><form><label class="checkbox-row"><input type="checkbox" name="notifications" ${current.notifications !== false ? "checked" : ""}> Message notifications</label><label class="checkbox-row"><input type="checkbox" name="bubbles" ${current.bubbles !== false ? "checked" : ""}> Android conversation bubbles</label><div class="form-actions"><button class="button button-primary">Save</button></div></form>`,
+      `<span class="eyebrow">Community notifications</span><h2>Conversation settings</h2><form><label class="checkbox-row"><input type="checkbox" name="notifications" ${current.notifications !== false ? "checked" : ""}> Message notifications</label><label class="checkbox-row"><input type="checkbox" name="bubbles" ${current.bubbles !== false ? "checked" : ""}> Android conversation bubbles</label><button type="button" class="button button-secondary desktop-notification-button" data-enable-desktop>Enable desktop notifications</button><small class="field-help" data-notification-status>${typeof Notification === "undefined" ? "This browser does not support notifications." : Notification.permission === "granted" ? "Desktop notifications are allowed on this browser." : "Allow this browser to notify you when Community is closed."}</small><div class="form-actions"><button class="button button-primary">Save</button></div></form>`,
     );
+  modal.querySelector("[data-enable-desktop]").onclick = async (event) => {
+    const button = event.currentTarget, status = modal.querySelector("[data-notification-status]");
+    button.disabled = true;
+    status.textContent = "Connecting this browser securely…";
+    try {
+      await enableDesktopNotifications();
+      status.textContent = "Desktop notifications are connected to your Bedford account.";
+      BRM.toast("Desktop notifications enabled.");
+    } catch (error) {
+      status.textContent = error.message;
+      BRM.toast(error.message, "error");
+    } finally { button.disabled = false; }
+  };
   modal.querySelector("form").onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget),
@@ -926,6 +978,7 @@ document.addEventListener("DOMContentLoaded", () =>
       .catch(() => {});
     document.querySelector("#app-main").innerHTML =
       `<header class="community-header"><div><span class="eyebrow">BEDFORD COMMUNITY</span><h1>Community Messages</h1><p>${BRM.isAdmin() ? "Admin view · all assigned Spaces" : "Spaces and administrator conversations"}</p></div><div class="community-actions"><button class="icon-button" data-settings title="Notification settings">⚙</button>${BRM.isAdmin() ? '<button class="icon-button" data-manage title="Manage automatic Spaces">♚</button><button class="icon-button" data-new title="New conversation">＋</button>' : ""}</div></header><section class="panel communications" data-communications><aside class="conversation-list"><div class="conversation-list-head"><div class="unread-overview"><span class="unread-orbit">✓</span><div><strong data-unread-total>Inbox is caught up</strong><small>Official messages for your production</small></div></div><input class="search-input" data-room-search placeholder="Search Spaces and conversations"></div><div data-room-list></div></aside><section class="chat-pane"><header class="chat-head"><button class="button button-ghost button-small comm-mobile-back" data-back>‹ Messages</button><span class="chat-avatar" data-chat-avatar>🎭</span><div class="chat-identity"><strong data-chat-title>Select a conversation</strong><small data-chat-subtitle style="display:block"></small></div><input class="chat-message-search" data-message-search type="search" placeholder="Search messages" aria-label="Search this conversation">${BRM.isAdmin() ? '<button class="icon-button chat-aesthetic-button" data-customize-room title="Edit group theme, icon and picture" disabled>✦</button>' : ""}</header><div class="pinned-message hidden" data-pinned-message></div><div class="message-stream" data-messages><div class="empty-chat"><span class="empty-chat-icon">●</span><strong>Your Bedford community</strong><small>Choose a Space to begin.</small></div></div><form class="composer"><div class="typing-indicator" data-typing></div><div class="reply-preview hidden" data-reply-preview></div><button type="button" class="composer-plus" title="Attachments coming next">＋</button><textarea name="message" maxlength="4000" placeholder="Message this Space…" required></textarea><button class="send-button" aria-label="Send">➤</button></form></section></section>`;
+    document.querySelector("[data-message-search]").insertAdjacentHTML("afterend", '<button class="icon-button chat-background-button" data-chat-background title="Choose your chat background">▦</button>');
     document.querySelector(".composer").onsubmit = send;
     document.querySelector('.composer textarea[name="message"]').oninput =
       announceTyping;
@@ -934,6 +987,7 @@ document.addEventListener("DOMContentLoaded", () =>
         .querySelector("[data-communications]")
         .classList.remove("chat-open");
     document.querySelector("[data-settings]").onclick = settings;
+    document.querySelector("[data-chat-background]").onclick = chooseChatBackground;
     document.querySelector("[data-room-search]").oninput = renderRooms;
     document.querySelector("[data-message-search]").oninput = (event) => {
       messageSearch = event.target.value.trim().toLowerCase();
