@@ -45,7 +45,13 @@ let productionId,
   typingTimer,
   lastTypingWrite = 0;
 let foregroundMessagingStarted = false;
-const chatBackgrounds = [["room", "Space theme"], ["midnight", "Midnight"], ["curtain", "Red curtain"], ["aurora", "Aurora"], ["score", "Music score"], ["spotlight", "Spotlight"], ["classic", "Classic"]];
+const chatBackgrounds = [
+  ["room", "Space theme"], ["royal-villain", "Royal Villain"],
+  ["enchanted-stage", "Enchanted Stage"], ["dragon-fire", "Dragon Fire"],
+  ["auradon-castle", "Royal Academy"], ["isle-graffiti", "Island Graffiti"],
+  ["magic-mirror", "Magic Mirror"], ["spotlight-score", "Spotlight Score"],
+  ["red-curtain", "Red Curtain"],
+];
 const esc = (v) => BRM.escape(String(v ?? "")),
   roomPalette = [
     "#9b1c31",
@@ -253,12 +259,12 @@ function renderActiveMessages() {
                 (roomReads.get(id)?.lastReadAt?.seconds || 0) >= messageTime,
             ),
             receipts = seenBy.length
-              ? `<div class="message-seen" title="Seen by ${seenBy.map((id) => esc(person(id).displayName)).join(", ")}"><span>Seen</span>${seenBy
+              ? `<button type="button" class="message-seen" data-seen-message="${esc(message.id)}" title="See read details"><span>Seen</span>${seenBy
                   .slice(0, 8)
                   .map((id) => personAvatar(id, "small"))
                   .join(
                     "",
-                  )}${seenBy.length > 8 ? `<b>+${seenBy.length - 8}</b>` : ""}</div>`
+                  )}${seenBy.length > 8 ? `<b>+${seenBy.length - 8}</b>` : ""}</button>`
               : mine
                 ? '<div class="message-seen pending"><span>Sent</span></div>'
                 : "";
@@ -279,6 +285,9 @@ function renderActiveMessages() {
         .join("")
     : `<div class="empty-chat">${messageSearch ? "No messages match your search." : "Start the conversation."}</div>`;
   BRM.hydrateProfilePhotos(stream);
+  stream.querySelectorAll("[data-seen-message]").forEach(button =>
+    button.addEventListener("click", () => showReadDetails(button.dataset.seenMessage)),
+  );
   stream.querySelectorAll("[data-reply-message]").forEach((button) =>
     button.addEventListener("click", () => {
       replyingTo = activeMessages.find(
@@ -324,6 +333,14 @@ function renderActiveMessages() {
   renderPinnedMessage();
   if (nearBottom && !messageSearch) stream.scrollTop = stream.scrollHeight;
   else stream.scrollTop += stream.scrollHeight - previousHeight;
+}
+function showReadDetails(messageId) {
+  const message = activeMessages.find(item => item.id === messageId);
+  if (!message) return;
+  const sentAt = message.createdAt?.seconds || 0,
+    readers = (activeRoom?.memberIds || []).filter(id => id !== message.senderId && (roomReads.get(id)?.lastReadAt?.seconds || 0) >= sentAt),
+    modal = BRM.openModal(`<span class="eyebrow">Message details</span><h2>Seen by ${readers.length}</h2><div class="seen-detail-list">${readers.length ? readers.map(id => { const read = roomReads.get(id)?.lastReadAt?.toDate?.(); return `<div class="seen-detail-person">${personAvatar(id)}<span><strong>${esc(person(id).displayName)}</strong><small>${read ? `Seen ${read.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "Seen"}</small></span><b>✓✓</b></div>`; }).join("") : "<p>No one has seen this message yet.</p>"}</div>`);
+  BRM.hydrateProfilePhotos(modal);
 }
 function messageDocument(messageId) {
   return doc(
@@ -383,14 +400,10 @@ function renderTyping() {
     active = [...typingMembers.values()].filter(
       (entry) => entry.userId !== userId && entry.expiresAt?.toMillis?.() > now,
     );
-  host.textContent = active.length
-    ? `${active
-        .slice(0, 2)
-        .map((entry) => entry.displayName)
-        .join(
-          " and ",
-        )}${active.length > 2 ? ` +${active.length - 2}` : ""} ${active.length === 1 ? "is" : "are"} typing…`
+  host.innerHTML = active.length
+    ? `<span class="typing-avatars">${active.slice(0, 3).map(entry => personAvatar(entry.userId)).join("")}</span><span>${active.slice(0, 2).map(entry => esc(entry.displayName)).join(" and ")}${active.length > 2 ? ` +${active.length - 2}` : ""} ${active.length === 1 ? "is" : "are"} typing</span><i class="typing-dots"><b></b><b></b><b></b></i>`
     : "";
+  if (active.length) BRM.hydrateProfilePhotos(host);
   host.classList.toggle("active", active.length > 0);
 }
 function typingDocument(roomId = activeRoom?.id) {

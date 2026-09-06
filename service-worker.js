@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260906-desktop-community1';
+const BUILD_ID = 'bedford-frontend-20260906-community-art2';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
@@ -115,6 +115,14 @@ const COMPLETE_SHELL = [
   "assets/images/icons/maskable-192.png",
   "assets/images/icons/maskable-512.png",
   "assets/images/icons/apple-touch-icon.png",
+  "assets/images/chat-backgrounds/royal-villain.jpg",
+  "assets/images/chat-backgrounds/enchanted-stage.jpg",
+  "assets/images/chat-backgrounds/dragon-fire.jpg",
+  "assets/images/chat-backgrounds/auradon-castle.jpg",
+  "assets/images/chat-backgrounds/isle-graffiti.jpg",
+  "assets/images/chat-backgrounds/magic-mirror.jpg",
+  "assets/images/chat-backgrounds/spotlight-score.jpg",
+  "assets/images/chat-backgrounds/red-curtain.jpg",
   "assets/vendor/fflate.min.js"
 ];
 

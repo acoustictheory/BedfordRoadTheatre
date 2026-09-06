@@ -696,6 +696,46 @@
 .chat-background-choice span[data-preview="classic"] { background:#e9edf1; }
 .desktop-notification-button { width:100%;margin-top:1rem; }
 .field-help { display:block;margin-top:.5rem;opacity:.76; }
+
+/* Original Bedford Community theatrical backdrop collection. */
+.communications[data-chat-background="royal-villain"] .message-stream { background-image:linear-gradient(#07071066,#07071066),url("images/chat-backgrounds/royal-villain.jpg"); }
+.communications[data-chat-background="enchanted-stage"] .message-stream { background-image:linear-gradient(#08060a66,#08060a66),url("images/chat-backgrounds/enchanted-stage.jpg"); }
+.communications[data-chat-background="dragon-fire"] .message-stream { background-image:linear-gradient(#08051170,#08051170),url("images/chat-backgrounds/dragon-fire.jpg"); }
+.communications[data-chat-background="auradon-castle"] .message-stream { background-image:linear-gradient(#06101a59,#06101a59),url("images/chat-backgrounds/auradon-castle.jpg"); }
+.communications[data-chat-background="isle-graffiti"] .message-stream { background-image:linear-gradient(#05080b70,#05080b70),url("images/chat-backgrounds/isle-graffiti.jpg"); }
+.communications[data-chat-background="magic-mirror"] .message-stream { background-image:linear-gradient(#09051066,#09051066),url("images/chat-backgrounds/magic-mirror.jpg"); }
+.communications[data-chat-background="spotlight-score"] .message-stream { background-image:linear-gradient(#06060659,#06060659),url("images/chat-backgrounds/spotlight-score.jpg"); }
+.communications[data-chat-background="red-curtain"] .message-stream { background-image:linear-gradient(#09030566,#09030566),url("images/chat-backgrounds/red-curtain.jpg"); }
+.communications[data-chat-background]:not([data-chat-background="room"]) .message-stream { background-size:cover;background-position:center;background-attachment:local; }
+.chat-background-choice span[data-preview="royal-villain"] { background-image:url("images/chat-backgrounds/royal-villain.jpg"); }
+.chat-background-choice span[data-preview="enchanted-stage"] { background-image:url("images/chat-backgrounds/enchanted-stage.jpg"); }
+.chat-background-choice span[data-preview="dragon-fire"] { background-image:url("images/chat-backgrounds/dragon-fire.jpg"); }
+.chat-background-choice span[data-preview="auradon-castle"] { background-image:url("images/chat-backgrounds/auradon-castle.jpg"); }
+.chat-background-choice span[data-preview="isle-graffiti"] { background-image:url("images/chat-backgrounds/isle-graffiti.jpg"); }
+.chat-background-choice span[data-preview="magic-mirror"] { background-image:url("images/chat-backgrounds/magic-mirror.jpg"); }
+.chat-background-choice span[data-preview="spotlight-score"] { background-image:url("images/chat-backgrounds/spotlight-score.jpg"); }
+.chat-background-choice span[data-preview="red-curtain"] { background-image:url("images/chat-backgrounds/red-curtain.jpg"); }
+.chat-background-choice span[data-preview] { background-size:cover;background-position:center; }
+.communications[data-chat-background]:not([data-chat-background="room"]) .message:not(.mine) { background:color-mix(in srgb,var(--surface-2) 90%,transparent);backdrop-filter:blur(14px);box-shadow:0 8px 28px #0006; }
+.message { border-radius:8px 22px 22px 22px;transition:transform .16s ease,box-shadow .16s ease; }
+.message.mine { border-radius:22px 8px 22px 22px; }
+.message-row:hover .message { transform:translateY(-1px);box-shadow:0 11px 27px #0004; }
+.message-seen { border:0;background:transparent;padding:0;cursor:pointer;color:var(--muted);font:inherit;font-size:.64rem; }
+.message-seen:hover > span { color:var(--room-accent,var(--accent));text-decoration:underline; }
+.seen-detail-list { display:grid;gap:.45rem;margin-top:1rem;max-height:55vh;overflow:auto; }
+.seen-detail-person { display:grid;grid-template-columns:42px 1fr auto;gap:.75rem;align-items:center;padding:.65rem;border-radius:16px;background:var(--surface-2); }
+.seen-detail-person .avatar { width:42px;height:42px; }
+.seen-detail-person span { display:grid; }
+.seen-detail-person small { color:var(--muted); }
+.seen-detail-person b { color:var(--room-accent,var(--accent)); }
+.typing-indicator.active { height:28px;display:flex;align-items:center;gap:7px; }
+.typing-avatars { display:flex; }
+.typing-avatars .avatar { width:23px;height:23px;min-width:23px;margin-right:-6px;border:2px solid var(--surface);font-size:.5rem; }
+.typing-dots { display:inline-flex;gap:3px;align-items:center; }
+.typing-dots b { width:4px;height:4px;border-radius:50%;background:currentColor;animation:communityTyping 1.1s infinite ease-in-out; }
+.typing-dots b:nth-child(2) { animation-delay:.14s; }
+.typing-dots b:nth-child(3) { animation-delay:.28s; }
+@keyframes communityTyping { 0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1} }
 .group-picture-preview {
   width: 150px;
   height: 150px;
