@@ -1841,6 +1841,154 @@ class _LoadStateCard extends StatelessWidget {
   );
 }
 
+const _communityColours = <Color>[
+  Color(0xff9b1c31),
+  Color(0xffd2183b),
+  Color(0xffff365b),
+  Color(0xffff6b6b),
+  Color(0xffc62828),
+  Color(0xffef6c00),
+  Color(0xffff9800),
+  Color(0xfff0bf52),
+  Color(0xffffd54f),
+  Color(0xff8bc34a),
+  Color(0xff2e7d32),
+  Color(0xff00a86b),
+  Color(0xff00897b),
+  Color(0xff00bfa5),
+  Color(0xff00b8d4),
+  Color(0xff0277bd),
+  Color(0xff1565c0),
+  Color(0xff3949ab),
+  Color(0xff5c36d9),
+  Color(0xff6f4cff),
+  Color(0xff7e57c2),
+  Color(0xff8e24aa),
+  Color(0xffc2185b),
+  Color(0xffff4fa3),
+  Color(0xff5d4037),
+  Color(0xff455a64),
+  Color(0xff263238),
+  Color(0xff111827),
+  Color(0xff374151),
+  Color(0xff6b7280),
+  Color(0xffd1d5db),
+  Color(0xfff8fafc),
+];
+
+const _communityColourPairs = <(Color, Color)>[
+  (Color(0xff9b1c31), Color(0xfff0bf52)),
+  (Color(0xffd2183b), Color(0xff111827)),
+  (Color(0xff5c36d9), Color(0xffff4fa3)),
+  (Color(0xff1565c0), Color(0xff00b8d4)),
+  (Color(0xff00897b), Color(0xff8bc34a)),
+  (Color(0xffef6c00), Color(0xffffd54f)),
+  (Color(0xff3949ab), Color(0xff7e57c2)),
+  (Color(0xffc2185b), Color(0xffff9800)),
+  (Color(0xff263238), Color(0xff6b7280)),
+  (Color(0xff111827), Color(0xffd1d5db)),
+];
+
+Future<Color?> chooseCommunityColour(
+  BuildContext context,
+  String title,
+  Color current,
+) async {
+  var selected = current;
+  final hex = TextEditingController(
+    text: selected.toARGB32().toRadixString(16).padLeft(8, '0').substring(2),
+  );
+  return showDialog<Color>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setPickerState) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: 390,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: _communityColours.map((colour) {
+                    final chosen = colour.toARGB32() == selected.toARGB32();
+                    return InkWell(
+                      onTap: () => setPickerState(() {
+                        selected = colour;
+                        hex.text = colour
+                            .toARGB32()
+                            .toRadixString(16)
+                            .padLeft(8, '0')
+                            .substring(2);
+                      }),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: colour,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: chosen ? Colors.white : Colors.white30,
+                            width: chosen ? 4 : 1,
+                          ),
+                        ),
+                        child: chosen
+                            ? const Icon(Icons.check, color: Colors.white)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: hex,
+                  maxLength: 7,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Custom HEX colour',
+                    prefixText: '#',
+                    hintText: '9B1C31',
+                  ),
+                  onChanged: (value) {
+                    final clean = value.replaceAll('#', '').trim();
+                    if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(clean)) {
+                      setPickerState(
+                        () =>
+                            selected = Color(int.parse('ff$clean', radix: 16)),
+                      );
+                    }
+                  },
+                ),
+                Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: selected,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, selected),
+            child: const Text('Use colour'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 Future<void> editConversation(
   BuildContext context,
   Object reference, {
@@ -1927,23 +2075,62 @@ Future<void> editConversation(
                 title: const Text('Light foreground text'),
               ),
               const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Suggested combinations',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _communityColourPairs.map((pair) {
+                  return InkWell(
+                    onTap: () => setDialogState(() {
+                      primary = pair.$1;
+                      secondary = pair.$2;
+                    }),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 60,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [pair.$1, pair.$2]),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
               ListTile(
                 title: const Text('Primary colour'),
+                subtitle: const Text('Choose from 32 colours or enter HEX'),
                 trailing: CircleAvatar(backgroundColor: primary),
-                onTap: () => setDialogState(
-                  () => primary = primary == const Color(0xff9b1c31)
-                      ? const Color(0xff6f4cff)
-                      : const Color(0xff9b1c31),
-                ),
+                onTap: () async {
+                  final colour = await chooseCommunityColour(
+                    dialogContext,
+                    'Primary colour',
+                    primary,
+                  );
+                  if (colour != null) setDialogState(() => primary = colour);
+                },
               ),
               ListTile(
                 title: const Text('Secondary colour'),
+                subtitle: const Text('Choose from 32 colours or enter HEX'),
                 trailing: CircleAvatar(backgroundColor: secondary),
-                onTap: () => setDialogState(
-                  () => secondary = secondary == const Color(0xfff0bf52)
-                      ? const Color(0xff00d8d8)
-                      : const Color(0xfff0bf52),
-                ),
+                onTap: () async {
+                  final colour = await chooseCommunityColour(
+                    dialogContext,
+                    'Secondary colour',
+                    secondary,
+                  );
+                  if (colour != null) setDialogState(() => secondary = colour);
+                },
               ),
             ],
           ),
