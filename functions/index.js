@@ -28,6 +28,7 @@ const fixedCommunicationSpaces = [
   ['theatre-arts','Theatre Arts 20/30'],
   ['choreography','Choreography'],
   ['featured-dancers','Featured Dancers'],
+  ['pit-orchestra','Pit Orchestra'],
   ['stage-crew','Stage Crew & Stage Hands'],
   ['scenic-painting','Scenic Painting'],
   ['hair-makeup','Hair & Makeup'],
@@ -102,7 +103,7 @@ async function reconcileCommunicationSpaces(productionId) {
   const spaces=[],generalCastMembers=[];
   departments.docs.forEach(d=>{const row=d.data(),status=row.status||row.Status,slug=String(row.slug||row.Slug||'').toLowerCase();if(status!=='Active'||slug==='administration'||slug==='directing')return;const sourceId=row.departmentID||row.DepartmentID||d.id,members=byDepartment.get(String(sourceId))||[];if(slug==='ensemble'||slug==='principal-cast'||slug==='general-cast'){generalCastMembers.push(...members);return;}const fixedKey=normalizeCommunicationSpaceKey(slug);if(assigned.has(fixedKey)){assigned.get(fixedKey).push(...members);return;}const category=slug==='pit-orchestra'?'ensemble':'production';spaces.push({key:`department-${slug}`,title:communicationNameMap[slug]||row.name||row.Name||slug,category,sourceType:'department',sourceId,members});});
   spaces.push({key:'ensemble-general-cast',title:'Cast',category:'ensemble',sourceType:'ensemble',sourceId:'general-cast',members:generalCastMembers});
-  fixedCommunicationSpaces.forEach(([key,title])=>{const category=key==='musical-theatre'||key==='theatre-arts'?'class':key==='choreography'||key==='featured-dancers'?'ensemble':'production';spaces.push({key:`assignment-${key}`,title,category,sourceType:'assignment',sourceId:key,members:assigned.get(key)||[]});});
+  fixedCommunicationSpaces.forEach(([key,title])=>{const category=key==='musical-theatre'||key==='theatre-arts'?'class':key==='choreography'||key==='featured-dancers'||key==='pit-orchestra'?'ensemble':'production';spaces.push({key:`assignment-${key}`,title,category,sourceType:'assignment',sourceId:key,members:assigned.get(key)||[]});});
   const batch=db.batch(),now=FieldValue.serverTimestamp(),roomCollection=production.collection('communicationConversations'),desiredIds=new Set(spaces.map(space=>`space-${space.key}`));
   const existingRooms=await roomCollection.get();
   existingRooms.docs.filter(document=>document.data().autoManaged===true&&!desiredIds.has(document.id)).forEach(document=>batch.set(document.ref,{status:'Archived',updatedAt:now},{merge:true}));
@@ -237,7 +238,39 @@ export const legacyAppSignIn = onRequest({region:'northamerica-northeast2',timeo
       ...claims,
     });
     const customToken = await getAuth().createCustomToken(firebaseUser.uid, claims);
-    response.json({success:true,customToken,portalToken:sessionToken,portalContext:context});
+    const activeProductionId = clean(context.productionId, 128);
+    const pitRoomRef = activeProductionId
+      ? db.collection('productions').doc(activeProductionId).collection('communicationConversations').doc('space-assignment-pit-orchestra')
+      : null;
+    const hasPitOrchestraAccess = Array.isArray(context.departments)
+      && context.departments.some(department => clean(department?.slug || department?.Slug, 80).toLowerCase() === 'pit-orchestra');
+    if (pitRoomRef && context.isAdmin !== true) {
+      const assignmentRef = db.collection('productions').doc(activeProductionId).collection('communicationAssignments').doc(userId);
+      await assignmentRef.set({
+        userId,
+        spaceKeys: hasPitOrchestraAccess
+          ? FieldValue.arrayUnion('pit-orchestra')
+          : FieldValue.arrayRemove('pit-orchestra'),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge:true});
+      const pitRoom = await pitRoomRef.get();
+      if (pitRoom.exists) {
+        await pitRoomRef.set({
+          memberIds: hasPitOrchestraAccess
+            ? FieldValue.arrayUnion(userId)
+            : FieldValue.arrayRemove(userId),
+          updatedAt: FieldValue.serverTimestamp(),
+        }, {merge:true});
+      }
+    }
+    // Keep guaranteed spaces current without exposing reconciliation to
+    // unauthenticated callers. An administrator sign-in safely repairs any
+    // room omitted by an earlier department synchronization.
+    let communicationSync = null;
+    if (context.isAdmin === true && activeProductionId) {
+      communicationSync = await reconcileCommunicationSpaces(activeProductionId);
+    }
+    response.json({success:true,customToken,portalToken:sessionToken,portalContext:context,communicationSync});
   } catch(error) {
     response.status(401).json({success:false,error:error.message || 'App sign in failed.'});
   }

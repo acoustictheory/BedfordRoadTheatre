@@ -798,6 +798,7 @@ async function manageSpaces() {
       ["theatre-arts", "Theatre Arts 20/30"],
       ["choreography", "Choreography"],
       ["featured-dancers", "Featured Dancers"],
+      ["pit-orchestra", "Pit Orchestra"],
       ["stage-crew", "Stage Crew & Stage Hands"],
       ["scenic-painting", "Scenic Painting"],
       ["hair-makeup", "Hair & Makeup"],
