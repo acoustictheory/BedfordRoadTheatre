@@ -1,4 +1,4 @@
-window.BRM_TRACK_PLAYER_BUILD = 'dual-offline-v15';
+window.BRM_TRACK_PLAYER_BUILD = 'score-workspace-v16';
 
 document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async () => {
   const main = document.querySelector('#app-main');
@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
         </p>
       </div>
     </div>
+
+    <section class="panel track-score-panel" data-score-panel>
+      <div class="track-score-head">
+        <div><span class="eyebrow">Matching sheet music</span><h2 data-score-title>Select a song to open its score</h2><p data-score-copy>The score follows the same song number and title as the guide vocal and practice track.</p></div>
+        <div class="page-actions"><a class="button button-primary" data-score-open href="#">Open in ScoreFlow</a></div>
+      </div>
+    </section>
 
     <div class="dual-track-layout">
       <section class="panel dual-track-studio" aria-label="Track player">
@@ -178,6 +185,10 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
     filter: main.querySelector('[data-pair-filter]'),
     list: main.querySelector('[data-track-list]'),
     summary: main.querySelector('[data-library-summary]'),
+    scoreTitle: main.querySelector('[data-score-title]'),
+    scoreCopy: main.querySelector('[data-score-copy]'),
+    scoreOpen: main.querySelector('[data-score-open]'),
+    scoreAppNote: main.querySelector('[data-score-app-note]'),
     cachePanel: main.querySelector('[data-cache-panel]'),
     cacheTitle: main.querySelector('[data-cache-title]'),
     cacheDetail: main.querySelector('[data-cache-detail]'),
@@ -214,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
   const AUDIO_DB_NAME = 'bedford-musical-audio-v1';
   const AUDIO_DB_VERSION = 1;
   const AUDIO_STORE_NAME = 'tracks';
-  const FULL_LIBRARY_WORKERS = 2;
+  const FULL_LIBRARY_WORKERS = 4;
 
   function cleanTrackTitle(value) {
     return String(value || '')
@@ -526,6 +537,41 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
     });
   }
 
+  function firestoreString(document, field) {
+    return document?.fields?.[field]?.stringValue || '';
+  }
+
+  async function fetchFirebaseTrackBlob(track, onProgress) {
+    const token = sessionStorage.getItem('brmFirebaseIdToken');
+    const driveFileId = String(track?.DriveFileID || '').trim();
+    const firebase = window.BRM_CONFIG?.FIREBASE;
+    const productionId = BRM.context?.production?.ProductionID;
+    if (!token || !driveFileId || !firebase?.projectId || !productionId) return null;
+
+    const documentUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebase.projectId)}/databases/(default)/documents/productions/${encodeURIComponent(productionId)}/storageAssets/${encodeURIComponent(driveFileId)}`;
+    const metadataResponse = await fetch(documentUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store'
+    });
+    if (!metadataResponse.ok) throw new Error(`Firebase asset lookup failed (${metadataResponse.status}).`);
+    const metadata = await metadataResponse.json();
+    const storagePath = firestoreString(metadata, 'storagePath');
+    if (!storagePath) return null;
+
+    const mediaUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(firebase.storageBucket)}/o/${encodeURIComponent(storagePath)}?alt=media`;
+    const mediaResponse = await fetch(mediaUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!mediaResponse.ok) throw new Error(`Firebase audio download failed (${mediaResponse.status}).`);
+    const blob = await mediaResponse.blob();
+    if (onProgress) onProgress(1);
+    return {
+      blob,
+      byteLength: blob.size,
+      mimeType: firestoreString(metadata, 'mimeType') || blob.type || 'audio/mpeg',
+      fromCache: false,
+      source: 'firebase-storage'
+    };
+  }
+
   async function fetchTrackBlob(track, label, onProgress) {
     if (!track?.TrackID) throw new Error(`${label} is missing its track record.`);
 
@@ -558,6 +604,16 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
     };
 
     task.promise = (async () => {
+      try {
+        const firebaseAudio = await fetchFirebaseTrackBlob(track, progress => notifyDownloadTask(task, progress));
+        if (firebaseAudio) {
+          await saveStoredAudioEntry(track, firebaseAudio.blob, firebaseAudio);
+          return firebaseAudio;
+        }
+      } catch (firebaseError) {
+        console.warn('Firebase audio unavailable; using Apps Script fallback:', firebaseError.message);
+      }
+
       const info = await BRM.api('trackAudioInfo', { trackId });
       const chunks = new Array(info.chunkCount);
       let completed = 0;
@@ -1111,6 +1167,18 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
     if (!song.guide && !song.single) badges.push('<span class="badge dual-badge-missing">Guide missing</span>');
     if (!song.practice && !song.single) badges.push('<span class="badge dual-badge-missing">Practice missing</span>');
     refs.badges.innerHTML = badges.join('');
+
+    if (Number.isFinite(song.sortOrder) && song.sortOrder >= 1 && song.sortOrder <= 46) {
+      const number = String(song.sortOrder).padStart(2, '0');
+      const filename = `${number} ${song.title}.pdf`;
+      const scoreUrl = `song-pdfs/${encodeURIComponent(filename)}`;
+      refs.scoreTitle.textContent = `${number} · ${song.title}`;
+      const nativeApp = Boolean(localStorage.getItem('brmAppInstall'));
+      refs.scoreCopy.textContent = nativeApp ? 'Open the score with its integrated player and Annotation Studio.' : 'Continue this score in ScoreFlow.';
+      refs.scoreOpen.href = nativeApp ? scoreUrl : 'downloads/BedfordRoadMusical-2.11.0.apk';
+      refs.scoreOpen.target = '_self';
+    } else {
+    }
 
     refs.blend.disabled = !(song.guide && song.practice);
     main.querySelectorAll('[data-blend-value]').forEach(button => {

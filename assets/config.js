@@ -1,5 +1,5 @@
 window.BRM_CONFIG = {
-  BUILD_ID: 'bedford-frontend-20260906-community-art3',
+  BUILD_ID: 'bedford-frontend-20260906-apk211',
   API_URL: 'https://script.google.com/macros/s/AKfycbw2hM9wqpgvlRlQVEUr-h19GpTeXoVe3fwZb2CsR0bjIDdi9idHEEUtgLPne0YJ0HtHMQ/exec',
   SITE_NAME: 'Bedford Road Musical',
   SCHOOL_NAME: 'Bedford Road Collegiate',

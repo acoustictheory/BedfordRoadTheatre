@@ -2623,57 +2623,180 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
   }
 }
 
-const _chatBackgrounds = <(String, String, IconData)>[
-  ('midnight', 'Midnight stage', Icons.theater_comedy),
-  ('curtain', 'Red curtain', Icons.curtains),
-  ('aurora', 'Aurora', Icons.auto_awesome),
-  ('score', 'Music score', Icons.music_note),
-  ('spotlight', 'Spotlight', Icons.light_mode),
-  ('classic', 'Classic', Icons.chat_bubble_outline),
+const _chatBackgrounds = <(String, String, IconData, String?, String)>[
+  (
+    'royal-villain',
+    'Royal Villain',
+    Icons.auto_awesome,
+    'assets/images/chat-backgrounds/royal-villain.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'enchanted-stage',
+    'Enchanted Stage',
+    Icons.theater_comedy,
+    'assets/images/chat-backgrounds/enchanted-stage.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'dragon-fire',
+    'Dragon Fire',
+    Icons.local_fire_department,
+    'assets/images/chat-backgrounds/dragon-fire.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'auradon-castle',
+    'Royal Academy',
+    Icons.castle,
+    'assets/images/chat-backgrounds/auradon-castle.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'isle-graffiti',
+    'Island Graffiti',
+    Icons.brush,
+    'assets/images/chat-backgrounds/isle-graffiti.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'magic-mirror',
+    'Magic Mirror',
+    Icons.blur_on,
+    'assets/images/chat-backgrounds/magic-mirror.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'spotlight-score',
+    'Spotlight Score',
+    Icons.light_mode,
+    'assets/images/chat-backgrounds/spotlight-score.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'red-curtain',
+    'Red Curtain',
+    Icons.curtains,
+    'assets/images/chat-backgrounds/red-curtain.jpg',
+    'Theatre & fantasy',
+  ),
+  (
+    'spring-opening-night',
+    'Spring Opening Night',
+    Icons.local_florist,
+    'assets/images/chat-backgrounds/spring-opening-night.jpg',
+    'Seasonal celebrations',
+  ),
+  (
+    'summer-showtime',
+    'Summer Showtime',
+    Icons.sunny,
+    'assets/images/chat-backgrounds/summer-showtime.jpg',
+    'Seasonal celebrations',
+  ),
+  (
+    'autumn-playbill',
+    'Autumn Playbill',
+    Icons.park,
+    'assets/images/chat-backgrounds/autumn-playbill.jpg',
+    'Seasonal celebrations',
+  ),
+  (
+    'winter-gala',
+    'Winter Gala',
+    Icons.ac_unit,
+    'assets/images/chat-backgrounds/winter-gala.jpg',
+    'Seasonal celebrations',
+  ),
+  (
+    'symphony-night',
+    'Symphony Night',
+    Icons.queue_music,
+    'assets/images/chat-backgrounds/symphony-night.jpg',
+    'Music collection',
+  ),
+  (
+    'piano-nocturne',
+    'Piano Nocturne',
+    Icons.piano,
+    'assets/images/chat-backgrounds/piano-nocturne.jpg',
+    'Music collection',
+  ),
+  (
+    'jazz-stage',
+    'Jazz Stage',
+    Icons.music_note,
+    'assets/images/chat-backgrounds/jazz-stage.jpg',
+    'Music collection',
+  ),
+  (
+    'choral-harmony',
+    'Choral Harmony',
+    Icons.graphic_eq,
+    'assets/images/chat-backgrounds/choral-harmony.jpg',
+    'Music collection',
+  ),
+  ('classic', 'Classic', Icons.chat_bubble_outline, null, 'Simple'),
 ];
 
-BoxDecoration chatBackgroundDecoration(String id, Color accent) => switch (id) {
-  'curtain' => const BoxDecoration(
-    gradient: LinearGradient(
-      colors: [Color(0xff25040b), Color(0xff710d23), Color(0xff25040b)],
-      stops: [0, .5, 1],
+BoxDecoration chatBackgroundDecoration(String id, Color accent) {
+  final image = _chatBackgrounds.where((item) => item.$1 == id).firstOrNull?.$4;
+  if (image != null) {
+    return BoxDecoration(
+      color: const Color(0xff090a0f),
+      image: DecorationImage(
+        image: AssetImage(image),
+        fit: BoxFit.cover,
+        colorFilter: const ColorFilter.mode(
+          Color(0x44000000),
+          BlendMode.darken,
+        ),
+      ),
+    );
+  }
+  return switch (id) {
+    'curtain' => const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xff25040b), Color(0xff710d23), Color(0xff25040b)],
+        stops: [0, .5, 1],
+      ),
     ),
-  ),
-  'aurora' => BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        const Color(0xff071521),
-        accent.withValues(alpha: .42),
-        const Color(0xff22102b),
-      ],
+    'aurora' => BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xff071521),
+          accent.withValues(alpha: .42),
+          const Color(0xff22102b),
+        ],
+      ),
     ),
-  ),
-  'score' => const BoxDecoration(
-    color: Color(0xff171510),
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xff262218), Color(0xff11100d)],
+    'score' => const BoxDecoration(
+      color: Color(0xff171510),
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xff262218), Color(0xff11100d)],
+      ),
     ),
-  ),
-  'spotlight' => BoxDecoration(
-    gradient: RadialGradient(
-      center: const Alignment(0, -.85),
-      radius: 1.25,
-      colors: [accent.withValues(alpha: .38), const Color(0xff07070a)],
+    'spotlight' => BoxDecoration(
+      gradient: RadialGradient(
+        center: const Alignment(0, -.85),
+        radius: 1.25,
+        colors: [accent.withValues(alpha: .38), const Color(0xff07070a)],
+      ),
     ),
-  ),
-  'classic' => const BoxDecoration(color: Color(0xff101116)),
-  _ => const BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xff0b1020), Color(0xff08090d)],
+    'classic' => const BoxDecoration(color: Color(0xff101116)),
+    _ => const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xff0b1020), Color(0xff08090d)],
+      ),
     ),
-  ),
-};
+  };
+}
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen(this.portal, this.roomId, this.room, {super.key});
@@ -2724,63 +2847,183 @@ class _ChatState extends State<ChatScreen> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * .82,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Chat background',
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+                child: Text(
+                  'Chat background',
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
               ),
               const SizedBox(height: 6),
-              const Text('This choice is private to this device.'),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18),
+                child: Text(
+                  'Preview a style below. Your choice is private to this device.',
+                ),
+              ),
               const SizedBox(height: 14),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 2.65,
-                crossAxisSpacing: 9,
-                mainAxisSpacing: 9,
-                children: _chatBackgrounds.map((item) {
-                  final active = item.$1 == background;
-                  return InkWell(
-                    onTap: () => Navigator.pop(sheetContext, item.$1),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: active
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.white24,
-                          width: active ? 2 : 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Icon(item.$3, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              item.$2,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.05,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: _chatBackgrounds.length,
+                  itemBuilder: (_, index) {
+                    final item = _chatBackgrounds[index],
+                        active = item.$1 == background;
+                    return InkWell(
+                      onTap: () => Navigator.pop(sheetContext, item.$1),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration:
+                            chatBackgroundDecoration(
+                              item.$1,
+                              Theme.of(context).colorScheme.primary,
+                            ).copyWith(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: active
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.white24,
+                                width: active ? 3 : 1,
                               ),
                             ),
-                          ),
-                        ],
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: 12,
+                              left: 10,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 118,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xdd252630),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(6),
+                                    topRight: Radius.circular(15),
+                                    bottomRight: Radius.circular(15),
+                                    bottomLeft: Radius.circular(15),
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black38,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  'See you at rehearsal!',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 10,
+                              top: 54,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary
+                                      .withValues(alpha: .94),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(15),
+                                    topRight: Radius.circular(6),
+                                    bottomRight: Radius.circular(15),
+                                    bottomLeft: Radius.circular(15),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Perfect! 🎭',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  10,
+                                  18,
+                                  10,
+                                  9,
+                                ),
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Color(0xee08090d),
+                                    ],
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      item.$3,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item.$2,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (active)
+                                      const Icon(
+                                        Icons.check_circle,
+                                        size: 17,
+                                        color: Colors.white,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  },
+                ),
               ),
             ],
           ),

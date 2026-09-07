@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260906-community-art3';
+const BUILD_ID = 'bedford-frontend-20260906-apk211';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
