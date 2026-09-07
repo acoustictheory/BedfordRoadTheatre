@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260906-community-art2';
+const BUILD_ID = 'bedford-frontend-20260906-community-art3';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
@@ -123,6 +123,14 @@ const COMPLETE_SHELL = [
   "assets/images/chat-backgrounds/magic-mirror.jpg",
   "assets/images/chat-backgrounds/spotlight-score.jpg",
   "assets/images/chat-backgrounds/red-curtain.jpg",
+  "assets/images/chat-backgrounds/spring-opening-night.jpg",
+  "assets/images/chat-backgrounds/summer-showtime.jpg",
+  "assets/images/chat-backgrounds/autumn-playbill.jpg",
+  "assets/images/chat-backgrounds/winter-gala.jpg",
+  "assets/images/chat-backgrounds/symphony-night.jpg",
+  "assets/images/chat-backgrounds/piano-nocturne.jpg",
+  "assets/images/chat-backgrounds/jazz-stage.jpg",
+  "assets/images/chat-backgrounds/choral-harmony.jpg",
   "assets/vendor/fflate.min.js"
 ];
 

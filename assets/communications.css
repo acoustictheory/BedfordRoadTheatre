@@ -706,6 +706,14 @@
 .communications[data-chat-background="magic-mirror"] .message-stream { background-image:linear-gradient(#09051066,#09051066),url("images/chat-backgrounds/magic-mirror.jpg"); }
 .communications[data-chat-background="spotlight-score"] .message-stream { background-image:linear-gradient(#06060659,#06060659),url("images/chat-backgrounds/spotlight-score.jpg"); }
 .communications[data-chat-background="red-curtain"] .message-stream { background-image:linear-gradient(#09030566,#09030566),url("images/chat-backgrounds/red-curtain.jpg"); }
+.communications[data-chat-background="spring-opening-night"] .message-stream { background-image:linear-gradient(#07100b66,#07100b66),url("images/chat-backgrounds/spring-opening-night.jpg"); }
+.communications[data-chat-background="summer-showtime"] .message-stream { background-image:linear-gradient(#08101866,#08101866),url("images/chat-backgrounds/summer-showtime.jpg"); }
+.communications[data-chat-background="autumn-playbill"] .message-stream { background-image:linear-gradient(#10090666,#10090666),url("images/chat-backgrounds/autumn-playbill.jpg"); }
+.communications[data-chat-background="winter-gala"] .message-stream { background-image:linear-gradient(#07101a66,#07101a66),url("images/chat-backgrounds/winter-gala.jpg"); }
+.communications[data-chat-background="symphony-night"] .message-stream { background-image:linear-gradient(#08070566,#08070566),url("images/chat-backgrounds/symphony-night.jpg"); }
+.communications[data-chat-background="piano-nocturne"] .message-stream { background-image:linear-gradient(#060a1266,#060a1266),url("images/chat-backgrounds/piano-nocturne.jpg"); }
+.communications[data-chat-background="jazz-stage"] .message-stream { background-image:linear-gradient(#09080f66,#09080f66),url("images/chat-backgrounds/jazz-stage.jpg"); }
+.communications[data-chat-background="choral-harmony"] .message-stream { background-image:linear-gradient(#06101466,#06101466),url("images/chat-backgrounds/choral-harmony.jpg"); }
 .communications[data-chat-background]:not([data-chat-background="room"]) .message-stream { background-size:cover;background-position:center;background-attachment:local; }
 .chat-background-choice span[data-preview="royal-villain"] { background-image:url("images/chat-backgrounds/royal-villain.jpg"); }
 .chat-background-choice span[data-preview="enchanted-stage"] { background-image:url("images/chat-backgrounds/enchanted-stage.jpg"); }
@@ -715,7 +723,18 @@
 .chat-background-choice span[data-preview="magic-mirror"] { background-image:url("images/chat-backgrounds/magic-mirror.jpg"); }
 .chat-background-choice span[data-preview="spotlight-score"] { background-image:url("images/chat-backgrounds/spotlight-score.jpg"); }
 .chat-background-choice span[data-preview="red-curtain"] { background-image:url("images/chat-backgrounds/red-curtain.jpg"); }
+.chat-background-choice span[data-preview="spring-opening-night"] { background-image:url("images/chat-backgrounds/spring-opening-night.jpg"); }
+.chat-background-choice span[data-preview="summer-showtime"] { background-image:url("images/chat-backgrounds/summer-showtime.jpg"); }
+.chat-background-choice span[data-preview="autumn-playbill"] { background-image:url("images/chat-backgrounds/autumn-playbill.jpg"); }
+.chat-background-choice span[data-preview="winter-gala"] { background-image:url("images/chat-backgrounds/winter-gala.jpg"); }
+.chat-background-choice span[data-preview="symphony-night"] { background-image:url("images/chat-backgrounds/symphony-night.jpg"); }
+.chat-background-choice span[data-preview="piano-nocturne"] { background-image:url("images/chat-backgrounds/piano-nocturne.jpg"); }
+.chat-background-choice span[data-preview="jazz-stage"] { background-image:url("images/chat-backgrounds/jazz-stage.jpg"); }
+.chat-background-choice span[data-preview="choral-harmony"] { background-image:url("images/chat-backgrounds/choral-harmony.jpg"); }
 .chat-background-choice span[data-preview] { background-size:cover;background-position:center; }
+.chat-background-library { margin-top:1rem;max-height:min(68vh,760px);overflow:auto;padding-right:.35rem; }
+.chat-background-section + .chat-background-section { margin-top:1.4rem; }
+.chat-background-section h3 { margin:0 0 .6rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted); }
 .communications[data-chat-background]:not([data-chat-background="room"]) .message:not(.mine) { background:color-mix(in srgb,var(--surface-2) 90%,transparent);backdrop-filter:blur(14px);box-shadow:0 8px 28px #0006; }
 .message { border-radius:8px 22px 22px 22px;transition:transform .16s ease,box-shadow .16s ease; }
 .message.mine { border-radius:22px 8px 22px 22px; }

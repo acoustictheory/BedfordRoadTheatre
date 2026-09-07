@@ -46,11 +46,15 @@ let productionId,
   lastTypingWrite = 0;
 let foregroundMessagingStarted = false;
 const chatBackgrounds = [
-  ["room", "Space theme"], ["royal-villain", "Royal Villain"],
-  ["enchanted-stage", "Enchanted Stage"], ["dragon-fire", "Dragon Fire"],
-  ["auradon-castle", "Royal Academy"], ["isle-graffiti", "Island Graffiti"],
-  ["magic-mirror", "Magic Mirror"], ["spotlight-score", "Spotlight Score"],
-  ["red-curtain", "Red Curtain"],
+  ["room", "Space theme", "Theatre & fantasy"], ["royal-villain", "Royal Villain", "Theatre & fantasy"],
+  ["enchanted-stage", "Enchanted Stage", "Theatre & fantasy"], ["dragon-fire", "Dragon Fire", "Theatre & fantasy"],
+  ["auradon-castle", "Royal Academy", "Theatre & fantasy"], ["isle-graffiti", "Island Graffiti", "Theatre & fantasy"],
+  ["magic-mirror", "Magic Mirror", "Theatre & fantasy"], ["spotlight-score", "Spotlight Score", "Theatre & fantasy"],
+  ["red-curtain", "Red Curtain", "Theatre & fantasy"],
+  ["spring-opening-night", "Spring Opening Night", "Seasonal celebrations"], ["summer-showtime", "Summer Showtime", "Seasonal celebrations"],
+  ["autumn-playbill", "Autumn Playbill", "Seasonal celebrations"], ["winter-gala", "Winter Gala", "Seasonal celebrations"],
+  ["symphony-night", "Symphony Night", "Music collection"], ["piano-nocturne", "Piano Nocturne", "Music collection"],
+  ["jazz-stage", "Jazz Stage", "Music collection"], ["choral-harmony", "Choral Harmony", "Music collection"],
 ];
 const esc = (v) => BRM.escape(String(v ?? "")),
   roomPalette = [
@@ -191,7 +195,10 @@ function applyChatBackground() {
 }
 function chooseChatBackground() {
   if (!activeRoom) return BRM.toast("Choose a conversation first.", "info");
-  const selected = localStorage.getItem(backgroundKey()) || "room", modal = BRM.openModal(`<span class="eyebrow">Chat appearance</span><h2>Choose a background</h2><div class="chat-background-grid">${chatBackgrounds.map(([id, label]) => `<button type="button" class="chat-background-choice ${id === selected ? "selected" : ""}" data-background="${id}"><span data-preview="${id}"></span><strong>${label}</strong></button>`).join("")}</div>`);
+  const selected = localStorage.getItem(backgroundKey()) || "room",
+    categories = [...new Set(chatBackgrounds.map(([, , category]) => category))],
+    choices = categories.map(category => `<section class="chat-background-section"><h3>${category}</h3><div class="chat-background-grid">${chatBackgrounds.filter(([, , group]) => group === category).map(([id, label]) => `<button type="button" class="chat-background-choice ${id === selected ? "selected" : ""}" data-background="${id}"><span data-preview="${id}"></span><strong>${label}</strong></button>`).join("")}</div></section>`).join(""),
+    modal = BRM.openModal(`<span class="eyebrow">Chat appearance</span><h2>Choose a background</h2><p class="field-help">Your choice is saved separately for this conversation.</p><div class="chat-background-library">${choices}</div>`);
   modal.querySelectorAll("[data-background]").forEach(button => button.onclick = () => { localStorage.setItem(backgroundKey(), button.dataset.background); applyChatBackground(); modal.closeModal(); });
 }
 function roomTile(r) {
