@@ -375,12 +375,12 @@ export const openCommunicationDirect = onRequest({region:'northamerica-northeast
     const decoded=await getAuth().verifyIdToken(bearer), callerId=principalId(decoded);
     const callerSnap=await db.collection('users').doc(callerId).get(), caller=callerSnap.data();
     if(!isActiveUser(caller)) throw new Error('Active membership is required.');
-    const callerAdmin=isFullAdministrator(caller), usersSnap=await db.collection('users').get();
+    const callerAdmin=isFullAdministrator(caller), [usersSnap,profilesSnap]=await Promise.all([db.collection('users').get(),db.collection('profiles').get()]);
     const activeUsers=usersSnap.docs.filter(document=>isActiveUser(document.data())&&document.id!==callerId);
     const allowedTargets=callerAdmin?activeUsers:activeUsers.filter(document=>isFullAdministrator(document.data()));
-    const profileSnaps=await Promise.all(allowedTargets.map(document=>db.collection('profiles').doc(document.id).get()));
+    const profilesByUser=new Map(); profilesSnap.docs.forEach(document=>{const profile=document.data(),id=clean(profile.userID||profile.UserID||document.id,128);if(id)profilesByUser.set(id,profile);});
     const targetRows=allowedTargets.map((document,index)=>{
-      const user=document.data(), profile=profileSnaps[index].data()||{};
+      const user=document.data(), profile=profilesByUser.get(document.id)||{};
       const name=clean(profile.displayName||profile.DisplayName||`${profile.firstName||profile.FirstName||''} ${profile.lastName||profile.LastName||''}`||user.username||'Member',120);
       return {id:document.id,name:name||clean(user.username,40)||'Member',administrator:isFullAdministrator(user)};
     }).sort((a,b)=>a.name.localeCompare(b.name));
@@ -389,7 +389,7 @@ export const openCommunicationDirect = onRequest({region:'northamerica-northeast
     if(!productionId) throw new Error('Production is required.');
     const target=targetRows.find(item=>item.id===targetUserId);
     if(!target) throw new Error(callerAdmin?'Choose an active member.':'Private messages may only be started with an administrator.');
-    const callerProfile=(await db.collection('profiles').doc(callerId).get()).data()||{};
+    const callerProfile=profilesByUser.get(callerId)||{};
     const callerName=clean(callerProfile.displayName||callerProfile.DisplayName||`${callerProfile.firstName||callerProfile.FirstName||''} ${callerProfile.lastName||callerProfile.LastName||''}`||caller.username||'Member',120)||'Member';
     const memberIds=[callerId,targetUserId].sort(), id=`direct-${crypto.createHash('sha256').update(memberIds.join('|')).digest('hex').slice(0,24)}`;
     const conversation={title:`${callerName} & ${target.name}`,type:'direct',description:'Private conversation',memberIds,adminIds:callerAdmin?[callerId]:[targetUserId],createdBy:callerId,status:'Active',category:'production',groupColor:'#6d4aff',groupSecondaryColor:'#b22a8f',groupTheme:'aurora',groupIcon:'💬',updatedAt:FieldValue.serverTimestamp()};

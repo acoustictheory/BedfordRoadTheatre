@@ -1175,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
       refs.scoreTitle.textContent = `${number} · ${song.title}`;
       const nativeApp = Boolean(localStorage.getItem('brmAppInstall'));
       refs.scoreCopy.textContent = nativeApp ? 'Open the score with its integrated player and Annotation Studio.' : 'Continue this score in ScoreFlow.';
-      refs.scoreOpen.href = nativeApp ? scoreUrl : 'downloads/BedfordRoadMusical-2.13.0.apk';
+      refs.scoreOpen.href = nativeApp ? scoreUrl : 'downloads/BedfordRoadMusical-2.13.1.apk';
       refs.scoreOpen.target = '_self';
     } else {
     }

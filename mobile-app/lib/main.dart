@@ -760,6 +760,31 @@ class ProfileAvatar extends StatelessWidget {
 
 final Map<String, Future<Map<String, dynamic>>> _profiles = {};
 
+Future<Map<String, dynamic>> loadUserProfile(String userId) =>
+    _profiles.putIfAbsent(userId, () async {
+      final profiles = FirebaseFirestore.instance.collection('profiles');
+      final direct = await profiles.doc(userId).get();
+      if (direct.exists) return direct.data() ?? {};
+      for (final field in const ['userID', 'UserID']) {
+        final match = await profiles
+            .where(field, isEqualTo: userId)
+            .limit(1)
+            .get();
+        if (match.docs.isNotEmpty) return match.docs.first.data();
+      }
+      return {};
+    });
+
+String profileDisplayName(Map<String, dynamic> profile, String fallback) {
+  final explicit = '${profile['displayName'] ?? profile['DisplayName'] ?? ''}'
+      .trim();
+  if (explicit.isNotEmpty) return explicit;
+  final assembled =
+      '${profile['firstName'] ?? profile['FirstName'] ?? ''} ${profile['lastName'] ?? profile['LastName'] ?? ''}'
+          .trim();
+  return assembled.isNotEmpty ? assembled : fallback;
+}
+
 class UserProfileAvatar extends StatelessWidget {
   const UserProfileAvatar({
     super.key,
@@ -771,20 +796,11 @@ class UserProfileAvatar extends StatelessWidget {
   final double radius;
   @override
   Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
-    future: _profiles.putIfAbsent(
-      userId,
-      () async =>
-          (await FirebaseFirestore.instance
-                  .collection('profiles')
-                  .doc(userId)
-                  .get())
-              .data() ??
-          {},
-    ),
+    future: loadUserProfile(userId),
     builder: (context, snapshot) {
       final profile = snapshot.data ?? const <String, dynamic>{};
       return ProfileAvatar(
-        name: '${profile['displayName'] ?? profile['DisplayName'] ?? name}',
+        name: profileDisplayName(profile, name),
         fileId: profilePhotoReference(profile),
         url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
         radius: radius,
@@ -3051,7 +3067,14 @@ class _ChatState extends State<ChatScreen> {
   final text = TextEditingController();
   Map<String, dynamic>? replyingTo;
   Map<String, List<Map<String, dynamic>>> messageReactions = {};
+  Map<String, Map<String, dynamic>> roomReads = {};
+  Map<String, Map<String, dynamic>> typingMembers = {};
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? reactionSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? readSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? typingSubscription;
+  Timer? typingStopTimer;
+  Timer? presenceRefreshTimer;
+  DateTime lastTypingWrite = DateTime(1970);
   bool sending = false;
   bool uploading = false;
   double uploadProgress = 0;
@@ -3068,6 +3091,35 @@ class _ChatState extends State<ChatScreen> {
       }
       if (mounted) setState(() => messageReactions = grouped);
     });
+    readSubscription = messages.parent!.collection('reads').snapshots().listen((
+      snapshot,
+    ) {
+      if (mounted) {
+        setState(
+          () => roomReads = {
+            for (final document in snapshot.docs) document.id: document.data(),
+          },
+        );
+      }
+    });
+    typingSubscription = messages.parent!
+        .collection('typing')
+        .snapshots()
+        .listen((snapshot) {
+          if (mounted) {
+            setState(
+              () => typingMembers = {
+                for (final document in snapshot.docs)
+                  if (document.id != widget.portal.userId)
+                    document.id: document.data(),
+              },
+            );
+          }
+        });
+    text.addListener(announceTyping);
+    presenceRefreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted && typingMembers.isNotEmpty) setState(() {});
+    });
     SharedPreferences.getInstance().then((preferences) {
       if (!mounted) return;
       setState(
@@ -3081,8 +3133,89 @@ class _ChatState extends State<ChatScreen> {
   @override
   void dispose() {
     reactionSubscription?.cancel();
+    readSubscription?.cancel();
+    typingSubscription?.cancel();
+    typingStopTimer?.cancel();
+    presenceRefreshTimer?.cancel();
+    unawaited(typingDocument.delete().catchError((_) {}));
     text.dispose();
     super.dispose();
+  }
+
+  DocumentReference<Map<String, dynamic>> get typingDocument =>
+      messages.parent!.collection('typing').doc(widget.portal.userId);
+
+  void announceTyping() {
+    typingStopTimer?.cancel();
+    if (text.text.trim().isEmpty) {
+      unawaited(typingDocument.delete().catchError((_) {}));
+      return;
+    }
+    final now = DateTime.now();
+    if (now.difference(lastTypingWrite) > const Duration(milliseconds: 900)) {
+      lastTypingWrite = now;
+      unawaited(
+        typingDocument.set({
+          'userId': widget.portal.userId,
+          'name': widget.portal.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }),
+      );
+    }
+    typingStopTimer = Timer(const Duration(seconds: 4), () {
+      unawaited(typingDocument.delete().catchError((_) {}));
+    });
+  }
+
+  List<MapEntry<String, Map<String, dynamic>>> get activeTypers {
+    final cutoff = DateTime.now().subtract(const Duration(seconds: 7));
+    return typingMembers.entries.where((entry) {
+      final updated = dateField(entry.value, const ['updatedAt']);
+      return updated != null && updated.isAfter(cutoff);
+    }).toList();
+  }
+
+  Future<void> showSeenDetails(List<String> userIds) async {
+    final profiles = await Future.wait(userIds.map(loadUserProfile));
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+          children: [
+            ListTile(
+              title: Text('Seen by ${userIds.length}'),
+              subtitle: const Text('Read receipts for this message'),
+            ),
+            for (var index = 0; index < userIds.length; index++)
+              ListTile(
+                leading: UserProfileAvatar(
+                  userId: userIds[index],
+                  name: profileDisplayName(profiles[index], 'Member'),
+                  radius: 20,
+                ),
+                title: Text(profileDisplayName(profiles[index], 'Member')),
+                trailing: Text(
+                  dateField(roomReads[userIds[index]] ?? {}, const [
+                            'lastReadAt',
+                          ]) ==
+                          null
+                      ? 'Seen'
+                      : DateFormat.jm().format(
+                          dateField(roomReads[userIds[index]]!, const [
+                            'lastReadAt',
+                          ])!,
+                        ),
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> chooseBackground() async {
@@ -3693,7 +3826,10 @@ class _ChatState extends State<ChatScreen> {
                   );
                   return ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
                     itemCount: s.data!.docs.length,
                     itemBuilder: (c, n) {
                       final messageDocument = s.data!.docs[n],
@@ -3704,6 +3840,22 @@ class _ChatState extends State<ChatScreen> {
                           mine = i['senderId'] == widget.portal.userId;
                       final senderId = '${i['senderId'] ?? ''}';
                       final senderName = '${i['senderName'] ?? 'Member'}';
+                      final messageTime = dateField(i, const ['createdAt']);
+                      final seenBy = !mine || messageTime == null
+                          ? const <String>[]
+                          : roomReads.entries
+                                .where((entry) {
+                                  if (entry.key == widget.portal.userId) {
+                                    return false;
+                                  }
+                                  final readAt = dateField(entry.value, const [
+                                    'lastReadAt',
+                                  ]);
+                                  return readAt != null &&
+                                      !readAt.isBefore(messageTime);
+                                })
+                                .map((entry) => entry.key)
+                                .toList();
                       final bubble = Container(
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         padding: const EdgeInsets.fromLTRB(10, 7, 9, 6),
@@ -3756,11 +3908,19 @@ class _ChatState extends State<ChatScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Flexible(
-                                  child: Text(
-                                    senderName,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
+                                  child: FutureBuilder<Map<String, dynamic>>(
+                                    future: loadUserProfile(senderId),
+                                    builder: (_, profileSnapshot) => Text(
+                                      profileDisplayName(
+                                        profileSnapshot.data ?? {},
+                                        senderName,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -3863,6 +4023,58 @@ class _ChatState extends State<ChatScreen> {
                                           .toList(),
                                 ),
                               ),
+                            if (mine && seenBy.isNotEmpty)
+                              InkWell(
+                                onTap: () => showSeenDetails(seenBy),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 3),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Seen',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.white.withValues(
+                                            alpha: .72,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      SizedBox(
+                                        width:
+                                            14.0 +
+                                            (seenBy.take(4).length - 1) * 10,
+                                        height: 16,
+                                        child: Stack(
+                                          children: [
+                                            for (
+                                              var avatarIndex = 0;
+                                              avatarIndex <
+                                                  seenBy.take(4).length;
+                                              avatarIndex++
+                                            )
+                                              Positioned(
+                                                left: avatarIndex * 10,
+                                                child: UserProfileAvatar(
+                                                  userId: seenBy[avatarIndex],
+                                                  name: 'Member',
+                                                  radius: 7,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (seenBy.length > 4)
+                                        Text(
+                                          '+${seenBy.length - 4}',
+                                          style: const TextStyle(fontSize: 8),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             if (dateField(i, const ['createdAt']) != null ||
                                 mine)
                               Padding(
@@ -3951,6 +4163,50 @@ class _ChatState extends State<ChatScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (activeTypers.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width:
+                                    18.0 +
+                                    (activeTypers.take(3).length - 1) * 13,
+                                height: 20,
+                                child: Stack(
+                                  children: [
+                                    for (
+                                      var index = 0;
+                                      index < activeTypers.take(3).length;
+                                      index++
+                                    )
+                                      Positioned(
+                                        left: index * 13,
+                                        child: UserProfileAvatar(
+                                          userId: activeTypers[index].key,
+                                          name:
+                                              '${activeTypers[index].value['name'] ?? 'Member'}',
+                                          radius: 9,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  activeTypers.length == 1
+                                      ? '${activeTypers.first.value['name'] ?? 'Someone'} is typing…'
+                                      : '${activeTypers.length} people are typing…',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.labelSmall,
+                                ),
+                              ),
+                              const Icon(Icons.more_horiz, size: 18),
+                            ],
+                          ),
+                        ),
                       if (replyingTo != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 7),
