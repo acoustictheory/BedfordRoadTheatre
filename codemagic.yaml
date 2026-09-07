@@ -39,36 +39,13 @@ workflows:
           test "$(/usr/libexec/PlistBuddy -c 'Print :BUNDLE_ID' ios/Runner/GoogleService-Info.plist)" = "$BUNDLE_ID"
           test "$(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png | awk '/hasAlpha/{print $2}')" = "no"
 
-      - name: Get Flutter packages and regenerate iOS Swift package
+      - name: Get Flutter packages with CocoaPods integration
         script: |
           set -euo pipefail
-          flutter config --enable-swift-package-manager
+          flutter config --no-enable-swift-package-manager
           rm -rf ios/Flutter/ephemeral
           flutter pub get
-          GENERATED_MANIFEST="ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
-          test -f "$GENERATED_MANIFEST"
-          grep -q 'swift-tools-version:' "$GENERATED_MANIFEST"
-          echo "Generated Flutter Swift package: $(head -n 1 "$GENERATED_MANIFEST")"
-
-      - name: Validate Swift package manifests
-        script: |
-          set -euo pipefail
-          MANIFEST_ROOTS=("$CM_BUILD_DIR/mobile-app/ios" "$FLUTTER_ROOT/.pub-cache" "$HOME/.pub-cache")
-          for root in "${MANIFEST_ROOTS[@]}"; do
-            [ -d "$root" ] || continue
-            while IFS= read -r -d '' manifest; do
-              first_line="$(head -n 1 "$manifest" || true)"
-              if [[ "$first_line" != *"swift-tools-version:"* ]]; then
-                echo "Repairing missing Swift tools declaration: $manifest"
-                temporary_manifest="${manifest}.codemagic-tmp"
-                {
-                  echo '// swift-tools-version: 5.9'
-                  cat "$manifest"
-                } > "$temporary_manifest"
-                mv "$temporary_manifest" "$manifest"
-              fi
-            done < <(find "$root" -type f -iname 'Package.swift' -print0)
-          done
+          grep -Eq '"swift_package_manager_enabled":\{"ios":false' .flutter-plugins-dependencies
 
       - name: Install CocoaPods dependencies when present
         script: |
