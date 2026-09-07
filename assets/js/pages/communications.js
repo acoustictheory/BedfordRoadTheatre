@@ -702,11 +702,11 @@ async function customizeRoom() {
     modal.querySelector("[data-member-count]").textContent = `(${selectedMembers.size})`;
     if (!host) return;
     host.innerHTML = [...people.entries()].filter(([, profile]) => profile.status !== "Disabled").sort((a,b)=>(a[1].displayName||a[1].username||"").localeCompare(b[1].displayName||b[1].username||"")).map(([id, profile]) => {
-      const fullName = profile.displayName || profile.fullName || profile.username || id,
+      const fullName = profile.fullName || ((profile.firstName || profile.lastName) ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() : ""),
         username = profile.username || id,
         photo = profile.photoURL || (profile.photoFileID ? `drivefile:${profile.photoFileID}` : ""),
         locked = id === userId;
-      return `<label class="checkbox-row membership-person">${BRM.avatar(fullName, photo, "small")}<span><strong>${esc(nameMode === "username" ? username : fullName)}</strong><small>${esc(nameMode === "username" ? fullName : `@${username}`)}</small></span><input type="checkbox" value="${esc(id)}" ${selectedMembers.has(id) ? "checked" : ""} ${locked ? "disabled" : ""}></label>`;
+      return `<label class="checkbox-row membership-person">${BRM.avatar(fullName || username, photo, "small")}<span><strong>${esc(nameMode === "username" ? username : (fullName || "Full name not set"))}</strong><small>${esc(nameMode === "username" ? (fullName || "Full name not set") : `@${username}`)}</small></span><input type="checkbox" value="${esc(id)}" ${selectedMembers.has(id) ? "checked" : ""} ${locked ? "disabled" : ""}></label>`;
     }).join("");
     host.querySelectorAll("input").forEach(input => input.onchange = () => { input.checked ? selectedMembers.add(input.value) : selectedMembers.delete(input.value); modal.querySelector("[data-member-count]").textContent = `(${selectedMembers.size})`; });
     BRM.hydrateProfilePhotos(host);
@@ -993,9 +993,9 @@ async function manageSpaces() {
       modal.querySelector("[data-members]").innerHTML = users
         .map(
           (u) => {
-            const display = nameMode === "username" ? u.username : u.fullName;
+            const display = nameMode === "username" ? u.username : (u.fullName || "Full name not set");
             const photo = u.photoURL || (u.photoFileID ? `drivefile:${u.photoFileID}` : "");
-            return `<label class="checkbox-row membership-person">${BRM.avatar(u.fullName || u.username, photo, "small")}<span><strong>${esc(display || u.username || u.id)}</strong><small>${esc(nameMode === "username" ? u.fullName : `@${u.username}`)}</small></span><input type="checkbox" value="${esc(u.id)}" ${(assignmentMap.get(u.id) || []).includes(selected) ? "checked" : ""}></label>`;
+            return `<label class="checkbox-row membership-person">${BRM.avatar(u.fullName || u.username, photo, "small")}<span><strong>${esc(display || u.id)}</strong><small>${esc(nameMode === "username" ? (u.fullName || "Full name not set") : `@${u.username}`)}</small></span><input type="checkbox" value="${esc(u.id)}" ${(assignmentMap.get(u.id) || []).includes(selected) ? "checked" : ""}></label>`;
           },
         )
         .join("");

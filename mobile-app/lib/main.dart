@@ -2341,8 +2341,11 @@ Future<void> editConversation(
                       shrinkWrap: true,
                       children: memberProfiles.map((person) {
                         final id = '${person['id']}',
+                            firstName = '${person['firstName'] ?? ''}'.trim(),
+                            lastName = '${person['lastName'] ?? ''}'.trim(),
                             fullName =
-                                '${person['displayName'] ?? person['fullName'] ?? person['username'] ?? id}',
+                                '${person['fullName'] ?? '${firstName} ${lastName}'.trim()}'
+                                    .trim(),
                             username = '${person['username'] ?? id}';
                         return CheckboxListTile(
                           dense: true,
@@ -2351,9 +2354,19 @@ Future<void> editConversation(
                             userId: id,
                             name: fullName,
                           ),
-                          title: Text(showUsernames ? username : fullName),
+                          title: Text(
+                            showUsernames
+                                ? username
+                                : (fullName.isEmpty
+                                      ? 'Full name not set'
+                                      : fullName),
+                          ),
                           subtitle: Text(
-                            showUsernames ? fullName : '@$username',
+                            showUsernames
+                                ? (fullName.isEmpty
+                                      ? 'Full name not set'
+                                      : fullName)
+                                : '@$username',
                           ),
                           enabled: id != userId,
                           onChanged: id == userId
@@ -2908,8 +2921,7 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                       itemCount: people.length,
                       itemBuilder: (_, index) {
                         final person = people[index], id = '${person['id']}';
-                        final fullName =
-                            '${person['fullName'] ?? person['name'] ?? id}';
+                        final fullName = '${person['fullName'] ?? ''}'.trim();
                         final username = '${person['username'] ?? id}';
                         return CheckboxListTile(
                           value: selectedPeople.contains(id),
@@ -2917,9 +2929,19 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                             userId: id,
                             name: fullName,
                           ),
-                          title: Text(showUsernames ? username : fullName),
+                          title: Text(
+                            showUsernames
+                                ? username
+                                : (fullName.isEmpty
+                                      ? 'Full name not set'
+                                      : fullName),
+                          ),
                           subtitle: Text(
-                            showUsernames ? fullName : '@$username',
+                            showUsernames
+                                ? (fullName.isEmpty
+                                      ? 'Full name not set'
+                                      : fullName)
+                                : '@$username',
                           ),
                           onChanged: (checked) => setSheetState(() {
                             checked == true
