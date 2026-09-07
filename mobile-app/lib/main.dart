@@ -116,7 +116,10 @@ Future<void> backgroundMessage(RemoteMessage m) async {
     await startupPreferences.remove('brmLegacyContext');
   }
   await initializeScoreFlowRendering();
-  await showNotification(m);
+  // Notification messages are displayed by Android/iOS while the app is in
+  // the background or terminated. Retain the local-notification fallback for
+  // data-only messages without creating a duplicate notification.
+  if (m.notification == null) await showNotification(m);
 }
 
 Future<void> showNotification(RemoteMessage m) async {

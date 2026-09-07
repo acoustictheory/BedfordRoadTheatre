@@ -505,7 +505,19 @@ export const notifyCommunicationMessage = onDocumentCreated({
   if (!targets.length) return;
   const data={type:'communication',productionId,conversationId,messageId:event.params.messageId,
     conversationTitle:String(room.title||'Bedford Musical'),senderName:String(message.senderName||'New message'),body:String(message.text||'New message').slice(0,500)};
-  const result=await getMessaging().sendEach(targets.map(device=>({token:device.data().token,data:{...data,bubbles:String(device.data().bubbles!==false)},android:{priority:'high'},apns:{headers:{'apns-priority':'10'},payload:{aps:{sound:'default','content-available':1}}}})));
+  const result=await getMessaging().sendEach(targets.map(device=>({
+    token:device.data().token,
+    notification:{title:data.senderName,body:data.body},
+    data:{...data,bubbles:String(device.data().bubbles!==false)},
+    android:{
+      priority:'high',
+      notification:{channelId:'bedford_messages',sound:'default',tag:`community-${conversationId}`}
+    },
+    apns:{
+      headers:{'apns-priority':'10','apns-push-type':'alert'},
+      payload:{aps:{sound:'default','content-available':1,'thread-id':conversationId}}
+    }
+  })));
   const batch=db.batch(); result.responses.forEach((r,i)=>{if(!r.success&&/registration-token-not-registered|invalid-registration-token/.test(r.error?.code||''))batch.delete(targets[i].ref);});
   await batch.commit();
 });
