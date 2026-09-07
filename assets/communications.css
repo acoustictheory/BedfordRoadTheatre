@@ -365,19 +365,51 @@
 .message-seen.pending {
   opacity: 0.7;
 }
-.message-actions {
-  height: 0;
-  display: flex;
-  gap: 5px;
-  overflow: hidden;
-  opacity: 0;
-  transition: 0.15s ease;
-}
-.message-row:hover .message-actions,
-.message-row:focus-within .message-actions {
-  height: 25px;
+.message-tools {
+  position: relative;
   margin-top: 3px;
-  opacity: 1;
+}
+.message-menu-toggle {
+  min-width: 34px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.message-menu-toggle:hover,
+.message-menu-toggle:focus-visible,
+.message-tools.open .message-menu-toggle {
+  background: color-mix(in srgb, var(--room-accent, var(--accent)) 12%, var(--surface-2));
+  color: var(--text);
+}
+.message-actions {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  bottom: 32px;
+  width: max-content;
+  max-width: min(330px, calc(100vw - 36px));
+  padding: 7px;
+  display: none;
+  flex-wrap: wrap;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 14px 38px #0005;
+}
+.message-row.mine .message-actions {
+  right: 0;
+  left: auto;
+}
+.message-tools.open .message-actions {
+  display: flex;
 }
 .message-actions button {
   padding: 3px 7px;
@@ -854,17 +886,35 @@
     display: inline-flex;
   }
   .message {
-    max-width: 88%;
+    max-width: 100%;
   }
   .message-stack {
-    max-width: calc(100% - 48px);
+    max-width: calc(100% - 42px);
+  }
+  .message-stream {
+    padding: 10px 8px 14px;
+    gap: 7px;
+  }
+  .message-row {
+    gap: 6px;
+  }
+  .message-row > .avatar {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
   }
   .message-actions {
-    height: 25px;
-    margin-top: 3px;
-    opacity: 1;
-    max-width: 100%;
-    overflow-x: auto;
+    position: fixed;
+    inset: auto 10px 82px 10px;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 18px;
+  }
+  .message-actions button {
+    min-height: 38px;
+    padding: 7px 10px;
   }
   .main-content {
     padding: 10px;

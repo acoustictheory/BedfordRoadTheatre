@@ -310,11 +310,25 @@ function renderActiveMessages() {
           const reply = message.replyTo?.text
             ? `<div class="message-reply-quote"><strong>${esc(message.replyTo.senderName || "Member")}</strong><span>${esc(message.replyTo.text)}</span></div>`
             : "";
-          return `<div class="message-row ${mine ? "mine" : ""}" data-message-id="${esc(message.id)}">${mine ? "" : personAvatar(message.senderId)}<div class="message-stack"><article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-meta">${message.pinned ? "📌 " : ""}${esc(person(message.senderId).displayName || message.senderName)} · ${clock(message.createdAt || message.clientCreatedAt)}</div><div>${esc(message.text).replace(/\n/g, "<br>")}</div></article>${reactions}<div class="message-actions"><button type="button" data-reply-message="${esc(message.id)}">↩ Reply</button><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-copy-message="${esc(message.id)}">Copy</button>${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">Delete</button>` : ""}</div>${receipts}</div>${mine ? personAvatar(message.senderId) : ""}</div>`;
+          const canEdit = mine || BRM.isAdmin();
+          return `<div class="message-row ${mine ? "mine" : ""}" data-message-id="${esc(message.id)}">${mine ? "" : personAvatar(message.senderId)}<div class="message-stack"><article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-meta">${message.pinned ? "📌 " : ""}${esc(person(message.senderId).displayName || message.senderName)} · ${clock(message.createdAt || message.clientCreatedAt)}${message.editedAt ? " · edited" : ""}</div><div>${esc(message.text).replace(/\n/g, "<br>")}</div></article>${reactions}<div class="message-tools"><button type="button" class="message-menu-toggle" data-message-menu="${esc(message.id)}" aria-label="Message options" aria-expanded="false">•••</button><div class="message-actions" role="menu"><button type="button" data-reply-message="${esc(message.id)}">Reply</button><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}" aria-label="React ${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-copy-message="${esc(message.id)}">Copy</button>${canEdit ? `<button type="button" data-edit-message="${esc(message.id)}">Edit</button>` : ""}${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">Delete</button>` : ""}</div></div>${receipts}</div>${mine ? personAvatar(message.senderId) : ""}</div>`;
         })
         .join("")
     : `<div class="empty-chat">${messageSearch ? "No messages match your search." : "Start the conversation."}</div>`;
   BRM.hydrateProfilePhotos(stream);
+  stream.querySelectorAll("[data-message-menu]").forEach(button =>
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      const tools = button.closest(".message-tools");
+      const opening = !tools.classList.contains("open");
+      stream.querySelectorAll(".message-tools.open").forEach(item => item.classList.remove("open"));
+      tools.classList.toggle("open", opening);
+      button.setAttribute("aria-expanded", String(opening));
+    }),
+  );
+  stream.querySelectorAll(".message-actions button").forEach(button =>
+    button.addEventListener("click", () => button.closest(".message-tools")?.classList.remove("open")),
+  );
   stream.querySelectorAll("[data-seen-message]").forEach(button =>
     button.addEventListener("click", () => showReadDetails(button.dataset.seenMessage)),
   );
@@ -334,6 +348,20 @@ function renderActiveMessages() {
       );
       if (message) await navigator.clipboard.writeText(message.text || "");
       BRM.toast("Message copied.", "success");
+    }),
+  );
+  stream.querySelectorAll("[data-edit-message]").forEach(button =>
+    button.addEventListener("click", async () => {
+      const message = activeMessages.find(item => item.id === button.dataset.editMessage);
+      if (!message) return;
+      const edited = prompt("Edit message", message.text || "");
+      if (edited === null || edited.trim() === (message.text || "").trim()) return;
+      if (!edited.trim()) return BRM.toast("A message cannot be empty.", "error");
+      await updateDoc(messageDocument(message.id), {
+        text: edited.trim(),
+        editedAt: serverTimestamp(),
+        editedBy: userId,
+      });
     }),
   );
   stream
