@@ -1,47 +1,97 @@
 function dashboardJournalDate(value) {
-  const text = String(value ?? '').trim();
-  if (!text) return 'None yet';
+  const text = String(value ?? "").trim();
+  if (!text) return "None yet";
   const m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) {
     const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12);
-    return new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium' }).format(d);
+    return new Intl.DateTimeFormat("en-CA", { dateStyle: "medium" }).format(d);
   }
   const d = new Date(text);
-  return Number.isNaN(d.getTime()) ? 'Date unavailable' : new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium', timeZone: 'America/Regina' }).format(d);
+  return Number.isNaN(d.getTime())
+    ? "Date unavailable"
+    : new Intl.DateTimeFormat("en-CA", {
+        dateStyle: "medium",
+        timeZone: "America/Regina",
+      }).format(d);
 }
 
-document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async () => {
-  const main = document.querySelector('#app-main');
-  BRM.loading(main, 'Building your dashboard…');
+document.addEventListener("DOMContentLoaded", () =>
+  BRM.initPrivatePage(async context => {
+    const main = document.querySelector("#app-main");
+    const instantName = context.profile?.FirstName || context.profile?.DisplayName?.split(" ")[0] || "there";
+    main.innerHTML = `<section class="welcome-card"><span class="eyebrow">${BRM.escape(context.production?.SchoolYear || "")} musical hub</span><h1>Welcome back, ${BRM.escape(instantName)}.</h1><p>Loading your latest calls, tasks, and production updates…</p></section><div class="dashboard-grid" style="margin-top:20px"><section class="panel"><div class="skeleton skeleton-title"></div><div class="skeleton"></div><div class="skeleton"></div></section><section class="panel"><div class="skeleton skeleton-title"></div><div class="skeleton"></div></section></div>`;
 
-  try {
-    const data = await BRM.api('dashboard');
-    const firstName = data.context.profile?.FirstName || data.context.profile?.DisplayName?.split(' ')[0] || 'there';
-    const adminStats = data.adminStats;
-    const blockingAccess = canAccessBlockingStudio();
+    try {
+      const dashboardRequest = BRM.api("dashboard");
+      const firebaseRequest = Promise.all([
+        BRM.firebaseCollection("events"),
+        BRM.firebaseCollection("blockingSnapshots"),
+      ]);
+      const data = await dashboardRequest;
+      await Promise.race([
+        firebaseRequest,
+        new Promise((_, reject) => window.setTimeout(() => reject(new Error("Firebase dashboard refresh timed out.")), 700)),
+      ]).then(([events, snapshots]) => {
+        const now = new Date();
+        const end = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const userId = String(data.context?.userId || "");
+        const departmentIds = (data.context?.departmentIds || []).map(String);
+        const audience = value => {
+          if (Array.isArray(value)) return value.map(String);
+          try { return JSON.parse(value || "[]").map(String); } catch { return []; }
+        };
+        data.events = events.filter(event => {
+          const start = new Date(event.StartAt);
+          const users = audience(event.AudienceUserIDsJSON);
+          const departments = audience(event.AudienceDepartmentIDsJSON);
+          const targeted = users.length || departments.length;
+          return String(event.Status) === "Published" && start >= now && start <= end
+            && (!targeted || users.includes(userId) || departments.some(id => departmentIds.includes(id)) || BRM.isAdmin());
+        }).sort((a, b) => new Date(a.StartAt) - new Date(b.StartAt)).slice(0, 12);
+        data.blockingSceneCount = new Set(snapshots.filter(item => String(item.Status || "Active") !== "Archived").map(item => String(item.SceneNumber || "0"))).size;
+      }).catch(error => console.warn("Firebase dashboard refresh unavailable; Apps Script data retained.", error));
+      const firstName =
+        data.context.profile?.FirstName ||
+        data.context.profile?.DisplayName?.split(" ")[0] ||
+        "there";
+      const adminStats = data.adminStats;
+      const blockingAccess = canAccessBlockingStudio();
 
-    main.innerHTML = `
+      main.innerHTML = `
       <section class="welcome-card">
-        <span class="eyebrow">${BRM.escape(data.context.production?.SchoolYear || '')} production portal</span>
+        <span class="eyebrow">${BRM.escape(data.context.production?.SchoolYear || "")} musical hub</span>
         <h1>Welcome back, ${BRM.escape(firstName)}.</h1>
         <p>Your dashboard brings together only the calls, tasks, departments, notes, tracks, and reflections connected to your production role.</p>
         <div class="quick-actions">
+          <a class="button button-primary dashboard-community-button" href="communications.html">● Open Community Messages</a>
           <a class="button button-primary" href="journal.html?new=1">✎ Write today’s reflection</a>
           <a class="button button-secondary" href="schedule.html">◷ View full schedule</a>
-          ${BRM.hasPermission('announcement.manage') ? '<button class="button button-secondary" data-new-announcement>! Post an update</button>' : ''}
+          ${BRM.hasPermission("announcement.manage") ? '<button class="button button-secondary" data-new-announcement>! Post an update</button>' : ""}
         </div>
       </section>
 
+      ${renderAnnouncementAttention(data.announcements || [])}
+
+      <a class="dashboard-community-launch" href="communications.html">
+        <span class="dashboard-community-icon" aria-hidden="true">●</span>
+        <span><strong>Community Messages</strong><small>Open your class, ensemble, production, and private administrator conversations.</small></span>
+        <span class="dashboard-community-arrow" aria-hidden="true">›</span>
+      </a>
+
       ${renderBlockingViewerHub(data.context, data)}
 
-      ${blockingAccess ? renderBlockingStudioLaunch(data.context) : ''}
+      ${blockingAccess ? renderBlockingStudioLaunch(data.context) : ""}
 
-      ${adminStats ? `<section class="stat-grid" style="margin-top:18px">
+      ${
+        adminStats
+          ? `<section class="stat-grid" style="margin-top:18px">
         <a class="stat-card" href="admin.html"><strong>${adminStats.activeUsers}</strong><span>Active accounts</span></a>
         <a class="stat-card" href="journal-review.html"><strong>${adminStats.journalEntries}</strong><span>Journal entries</span></a>
         <a class="stat-card" href="tasks.html"><strong>${adminStats.openTasks}</strong><span>Open tasks</span></a>
         <a class="stat-card" href="schedule.html"><strong>${adminStats.upcomingEvents}</strong><span>Upcoming events</span></a>
-      </section>` : ''}
+      </section>`
+          : ""
+      }
 
       <div class="dashboard-grid" style="margin-top:20px">
         <div class="stack">
@@ -95,31 +145,54 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
             <p style="color:var(--muted)">Your entries are private from other students. Full administrators can review them to track growth and provide feedback.</p>
             <div class="grid grid-2">
               <div class="panel-inset"><strong style="font-size:1.7rem">${data.journal?.totalEntries || 0}</strong><span style="display:block;color:var(--muted);font-size:.78rem">Entries this production</span></div>
-              <div class="panel-inset"><strong>${data.journal?.lastEntryDate ? dashboardJournalDate(data.journal.lastEntryDate) : 'None yet'}</strong><span style="display:block;color:var(--muted);font-size:.78rem">Most recent reflection</span></div>
+              <div class="panel-inset"><strong>${data.journal?.lastEntryDate ? dashboardJournalDate(data.journal.lastEntryDate) : "None yet"}</strong><span style="display:block;color:var(--muted);font-size:.78rem">Most recent reflection</span></div>
             </div>
             <a class="button button-primary button-block" style="margin-top:16px" href="journal.html?new=1">Write a reflection</a>
           </section>
 
-          ${data.journal?.helpReviewCount ? `<a class="panel" href="journal-review.html"><span class="eyebrow">Admin attention</span><h2>${data.journal.helpReviewCount} help request${data.journal.helpReviewCount === 1 ? '' : 's'}</h2><p style="color:var(--muted);margin:0">Students have flagged journal entries for support.</p></a>` : ''}
+          ${data.journal?.helpReviewCount ? `<a class="panel" href="journal-review.html"><span class="eyebrow">Admin attention</span><h2>${data.journal.helpReviewCount} help request${data.journal.helpReviewCount === 1 ? "" : "s"}</h2><p style="color:var(--muted);margin:0">Students have flagged journal entries for support.</p></a>` : ""}
         </aside>
       </div>`;
 
-    main.querySelectorAll('[data-ack]').forEach(button => button.addEventListener('click', async () => {
-      try {
-        await BRM.api('acknowledgeAnnouncement', { announcementId: button.dataset.ack });
-        button.textContent = 'Acknowledged';
-        button.disabled = true;
-        BRM.toast('Acknowledgement recorded.');
-      } catch (error) {
-        BRM.toast(error.message, 'error');
-      }
-    }));
+      main.querySelectorAll("[data-ack]").forEach((button) =>
+        button.addEventListener("click", async () => {
+          try {
+            await BRM.api("acknowledgeAnnouncement", {
+              announcementId: button.dataset.ack,
+            });
+            button.textContent = "Acknowledged";
+            button.disabled = true;
+            BRM.toast("Acknowledgement recorded.");
+          } catch (error) {
+            BRM.toast(error.message, "error");
+          }
+        }),
+      );
+      main.querySelectorAll("[data-read]").forEach((button) =>
+        button.addEventListener("click", async () => {
+          try {
+            await BRM.api("markAnnouncementRead", {
+              announcementId: button.dataset.read,
+            });
+            button.closest(".announcement-card")?.remove();
+            BRM.refreshAnnouncementBadge();
+          } catch (error) {
+            BRM.toast(error.message, "error");
+          }
+        }),
+      );
 
-    main.querySelector('[data-new-announcement]')?.addEventListener('click', () => location.href = 'announcements.html?new=1');
-  } catch (error) {
-    main.innerHTML = `<div class="alert alert-error">${BRM.escape(error.message)}</div>`;
-  }
-}));
+      main
+        .querySelector("[data-new-announcement]")
+        ?.addEventListener(
+          "click",
+          () => (location.href = "announcements.html?new=1"),
+        );
+    } catch (error) {
+      main.innerHTML = `<div class="alert alert-error">${BRM.escape(error.message)}</div>`;
+    }
+  }),
+);
 
 /**
  * Blocking Studio is intentionally surfaced only to people whose authenticated
@@ -132,15 +205,20 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
 function canAccessBlockingStudio() {
   return Boolean(
     BRM.isAdmin() ||
-    BRM.hasPermission('blocking.edit') ||
-    BRM.hasPermission('blocking.manage') ||
-    BRM.hasPermission('blocking.audit')
+    BRM.hasPermission("blocking.edit") ||
+    BRM.hasPermission("blocking.manage") ||
+    BRM.hasPermission("blocking.audit"),
   );
 }
 
 function renderBlockingViewerHub(context, data) {
-  const productionTitle = context.production?.ShortTitle || context.production?.Title || 'the production';
-  const sceneCount = Number(data.blockingViewer?.sceneCount || data.blockingSceneCount || 0);
+  const productionTitle =
+    context.production?.ShortTitle ||
+    context.production?.Title ||
+    "the production";
+  const sceneCount = Number(
+    data.blockingViewer?.sceneCount || data.blockingSceneCount || 0,
+  );
   return `
     <section class="panel dashboard-viewer-hub" aria-labelledby="blocking-viewer-title">
       <div class="section-heading">
@@ -152,15 +230,18 @@ function renderBlockingViewerHub(context, data) {
         <span class="dashboard-viewer-icon" aria-hidden="true">▶</span>
       </div>
       <div class="form-actions" style="justify-content:space-between;align-items:center">
-        <span class="field-hint">${sceneCount ? `${sceneCount} scene${sceneCount === 1 ? '' : 's'} available` : 'Saved scenes appear automatically'}</span>
+        <span class="field-hint">${sceneCount ? `${sceneCount} scene${sceneCount === 1 ? "" : "s"} available` : "Saved scenes appear automatically"}</span>
         <a class="button button-primary" href="blocking-viewer.html">Open Blocking Viewer</a>
       </div>
     </section>`;
 }
 
 function renderBlockingStudioLaunch(context) {
-  const accessLabel = BRM.isAdmin() ? 'Full Administrator' : 'Stage Management / Blocking Team';
-  const productionTitle = context.production?.ShortTitle || context.production?.Title || 'Production';
+  const accessLabel = BRM.isAdmin()
+    ? "Full Administrator"
+    : "Stage Management / Blocking Team";
+  const productionTitle =
+    context.production?.ShortTitle || context.production?.Title || "Production";
 
   return `
     <section class="dashboard-blocking-launch" aria-labelledby="blocking-launch-title">
@@ -201,30 +282,88 @@ function renderBlockingStudioLaunch(context) {
 }
 
 function renderAnnouncements(items) {
-  if (!items.length) return BRM.empty('No current announcements', 'New production updates will appear here.', '!');
-  return items.slice(0, 5).map(item => `<article class="announcement-card ${String(item.Priority).toLowerCase()}">
-    <div class="announcement-meta"><span class="badge ${item.Priority === 'Urgent' ? 'badge-urgent' : item.Priority === 'Important' ? 'badge-important' : ''}">${BRM.escape(item.Priority)}</span>${item.Pinned === 'TRUE' ? '<span class="badge">Pinned</span>' : ''}<span>${BRM.formatDateTime(item.CreatedAt)}</span></div>
+  if (!items.length)
+    return BRM.empty(
+      "No current announcements",
+      "New production updates will appear here.",
+      "!",
+    );
+  return items
+    .slice(0, 5)
+    .map(
+      (
+        item,
+      ) => `<article class="announcement-card ${String(item.Priority).toLowerCase()} ${item.IsRead ? "" : "unread"}">
+    <div class="announcement-meta"><span class="badge ${item.Priority === "Urgent" ? "badge-urgent" : item.Priority === "Important" ? "badge-important" : ""}">${BRM.escape(item.Priority)}</span>${item.Pinned === "TRUE" ? '<span class="badge">Pinned</span>' : ""}${!item.IsRead ? '<span class="badge badge-urgent">New</span>' : ""}<span>${BRM.formatDateTime(item.CreatedAt)}</span></div>
     <h3 style="margin:10px 0 7px">${BRM.escape(item.Title)}</h3><p style="color:var(--muted);white-space:pre-wrap">${BRM.escape(item.Body)}</p>
-    <div class="announcement-meta"><span>Posted by ${BRM.escape(item.AuthorName || 'Production Team')}</span></div>
-    ${item.AcknowledgementRequired === 'TRUE' ? `<button class="button button-secondary button-small" style="margin-top:12px" data-ack="${item.AnnouncementID}">Acknowledge</button>` : ''}
-  </article>`).join('');
+    <div class="announcement-meta"><span>Posted by ${BRM.escape(item.AuthorName || "Production Team")}</span></div>
+    <div class="announcement-action-row">${item.ActionURL ? `<a class="button button-primary button-small" href="${BRM.escape(item.ActionURL)}" target="_blank" rel="noopener">${BRM.escape(item.ActionLabel || "Open link")}</a>` : ""}${item.AcknowledgementRequired === "TRUE" && !item.IsAcknowledged ? `<button class="button button-secondary button-small" data-ack="${item.AnnouncementID}">Acknowledge</button>` : !item.IsRead ? `<button class="button button-secondary button-small" data-read="${item.AnnouncementID}">Mark as read</button>` : ""}</div>
+  </article>`,
+    )
+    .join("");
+}
+
+function renderAnnouncementAttention(items) {
+  const needsAttention = items.filter(
+    (item) =>
+      !item.IsRead &&
+      (item.Priority === "Urgent" || item.AcknowledgementRequired === "TRUE"),
+  );
+  if (!needsAttention.length) return "";
+  return `<section class="panel announcement-attention"><div class="announcement-attention-head"><div><span class="eyebrow">Needs your attention</span><h2>Important production updates</h2><p style="color:var(--muted);margin:0">Read these before continuing with today’s work.</p></div><span class="announcement-attention-count">${needsAttention.length}</span></div><div class="data-list">${needsAttention.map((item) => `<article class="announcement-card ${String(item.Priority).toLowerCase()} unread"><div class="announcement-meta"><span class="badge badge-urgent">${item.Priority === "Urgent" ? "⚠ Urgent" : "Acknowledgement required"}</span><span>${BRM.formatDateTime(item.CreatedAt)}</span></div><h3 style="margin:9px 0">${BRM.escape(item.Title)}</h3><p style="color:var(--muted);white-space:pre-wrap">${BRM.escape(item.Body)}</p><div class="announcement-action-row">${item.ActionURL ? `<a class="button button-primary button-small" href="${BRM.escape(item.ActionURL)}" target="_blank" rel="noopener">${BRM.escape(item.ActionLabel || "Open link")}</a>` : ""}${item.AcknowledgementRequired === "TRUE" ? `<button class="button button-primary button-small" data-ack="${item.AnnouncementID}">I have read this — acknowledge</button>` : `<button class="button button-secondary button-small" data-read="${item.AnnouncementID}">Mark as read</button>`}</div></article>`).join("")}</div></section>`;
 }
 
 function renderDepartments(items) {
-  if (!items.length) return BRM.empty('No departments assigned', 'An administrator can assign production departments to your profile.', '◇');
-  return items.map(dep => `<a class="department-card" href="${BRM.escape(dep.Slug)}.html"><span class="department-icon">${BRM.departmentIcon(dep.Slug)}</span><h3>${BRM.escape(dep.Name)}</h3><p>${BRM.escape(dep.Description || '')}</p><span class="eyebrow" style="margin:0">Open workspace →</span></a>`).join('');
+  const workspaceDepartments = items.filter(
+    (dep) => dep?.Slug && dep.Slug !== "administration",
+  );
+  if (!workspaceDepartments.length)
+    return BRM.empty(
+      "No departments assigned",
+      "An administrator can assign production departments to your profile.",
+      "◇",
+    );
+  return workspaceDepartments
+    .map(
+      (dep) =>
+        `<a class="department-card" href="${BRM.escape(dep.Slug)}.html"><span class="department-icon">${BRM.departmentIcon(dep.Slug)}</span><h3>${BRM.escape(dep.Name)}</h3><p>${BRM.escape(dep.Description || "")}</p><span class="eyebrow" style="margin:0">Open workspace →</span></a>`,
+    )
+    .join("");
 }
 
 function renderTasks(items) {
-  if (!items.length) return BRM.empty('You are caught up', 'No open tasks are currently assigned to you.', '✓');
-  return items.slice(0, 6).map(task => `<article class="data-card"><span class="rating-pill">${task.Status === 'In Progress' ? '→' : '○'}</span><div class="data-card-main"><div class="item-meta"><span class="badge ${task.Priority === 'Urgent' ? 'badge-urgent' : task.Priority === 'Important' ? 'badge-important' : ''}">${BRM.escape(task.Priority)}</span>${task.DueDate ? `<span>Due ${dashboardJournalDate(task.DueDate)}</span>` : ''}</div><h3>${BRM.escape(task.Title)}</h3><p>${BRM.escape(task.Description || '')}</p></div></article>`).join('');
+  if (!items.length)
+    return BRM.empty(
+      "You are caught up",
+      "No open tasks are currently assigned to you.",
+      "✓",
+    );
+  return items
+    .slice(0, 6)
+    .map(
+      (task) =>
+        `<article class="data-card"><span class="rating-pill">${task.Status === "In Progress" ? "→" : "○"}</span><div class="data-card-main"><div class="item-meta"><span class="badge ${task.Priority === "Urgent" ? "badge-urgent" : task.Priority === "Important" ? "badge-important" : ""}">${BRM.escape(task.Priority)}</span>${task.DueDate ? `<span>Due ${dashboardJournalDate(task.DueDate)}</span>` : ""}</div><h3>${BRM.escape(task.Title)}</h3><p>${BRM.escape(task.Description || "")}</p></div></article>`,
+    )
+    .join("");
 }
 
 function renderEvents(items) {
-  if (!items.length) return BRM.empty('No upcoming calls', 'Events targeted to you will appear here.', '◷');
-  return items.slice(0, 7).map(event => {
-    const date = new Date(event.StartAt);
-    const time = new Intl.DateTimeFormat('en-CA', { hour:'numeric', minute:'2-digit', timeZone:'America/Regina' }).format(date);
-    return `<div class="timeline-item"><div class="timeline-time">${time}</div><div class="timeline-rail"></div><div class="timeline-content"><strong>${BRM.escape(event.Title)}</strong><span>${BRM.formatDate(event.StartAt)}${event.Location ? ` · ${BRM.escape(event.Location)}` : ''}</span></div></div>`;
-  }).join('');
+  if (!items.length)
+    return BRM.empty(
+      "No upcoming calls",
+      "Events targeted to you will appear here.",
+      "◷",
+    );
+  return items
+    .slice(0, 7)
+    .map((event) => {
+      const date = new Date(event.StartAt);
+      const time = new Intl.DateTimeFormat("en-CA", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "America/Regina",
+      }).format(date);
+      return `<div class="timeline-item"><div class="timeline-time">${time}</div><div class="timeline-rail"></div><div class="timeline-content"><strong>${BRM.escape(event.Title)}</strong><span>${BRM.formatDate(event.StartAt)}${event.Location ? ` · ${BRM.escape(event.Location)}` : ""}</span></div></div>`;
+    })
+    .join("");
 }

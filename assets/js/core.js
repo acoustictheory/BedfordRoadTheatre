@@ -760,8 +760,12 @@ window.BRM = window.BRM || {};
     const resourcesLabel = BRM.hasPermission("resources.manage")
       ? "Manage Resources"
       : "Resources";
-    const communicationsLink = localStorage.getItem("brmAppInstall")
-      ? navItem("communications.html", "Conversations", "●", "communications") : "";
+    const communicationsLink = navItem(
+      "communications.html",
+      "Community Messages",
+      "●",
+      "communications",
+    );
     const hubCard = (href, title, description, icon, category) => `<article class="hub-launcher-card" data-hub-key="${BRM.escape(href)}" data-hub-title="${BRM.escape(title)}" data-hub-icon="${BRM.escape(icon)}" data-hub-search="${BRM.escape(`${title} ${description} ${category}`.toLowerCase())}"><a class="hub-launcher-card-main" href="${href}"${/\.apk(?:$|\?)/i.test(href) ? " download" : ""}><span class="hub-launcher-icon">${icon}</span><span><strong>${BRM.escape(title)}</strong><small>${BRM.escape(description)}</small></span><span class="hub-live-signal" data-hub-signal hidden></span></a><button type="button" class="hub-favorite" data-hub-favorite aria-label="Pin ${BRM.escape(title)}" title="Pin workspace">☆</button></article>`;
     const departmentCards = (context.departments || []).filter(dep => dep?.Slug && dep?.Name && dep.Slug !== "administration").map(dep => hubCard(`${encodeURIComponent(dep.Slug)}.html`, dep.Name, "Department workspace", BRM.departmentIcon(dep.Slug), "departments")).join("");
     const adminCards = BRM.isAdmin() ? [
@@ -774,6 +778,7 @@ window.BRM = window.BRM || {};
       hubCard("schedule.html", "Schedule", "Calls, events and calendar imports", "◷", "administration"),
     ].join("") : "";
     const productionCards = [
+      hubCard("communications.html", "Community Messages", "Group spaces and private administrator messages", "●", "production"),
       hubCard("tasks.html", BRM.isAdmin() ? "All Tasks" : "My Tasks", "Assignments and progress", "✓", "production"),
       hubCard("blocking-viewer.html", "Blocking Viewer", "Stage pictures and playback", "▶", "production"),
       canUseBlocking ? hubCard("blocking.html", "Blocking Studio", "Create and edit staging", "⌖", "production") : "",
@@ -814,7 +819,7 @@ window.BRM = window.BRM || {};
       </aside>
       <nav class="portal-dock" aria-label="Quick navigation">
         ${dockItem("dashboard.html", "Home", "&#x2302;", "dashboard")}
-        ${dockItem(communicationsLink ? "communications.html" : "announcements.html", communicationsLink ? "Community" : "Updates", "&#x25CF;", ["communications", "announcements"])}
+        ${dockItem("communications.html", "Community", "&#x25CF;", "communications")}
         ${dockItem("schedule.html", "Schedule", "&#x25F7;", "schedule")}
         <button type="button" class="portal-dock-link" data-open-hubs><span aria-hidden="true">&#x25A6;</span><span>Hubs</span></button>
         ${dockItem("profile.html", "Account", "&#x25C9;", "profile")}
