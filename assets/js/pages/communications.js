@@ -131,6 +131,24 @@ const esc = (v) => BRM.escape(String(v ?? "")),
     /^#[0-9a-f]{6}$/i.test(room?.groupSecondaryColor || "")
       ? room.groupSecondaryColor
       : roomColor(room),
+  roomAvatarKey = (room) => {
+    const value = `${room?.id || ""} ${room?.sourceId || ""} ${room?.title || ""}`.toLowerCase();
+    const matches = [
+      ["musical theatre", "musical-theatre"], ["theatre arts", "theatre-arts"],
+      ["choreograph", "choreography"], ["featured dancer", "featured-dancers"],
+      ["pit orchestra", "pit-orchestra"], ["stage management", "stage-management"],
+      ["stage crew", "stage-crew"], ["stage hand", "stage-crew"],
+      ["scenic painting", "scenic-painting"], ["hair", "hair-makeup"], ["makeup", "hair-makeup"],
+      ["projection", "projections-video"], ["video", "projections-video"],
+      ["photograph", "photography-videography"], ["ticket", "tickets-box-office"], ["box office", "tickets-box-office"],
+      ["wardrobe", "wardrobe-crew"], ["costume", "costume-crew"],
+      ["light", "lights-crew"], ["prop", "props-crew"], ["set design", "set-design"], ["set crew", "set-design"],
+      ["sound", "sound-crew"], ["front of house", "front-of-house"], ["usher", "front-of-house"],
+      ["publicity", "pr-marketing"], ["marketing", "pr-marketing"], ["pr &", "pr-marketing"],
+      ["general cast", "musical-theatre"], [" cast", "musical-theatre"],
+    ];
+    return matches.find(([term]) => value.includes(term))?.[1] || "musical-theatre";
+  },
   person = (id) =>
     people.get(String(id)) || { displayName: "Member", photoURL: "" },
   personAvatar = (id, size = "small") => {
@@ -140,7 +158,8 @@ const esc = (v) => BRM.escape(String(v ?? "")),
   roomAvatar = (room, className = "conversation-dot") => {
     const color = roomColor(room),
       image = String(room?.groupImage || "");
-    return `<span class="${className} ${room?.type === "space" ? "space-dot" : ""}" style="--room-accent:${color}">${image.startsWith("data:image/") ? `<img src="${esc(image)}" alt="">` : roomIcon(room)}</span>`;
+    const generated = `assets/images/chat-avatars/${roomAvatarKey(room)}.jpg`;
+    return `<span class="${className} ${room?.type === "space" ? "space-dot" : ""}" style="--room-accent:${color}">${image.startsWith("data:image/") || /^https:\/\//i.test(image) ? `<img src="${esc(image)}" alt="">` : `<img src="${generated}" alt="" loading="lazy">`}</span>`;
   },
   clock = (v) => {
     const d = v?.toDate?.() || new Date(v || 0);

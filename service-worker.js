@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260906-shared-card-backdrops';
+const BUILD_ID = 'bedford-frontend-20260906-community-avatars';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
@@ -131,6 +131,26 @@ const COMPLETE_SHELL = [
   "assets/images/chat-backgrounds/piano-nocturne.jpg",
   "assets/images/chat-backgrounds/jazz-stage.jpg",
   "assets/images/chat-backgrounds/choral-harmony.jpg",
+  "assets/images/chat-avatars/musical-theatre.jpg",
+  "assets/images/chat-avatars/theatre-arts.jpg",
+  "assets/images/chat-avatars/choreography.jpg",
+  "assets/images/chat-avatars/featured-dancers.jpg",
+  "assets/images/chat-avatars/pit-orchestra.jpg",
+  "assets/images/chat-avatars/stage-crew.jpg",
+  "assets/images/chat-avatars/scenic-painting.jpg",
+  "assets/images/chat-avatars/hair-makeup.jpg",
+  "assets/images/chat-avatars/projections-video.jpg",
+  "assets/images/chat-avatars/photography-videography.jpg",
+  "assets/images/chat-avatars/tickets-box-office.jpg",
+  "assets/images/chat-avatars/wardrobe-crew.jpg",
+  "assets/images/chat-avatars/lights-crew.jpg",
+  "assets/images/chat-avatars/props-crew.jpg",
+  "assets/images/chat-avatars/costume-crew.jpg",
+  "assets/images/chat-avatars/set-design.jpg",
+  "assets/images/chat-avatars/sound-crew.jpg",
+  "assets/images/chat-avatars/stage-management.jpg",
+  "assets/images/chat-avatars/front-of-house.jpg",
+  "assets/images/chat-avatars/pr-marketing.jpg",
   "assets/vendor/fflate.min.js"
 ];
 

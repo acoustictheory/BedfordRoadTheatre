@@ -2511,8 +2511,6 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                               );
                           final unread =
                               (room['unreadCount'] as num?)?.toInt() ?? 0;
-                          final photo =
-                              '${room['groupPhotoURL'] ?? room['groupPhotoUrl'] ?? ''}';
                           final solid =
                               '${room['groupThemeStyle'] ?? 'gradient'}' ==
                               'solid';
@@ -2572,15 +2570,7 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                               leading: CircleAvatar(
                                 radius: 26,
                                 backgroundColor: Colors.black26,
-                                backgroundImage: photo.startsWith('http')
-                                    ? CachedNetworkImageProvider(photo)
-                                    : null,
-                                child: photo.startsWith('http')
-                                    ? null
-                                    : Text(
-                                        '${room['groupIcon'] ?? '🎭'}',
-                                        style: const TextStyle(fontSize: 22),
-                                      ),
+                                backgroundImage: communityRoomAvatar(room),
                               ),
                               title: Row(
                                 children: [
@@ -2852,6 +2842,62 @@ BoxDecoration chatBackgroundDecoration(String id, Color accent) {
 
 String? chatBackgroundAsset(String id) =>
     _chatBackgrounds.where((item) => item.$1 == id).firstOrNull?.$4;
+
+String communityRoomAvatarKey(Map<String, dynamic> room) {
+  final value =
+      '${room['id'] ?? ''} ${room['sourceId'] ?? ''} ${room['title'] ?? ''}'
+          .toLowerCase();
+  const matches = <(String, String)>[
+    ('musical theatre', 'musical-theatre'),
+    ('theatre arts', 'theatre-arts'),
+    ('choreograph', 'choreography'),
+    ('featured dancer', 'featured-dancers'),
+    ('pit orchestra', 'pit-orchestra'),
+    ('stage management', 'stage-management'),
+    ('stage crew', 'stage-crew'),
+    ('stage hand', 'stage-crew'),
+    ('scenic painting', 'scenic-painting'),
+    ('hair', 'hair-makeup'),
+    ('makeup', 'hair-makeup'),
+    ('projection', 'projections-video'),
+    ('videography', 'photography-videography'),
+    ('photograph', 'photography-videography'),
+    ('ticket', 'tickets-box-office'),
+    ('box office', 'tickets-box-office'),
+    ('wardrobe', 'wardrobe-crew'),
+    ('costume', 'costume-crew'),
+    ('light', 'lights-crew'),
+    ('prop', 'props-crew'),
+    ('set design', 'set-design'),
+    ('set crew', 'set-design'),
+    ('sound', 'sound-crew'),
+    ('front of house', 'front-of-house'),
+    ('usher', 'front-of-house'),
+    ('publicity', 'pr-marketing'),
+    ('marketing', 'pr-marketing'),
+    ('pr &', 'pr-marketing'),
+    ('general cast', 'musical-theatre'),
+    ('cast', 'musical-theatre'),
+  ];
+  for (final match in matches) {
+    if (value.contains(match.$1)) return match.$2;
+  }
+  return 'musical-theatre';
+}
+
+ImageProvider<Object> communityRoomAvatar(Map<String, dynamic> room) {
+  final url = '${room['groupPhotoURL'] ?? room['groupPhotoUrl'] ?? ''}';
+  if (url.startsWith('http')) return CachedNetworkImageProvider(url);
+  final embedded = '${room['groupImage'] ?? ''}';
+  if (embedded.startsWith('data:image/') && embedded.contains(',')) {
+    try {
+      return MemoryImage(base64Decode(embedded.split(',').last));
+    } catch (_) {}
+  }
+  return AssetImage(
+    'assets/images/chat-avatars/${communityRoomAvatarKey(room)}.jpg',
+  );
+}
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen(this.portal, this.roomId, this.room, {super.key});
