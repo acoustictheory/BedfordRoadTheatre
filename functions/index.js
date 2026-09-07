@@ -387,11 +387,19 @@ export const communityAccess = onRequest({region:'northamerica-northeast2',timeo
     if(action==='adminState'){
       const [assignmentSnap,requestSnap,userSnap,profileSnap]=await Promise.all([production.collection('communicationAssignments').get(),requests.get(),db.collection('users').get(),db.collection('profiles').get()]);
       const profiles=new Map(profileSnap.docs.map(d=>[String(d.data().userID||d.data().UserID||d.id),d.data()]));
-      response.json({success:true,positions:communityPositionCatalog,spaces:Object.values(communitySpacePolicies),assignments:assignmentSnap.docs.map(d=>({id:d.id,...d.data()})),requests:requestSnap.docs.map(d=>({id:d.id,...d.data()})),people:userSnap.docs.filter(d=>isActiveUser(d.data())).map(d=>({id:d.id,name:profiles.get(d.id)?.displayName||profiles.get(d.id)?.DisplayName||d.data().username||d.id,photoURL:profiles.get(d.id)?.photoURL||profiles.get(d.id)?.PhotoURL||''}))});return;
+      response.json({success:true,positions:communityPositionCatalog,spaces:Object.values(communitySpacePolicies),assignments:assignmentSnap.docs.map(d=>({id:d.id,...d.data()})),requests:requestSnap.docs.map(d=>({id:d.id,...d.data()})),people:userSnap.docs.filter(d=>isActiveUser(d.data())).map(d=>{const account=d.data(),profile=profiles.get(d.id)||{},firstName=clean(profile.firstName||profile.FirstName,80),lastName=clean(profile.lastName||profile.LastName,80),fullName=`${firstName} ${lastName}`.trim()||clean(profile.displayName||profile.DisplayName,120);return {id:d.id,name:fullName||account.username||d.id,fullName:fullName||account.username||d.id,username:account.username||account.Username||d.id,photoURL:profile.photoURL||profile.PhotoURL||'',photoFileID:profile.photoFileID||profile.PhotoFileID||''};})});return;
     }
     if(action==='saveInvolvement'){
       const targetUserId=clean(request.body?.userId,128);if(!targetUserId)throw new Error('Choose a person.');
       await production.collection('communicationAssignments').doc(targetUserId).set({userId:targetUserId,positionKeys:validCommunityPositionKeys(request.body?.positionKeys),spaceKeys:validCommunicationSpaceKeys(request.body?.spaceKeys),blockedSpaceKeys:validCommunicationSpaceKeys(request.body?.blockedSpaceKeys),updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});
+      await reconcileCommunicationSpaces(productionId);response.json({success:true});return;
+    }
+    if(action==='saveSpaceMembership'){
+      const spaceKey=normalizeCommunicationSpaceKey(clean(request.body?.spaceKey,80)),policy=communitySpacePolicies[spaceKey],memberIds=new Set((Array.isArray(request.body?.memberIds)?request.body.memberIds:[]).map(value=>clean(value,128)).filter(Boolean));
+      if(!policy)throw new Error('Choose a valid Space.');
+      const current=await production.collection('communicationAssignments').get();
+      for(let offset=0;offset<current.docs.length;offset+=400){const batch=db.batch();for(const document of current.docs.slice(offset,offset+400)){const row=document.data(),keys=validCommunicationSpaceKeys(row.spaceKeys).filter(key=>key!==spaceKey);if(memberIds.has(document.id))keys.push(spaceKey);batch.set(document.ref,{userId:document.id,spaceKeys:[...new Set(keys)],updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});memberIds.delete(document.id);}await batch.commit();}
+      const remainingIds=[...memberIds];for(let offset=0;offset<remainingIds.length;offset+=400){const batch=db.batch();for(const id of remainingIds.slice(offset,offset+400))batch.set(production.collection('communicationAssignments').doc(id),{userId:id,spaceKeys:[spaceKey],positionKeys:[],blockedSpaceKeys:[],updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});await batch.commit();}
       await reconcileCommunicationSpaces(productionId);response.json({success:true});return;
     }
     if(action==='review'){

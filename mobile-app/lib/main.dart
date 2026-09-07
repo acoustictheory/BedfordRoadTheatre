@@ -804,48 +804,61 @@ class UserProfileAvatar extends StatelessWidget {
   final String userId, name;
   final double radius;
   @override
-  Widget build(BuildContext context) => StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-    stream: FirebaseFirestore.instance.collection('communityMembers').doc(userId).snapshots(),
-    builder: (context, memberSnapshot) {
-      final member = memberSnapshot.data?.data();
-      if (member != null) {
-        return ProfileAvatar(
-          name: profileDisplayName(member, name),
-          fileId: profilePhotoReference(member),
-          url: '${member['photoURL'] ?? ''}',
-          radius: radius,
-        );
-      }
-      return FutureBuilder<Map<String, dynamic>>(
-        future: loadUserProfile(userId),
-        builder: (context, snapshot) {
-          final profile = snapshot.data ?? const <String, dynamic>{};
-          return ProfileAvatar(
-            name: profileDisplayName(profile, name),
-            fileId: profilePhotoReference(profile),
-            url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
-            radius: radius,
+  Widget build(BuildContext context) =>
+      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('communityMembers')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, memberSnapshot) {
+          final member = memberSnapshot.data?.data();
+          if (member != null) {
+            return ProfileAvatar(
+              name: profileDisplayName(member, name),
+              fileId: profilePhotoReference(member),
+              url: '${member['photoURL'] ?? ''}',
+              radius: radius,
+            );
+          }
+          return FutureBuilder<Map<String, dynamic>>(
+            future: loadUserProfile(userId),
+            builder: (context, snapshot) {
+              final profile = snapshot.data ?? const <String, dynamic>{};
+              return ProfileAvatar(
+                name: profileDisplayName(profile, name),
+                fileId: profilePhotoReference(profile),
+                url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
+                radius: radius,
+              );
+            },
           );
         },
       );
-    },
-  );
 }
 
 class CommunityMemberName extends StatelessWidget {
-  const CommunityMemberName({super.key, required this.userId, required this.fallback, this.style});
+  const CommunityMemberName({
+    super.key,
+    required this.userId,
+    required this.fallback,
+    this.style,
+  });
   final String userId, fallback;
   final TextStyle? style;
   @override
-  Widget build(BuildContext context) => StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-    stream: FirebaseFirestore.instance.collection('communityMembers').doc(userId).snapshots(),
-    builder: (_, snapshot) => Text(
-      profileDisplayName(snapshot.data?.data() ?? const {}, fallback),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: style,
-    ),
-  );
+  Widget build(BuildContext context) =>
+      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('communityMembers')
+            .doc(userId)
+            .snapshots(),
+        builder: (_, snapshot) => Text(
+          profileDisplayName(snapshot.data?.data() ?? const {}, fallback),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      );
 }
 
 String initials(String name) => name
@@ -2532,10 +2545,16 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                           orElse: () => null,
                         );
                     final requestUserId = '${request['userId'] ?? ''}';
-                    final requestPerson = people[requestUserId] ?? const <String, dynamic>{};
+                    final requestPerson =
+                        people[requestUserId] ?? const <String, dynamic>{};
                     return ListTile(
-                      leading: UserProfileAvatar(userId: requestUserId, name: '${requestPerson['name'] ?? 'Unknown person'}'),
-                      title: Text('${requestPerson['name'] ?? 'Unknown person'}'),
+                      leading: UserProfileAvatar(
+                        userId: requestUserId,
+                        name: '${requestPerson['name'] ?? 'Unknown person'}',
+                      ),
+                      title: Text(
+                        '${requestPerson['name'] ?? 'Unknown person'}',
+                      ),
                       subtitle: Text(
                         '${position?['label'] ?? request['spaceKey']}${('${request['reason'] ?? ''}').isEmpty ? '' : ' · ${request['reason']}'}',
                       ),
@@ -2641,6 +2660,172 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
             content: Text(error.toString().replaceFirst('Exception: ', '')),
           ),
         );
+    }
+  }
+
+  Future<void> openMembershipManager() async {
+    try {
+      final data = await communityAccess({'action': 'adminState'});
+      if (!mounted) return;
+      final people = (data['people'] as List? ?? const [])
+          .whereType<Map>()
+          .map((value) => Map<String, dynamic>.from(value))
+          .where((person) => '${person['id']}' != widget.portal.userId)
+          .toList();
+      final assignments = <String, Map<String, dynamic>>{
+        for (final value
+            in (data['assignments'] as List? ?? const []).whereType<Map>())
+          '${value['userId'] ?? value['id']}': Map<String, dynamic>.from(value),
+      };
+      const spaces = <(String, String)>[
+        ('musical-theatre', 'Musical Theatre 10/20/30'),
+        ('theatre-arts', 'Theatre Arts 20/30'),
+        ('choreography', 'Choreography'),
+        ('featured-dancers', 'Featured Dancers'),
+        ('pit-orchestra', 'Pit Orchestra'),
+        ('stage-crew', 'Stage Crew & Stage Hands'),
+        ('scenic-painting', 'Scenic Painting'),
+        ('hair-makeup', 'Hair & Makeup'),
+        ('projections-video', 'Projections & Video'),
+        ('photography-videography', 'Photography & Videography'),
+        ('tickets-box-office', 'Tickets & Box Office'),
+        ('wardrobe-crew', 'Wardrobe Crew'),
+      ];
+      var selectedSpace = spaces.first.$1;
+      var showUsernames = false;
+      final selectedPeople = <String>{};
+      void selectExisting() {
+        selectedPeople
+          ..clear()
+          ..addAll(
+            people
+                .where((person) {
+                  final assignment = assignments['${person['id']}'];
+                  return (assignment?['spaceKeys'] as List? ?? const [])
+                      .map((value) => '$value')
+                      .contains(selectedSpace);
+                })
+                .map((person) => '${person['id']}'),
+          );
+      }
+
+      selectExisting();
+      await showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (sheetContext, setSheetState) => SafeArea(
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: .88,
+              builder: (_, controller) => Column(
+                children: [
+                  const ListTile(
+                    leading: Icon(Icons.groups_2_outlined),
+                    title: Text('Manage class memberships'),
+                    subtitle: Text(
+                      'Choose a Space and select everyone who belongs in it.',
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: selectedSpace,
+                      decoration: const InputDecoration(labelText: 'Space'),
+                      items: spaces
+                          .map(
+                            (space) => DropdownMenuItem(
+                              value: space.$1,
+                              child: Text(space.$2),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() {
+                          selectedSpace = value;
+                          selectExisting();
+                        });
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                    child: SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: false, label: Text('Full names')),
+                        ButtonSegment(value: true, label: Text('Usernames')),
+                      ],
+                      selected: {showUsernames},
+                      onSelectionChanged: (value) =>
+                          setSheetState(() => showUsernames = value.first),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: controller,
+                      itemCount: people.length,
+                      itemBuilder: (_, index) {
+                        final person = people[index], id = '${person['id']}';
+                        final fullName =
+                            '${person['fullName'] ?? person['name'] ?? id}';
+                        final username = '${person['username'] ?? id}';
+                        return CheckboxListTile(
+                          value: selectedPeople.contains(id),
+                          secondary: UserProfileAvatar(
+                            userId: id,
+                            name: fullName,
+                          ),
+                          title: Text(showUsernames ? username : fullName),
+                          subtitle: Text(
+                            showUsernames ? fullName : '@$username',
+                          ),
+                          onChanged: (checked) => setSheetState(() {
+                            checked == true
+                                ? selectedPeople.add(id)
+                                : selectedPeople.remove(id);
+                          }),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Save membership'),
+                      onPressed: () async {
+                        await communityAccess({
+                          'action': 'saveSpaceMembership',
+                          'spaceKey': selectedSpace,
+                          'memberIds': selectedPeople.toList(),
+                        });
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Membership synchronized.'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
     }
   }
 
@@ -2874,6 +3059,18 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                   ],
                 ),
               ),
+              if (widget.portal.admin)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 7),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: openMembershipManager,
+                      icon: const Icon(Icons.groups_2_outlined),
+                      label: const Text('Manage class memberships'),
+                    ),
+                  ),
+                ),
               TabBar(
                 controller: tabs,
                 tabs: const [
@@ -3471,27 +3668,51 @@ class _ChatState extends State<ChatScreen> {
           padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
           children: [
             ListTile(
-              title: Text('${userIds.length} ${userIds.length == 1 ? 'person' : 'people'}'),
-              subtitle: Text('${widget.room['title'] ?? 'Conversation'} members'),
+              title: Text(
+                '${userIds.length} ${userIds.length == 1 ? 'person' : 'people'}',
+              ),
+              subtitle: Text(
+                '${widget.room['title'] ?? 'Conversation'} members',
+              ),
             ),
             for (final id in userIds)
               StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance.collection('communityMembers').doc(id).snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('communityMembers')
+                    .doc(id)
+                    .snapshots(),
                 builder: (_, snapshot) {
-                  final profile = snapshot.data?.data() ?? const <String, dynamic>{};
-                  final departments = (profile['departments'] as List? ?? const [])
-                      .whereType<Map>()
-                      .map((item) {
-                        final name = '${item['name'] ?? ''}'.trim();
-                        final role = '${item['role'] ?? ''}'.trim();
-                        return role.isNotEmpty && role != 'Member' ? '$name · $role' : name;
-                      })
-                      .where((value) => value.isNotEmpty)
-                      .join(' · ');
+                  final profile =
+                      snapshot.data?.data() ?? const <String, dynamic>{};
+                  final departments =
+                      (profile['departments'] as List? ?? const [])
+                          .whereType<Map>()
+                          .map((item) {
+                            final name = '${item['name'] ?? ''}'.trim();
+                            final role = '${item['role'] ?? ''}'.trim();
+                            return role.isNotEmpty && role != 'Member'
+                                ? '$name · $role'
+                                : name;
+                          })
+                          .where((value) => value.isNotEmpty)
+                          .join(' · ');
                   return ListTile(
-                    leading: UserProfileAvatar(userId: id, name: profileDisplayName(profile, 'Unknown person'), radius: 20),
-                    title: CommunityMemberName(userId: id, fallback: 'Unknown person'),
-                    subtitle: Text(departments.isNotEmpty ? departments : profile['administrator'] == true ? 'Administrator' : 'Production member'),
+                    leading: UserProfileAvatar(
+                      userId: id,
+                      name: profileDisplayName(profile, 'Unknown person'),
+                      radius: 20,
+                    ),
+                    title: CommunityMemberName(
+                      userId: id,
+                      fallback: 'Unknown person',
+                    ),
+                    subtitle: Text(
+                      departments.isNotEmpty
+                          ? departments
+                          : profile['administrator'] == true
+                          ? 'Administrator'
+                          : 'Production member',
+                    ),
                   );
                 },
               ),

@@ -154,7 +154,7 @@ const esc = (v) => BRM.escape(String(v ?? "")),
     people.get(String(id)) || { displayName: "Unknown person", photoURL: "" },
   personAvatar = (id, size = "small") => {
     const profile = person(id);
-    return BRM.avatar(profile.displayName, profile.photoURL, size);
+    return BRM.avatar(profile.displayName, profile.photoURL || (profile.photoFileID ? `drivefile:${profile.photoFileID}` : ""), size);
   },
   roomAvatar = (room, className = "conversation-dot") => {
     const color = roomColor(room),
@@ -918,40 +918,22 @@ async function discoverSpaces() {
 async function openAccessCenter() {
   try {
     const data=await communityAccessRequest({action:'adminState'}), assignments=new Map((data.assignments||[]).map(item=>[item.userId||item.id,item])), pending=(data.requests||[]).filter(item=>item.status==='Pending'), personMap=new Map((data.people||[]).map(item=>[item.id,item]));
-    const modal=BRM.openModal(`<span class="eyebrow">PEOPLE & ACCESS</span><h2>Community access centre</h2><p>Assign what a person does; Community Spaces update automatically.</p><div class="access-admin-layout"><section><h3>${pending.length} pending request${pending.length===1?'':'s'}</h3><div class="data-list">${pending.map(item=>{const person=personMap.get(item.userId)||{name:'Member'},position=data.positions.find(value=>value.key===item.positionKey);return `<article class="data-card"><div class="data-card-main">${BRM.avatar(person.name,person.photoURL,'small')}<strong>${esc(person.name)}</strong><p>${esc(position?.label||item.spaceKey)}${item.reason?` · ${esc(item.reason)}`:''}</p></div><div><button class="button button-primary button-small" data-review="${item.id}" data-decision="Approved">Approve</button> <button class="button button-danger button-small" data-review="${item.id}" data-decision="Declined">Decline</button></div></article>`}).join('')||'<p class="field-hint">No requests are waiting.</p>'}</div></section><section><h3>Assign positions</h3><div class="field"><label>Person</label><select data-access-person>${data.people.map(person=>`<option value="${esc(person.id)}">${esc(person.name)}</option>`).join('')}</select></div><div class="member-picker" data-position-picker></div><div class="form-actions"><button class="button button-primary" data-save-access>Save involvement</button></div></section></div>`,{wide:true});
+    const modal=BRM.openModal(`<span class="eyebrow">PEOPLE & ACCESS</span><h2>Community access centre</h2><p>Assign what a person does; Community Spaces update automatically.</p><div class="access-admin-layout"><section><h3>${pending.length} pending request${pending.length===1?'':'s'}</h3><div class="data-list">${pending.map(item=>{const person=personMap.get(item.userId)||{name:'Member'},position=data.positions.find(value=>value.key===item.positionKey),photo=person.photoURL||(person.photoFileID?`drivefile:${person.photoFileID}`:'');return `<article class="data-card"><div class="data-card-main">${BRM.avatar(person.name,photo,'small')}<strong>${esc(person.name)}</strong><p>${esc(position?.label||item.spaceKey)}${item.reason?` · ${esc(item.reason)}`:''}</p></div><div><button class="button button-primary button-small" data-review="${item.id}" data-decision="Approved">Approve</button> <button class="button button-danger button-small" data-review="${item.id}" data-decision="Declined">Decline</button></div></article>`}).join('')||'<p class="field-hint">No requests are waiting.</p>'}</div></section><section><h3>Assign positions</h3><div class="field"><label>Person</label><select data-access-person>${data.people.map(person=>`<option value="${esc(person.id)}">${esc(person.fullName||person.name)} (@${esc(person.username)})</option>`).join('')}</select></div><div class="member-picker" data-position-picker></div><div class="form-actions"><button class="button button-primary" data-save-access>Save involvement</button></div></section></div>`,{wide:true});
+    BRM.hydrateProfilePhotos(modal);
     const select=modal.querySelector('[data-access-person]'),picker=modal.querySelector('[data-position-picker]'),render=()=>{const selected=new Set(assignments.get(select.value)?.positionKeys||[]);picker.innerHTML=data.positions.map(item=>`<label class="checkbox-row"><input type="checkbox" value="${esc(item.key)}" ${selected.has(item.key)?'checked':''}> ${esc(item.label)}</label>`).join('')};select.onchange=render;render();
     modal.querySelector('[data-save-access]').onclick=async event=>{event.currentTarget.disabled=true;try{const prior=assignments.get(select.value)||{};await communityAccessRequest({action:'saveInvolvement',userId:select.value,positionKeys:[...picker.querySelectorAll('input:checked')].map(input=>input.value),spaceKeys:prior.spaceKeys||[],blockedSpaceKeys:prior.blockedSpaceKeys||[]});BRM.toast('Involvement saved and Spaces synchronized.','success');modal.closeModal();}catch(error){event.currentTarget.disabled=false;BRM.toast(error.message,'error')}};
     modal.querySelectorAll('[data-review]').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await communityAccessRequest({action:'review',requestId:button.dataset.review,decision:button.dataset.decision});button.closest('.data-card').remove();BRM.toast(`Request ${button.dataset.decision.toLowerCase()}.`,'success');}catch(error){button.disabled=false;BRM.toast(error.message,'error')}});
   } catch(error) { BRM.toast(error.message,'error'); }
 }
 async function manageSpaces() {
-  const [profilesSnap, usersSnap, assignmentSnap] = await Promise.all([
-      getDocs(collection(db, "profiles")),
-      getDocs(collection(db, "users")),
-      getDocs(
-        collection(db, "productions", productionId, "communicationAssignments"),
-      ),
-    ]),
-    profiles = profilesSnap.docs.map((d) => d.data()),
-    names = new Map(
-      profiles.map((p) => [
-        p.userID || p.UserID,
-        p.displayName || p.DisplayName,
-      ]),
-    ),
-    users = usersSnap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter(
-        (u) =>
-          String(u.status ?? u.Status).toLowerCase() === "active" &&
-          String(u.isFullAdmin ?? u.IsFullAdmin).toLowerCase() !== "true",
-      ),
+  const data = await communityAccessRequest({ action: "adminState" }),
+    users = (data.people || []).filter(u => u.id !== userId),
     assignmentMap = new Map(
-      assignmentSnap.docs.map((d) => [
-        d.id,
+      (data.assignments || []).map((entry) => [
+        entry.userId || entry.id,
         [
           ...new Set(
-            (d.data().spaceKeys || []).map((key) =>
+            (entry.spaceKeys || []).map((key) =>
               key.startsWith("musical-theatre-")
                 ? "musical-theatre"
                 : key.startsWith("theatre-arts-")
@@ -976,23 +958,35 @@ async function manageSpaces() {
       ["tickets-box-office", "Tickets & Box Office"],
       ["wardrobe-crew", "Wardrobe Crew"],
     ];
-  let selected = fixed[0][0];
+  let selected = fixed[0][0], nameMode = "full";
   const modal = BRM.openModal(
-      `<span class="eyebrow">Automatic membership</span><h2>Manage class & ensemble Spaces</h2><p>Production Team and department-based Ensemble Spaces follow People & Access automatically. Use this for classes, choreography and featured dancers.</p><div class="field"><label>Space</label><select data-space>${fixed.map(([id, title]) => `<option value="${id}">${title}</option>`).join("")}</select></div><div class="member-picker" data-members></div><div class="form-actions"><button class="button button-primary" data-save>Save membership</button></div>`,
+      `<span class="eyebrow">Automatic membership</span><h2>Manage class & ensemble Spaces</h2><p>Choose a Space, then select its members. Profile pictures and names come directly from People & Access.</p><div class="field"><label>Space</label><select data-space>${fixed.map(([id, title]) => `<option value="${id}">${title}</option>`).join("")}</select></div><div class="membership-name-toggle" role="group" aria-label="Member name display"><button type="button" class="button button-small button-primary" data-name-mode="full">Full names</button><button type="button" class="button button-small button-ghost" data-name-mode="username">Usernames</button></div><div class="member-picker membership-people" data-members></div><div class="form-actions"><button class="button button-primary" data-save>Save membership</button></div>`,
       { wide: true },
     ),
     render = () => {
       modal.querySelector("[data-members]").innerHTML = users
         .map(
-          (u) =>
-            `<label class="checkbox-row"><input type="checkbox" value="${esc(u.id)}" ${(assignmentMap.get(u.id) || []).includes(selected) ? "checked" : ""}> ${esc(names.get(u.id) || u.username)}</label>`,
+          (u) => {
+            const display = nameMode === "username" ? u.username : u.fullName;
+            const photo = u.photoURL || (u.photoFileID ? `drivefile:${u.photoFileID}` : "");
+            return `<label class="checkbox-row membership-person">${BRM.avatar(u.fullName || u.username, photo, "small")}<span><strong>${esc(display || u.username || u.id)}</strong><small>${esc(nameMode === "username" ? u.fullName : `@${u.username}`)}</small></span><input type="checkbox" value="${esc(u.id)}" ${(assignmentMap.get(u.id) || []).includes(selected) ? "checked" : ""}></label>`;
+          },
         )
         .join("");
+      BRM.hydrateProfilePhotos(modal);
     };
   modal.querySelector("[data-space]").onchange = (e) => {
     selected = e.target.value;
     render();
   };
+  modal.querySelectorAll("[data-name-mode]").forEach(button => button.onclick = () => {
+    nameMode = button.dataset.nameMode;
+    modal.querySelectorAll("[data-name-mode]").forEach(item => {
+      item.classList.toggle("button-primary", item === button);
+      item.classList.toggle("button-ghost", item !== button);
+    });
+    render();
+  });
   modal.querySelector("[data-save]").onclick = async () => {
     const chosen = new Set(
         [...modal.querySelectorAll("[data-members] input:checked")].map(
