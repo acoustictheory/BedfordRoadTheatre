@@ -2102,6 +2102,29 @@ Future<void> editConversation(
   var lightText = existing?['lightForeground'] != false;
   var groupBackdrop = '${existing?['groupBackdrop'] ?? ''}';
   var showBackdropHint = existing?['showBackdropHint'] != false;
+  var showUsernames = false;
+  final selectedMembers = <String>{
+    ...(existing?['memberIds'] as List? ?? const []).map((value) => '$value'),
+    userId,
+  };
+  final editableMembership =
+      existing != null &&
+      existing['type'] != 'direct' &&
+      existing['sourceType'] != 'department';
+  final memberProfiles = editableMembership
+      ? (await FirebaseFirestore.instance
+                .collection('communityMembers')
+                .where('status', isEqualTo: 'Active')
+                .get())
+            .docs
+            .map((document) => {'id': document.id, ...document.data()})
+            .toList()
+      : <Map<String, dynamic>>[];
+  memberProfiles.sort(
+    (a, b) => '${a['displayName'] ?? a['username'] ?? ''}'.compareTo(
+      '${b['displayName'] ?? b['username'] ?? ''}',
+    ),
+  );
   final saved = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -2258,6 +2281,94 @@ Future<void> editConversation(
                   if (colour != null) setDialogState(() => secondary = colour);
                 },
               ),
+              if (existing != null) ...[
+                const Divider(height: 30),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Members (${selectedMembers.length})',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    editableMembership
+                        ? existing['autoManaged'] == true
+                              ? 'Changes update the matching People & Access assignment.'
+                              : 'Add or remove members. Previous messages remain in the group history.'
+                        : 'This department Space follows People & Access department assignments.',
+                  ),
+                ),
+                if (editableMembership) ...[
+                  const SizedBox(height: 10),
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(value: false, label: Text('Full names')),
+                      ButtonSegment(value: true, label: Text('Usernames')),
+                    ],
+                    selected: {showUsernames},
+                    onSelectionChanged: (selection) =>
+                        setDialogState(() => showUsernames = selection.first),
+                  ),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => setDialogState(() {
+                          selectedMembers.addAll(
+                            memberProfiles.map((person) => '${person['id']}'),
+                          );
+                        }),
+                        child: const Text('Select all'),
+                      ),
+                      TextButton(
+                        onPressed: () => setDialogState(() {
+                          selectedMembers
+                            ..clear()
+                            ..add(userId);
+                        }),
+                        child: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 360),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: memberProfiles.map((person) {
+                        final id = '${person['id']}',
+                            fullName =
+                                '${person['displayName'] ?? person['fullName'] ?? person['username'] ?? id}',
+                            username = '${person['username'] ?? id}';
+                        return CheckboxListTile(
+                          dense: true,
+                          value: selectedMembers.contains(id),
+                          secondary: UserProfileAvatar(
+                            userId: id,
+                            name: fullName,
+                          ),
+                          title: Text(showUsernames ? username : fullName),
+                          subtitle: Text(
+                            showUsernames ? fullName : '@$username',
+                          ),
+                          enabled: id != userId,
+                          onChanged: id == userId
+                              ? null
+                              : (checked) => setDialogState(() {
+                                  checked == true
+                                      ? selectedMembers.add(id)
+                                      : selectedMembers.remove(id);
+                                }),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ],
             ],
           ),
         ),
@@ -2293,6 +2404,9 @@ Future<void> editConversation(
     'status': 'Active',
     'updatedAt': FieldValue.serverTimestamp(),
   };
+  if (editableMembership && existing['autoManaged'] != true) {
+    values['memberIds'] = selectedMembers.toList();
+  }
   if (existing == null) {
     values.addAll({
       'type': 'custom',
@@ -2306,6 +2420,32 @@ Future<void> editConversation(
       values,
       SetOptions(merge: true),
     );
+    if (editableMembership &&
+        existing['autoManaged'] == true &&
+        existing['sourceType'] == 'assignment') {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      final segments = reference.path.split('/');
+      final productionId = segments.length > 1 ? segments[1] : '';
+      if (token == null || productionId.isEmpty) {
+        throw Exception('Sign in again to update membership.');
+      }
+      final response = await http.post(
+        Uri.parse(communityAccessEndpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'productionId': productionId,
+          'action': 'saveSpaceMembership',
+          'spaceKey': existing['sourceId'],
+          'memberIds': selectedMembers.toList(),
+        }),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('The group appearance saved, but membership did not.');
+      }
+    }
   }
 }
 

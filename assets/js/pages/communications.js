@@ -680,9 +680,13 @@ async function optimizeGroupImage(file) {
 async function customizeRoom() {
   if (!activeRoom || !BRM.isAdmin()) return;
   let pendingImage = activeRoom.groupImage || "",
-    removeImage = false;
+    removeImage = false,
+    nameMode = "full";
+  const selectedMembers = new Set(activeRoom.memberIds || []),
+    editableMembership = activeRoom.sourceType !== "department" && activeRoom.type !== "direct";
+  selectedMembers.add(userId);
   const modal = BRM.openModal(
-    `<span class="eyebrow">Group theme studio</span><h2>${esc(activeRoom.title)}</h2><p>Build a recognizable visual identity for this conversation.</p><div class="group-aesthetic-editor"><div class="group-theme-preview" data-theme-preview data-group-theme="${esc(activeRoom.groupTheme || "aurora")}" style="--room-accent:${roomColor(activeRoom)};--room-secondary:${roomSecondaryColor(activeRoom)}"><div class="group-picture-preview" data-group-preview>${pendingImage ? `<img src="${esc(pendingImage)}" alt="">` : roomIcon(activeRoom)}</div><strong>${esc(activeRoom.title)}</strong><small>Group preview</small></div><div class="group-theme-fields"><div class="grid grid-2"><div class="field"><label>Primary colour</label><input type="color" value="${roomColor(activeRoom)}" data-group-color></div><div class="field"><label>Secondary colour</label><input type="color" value="${roomSecondaryColor(activeRoom)}" data-group-secondary></div></div><div class="grid grid-2"><div class="field"><label>Theme style</label><select data-group-theme><option value="aurora">Aurora glow</option><option value="spotlight">Stage spotlight</option><option value="velvet">Velvet curtain</option><option value="solid">Clean colour</option></select></div><div class="field"><label>Icon identifier</label><input data-group-icon maxlength="4" value="${esc(activeRoom.groupIcon || roomIcon(activeRoom))}" placeholder="🎭"></div></div><div class="field"><label>Shared conversation-card backdrop</label><select data-group-backdrop><option value="">Colour theme only</option>${chatBackgrounds.filter(item => item[0] !== "room").map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}</select></div><label class="checkbox-row"><input type="checkbox" data-show-backdrop ${activeRoom.showBackdropHint !== false ? "checked" : ""}> Show a subtle backdrop hint on the Community card for everyone</label><small class="field-hint">Turn this off if illustrated cards become distracting. Personal backgrounds inside chats remain private.</small><div class="group-icon-choices" data-icon-choices>${["🎭", "🎤", "🎼", "💃", "✨", "🎬", "📋", "💡", "🎧", "🎨", "👗", "📣"].map((icon) => `<button type="button" data-icon="${icon}">${icon}</button>`).join("")}</div><div class="form-actions"><label class="button button-secondary">Choose picture<input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" data-group-image></label><button class="button button-ghost" type="button" data-remove-picture>Use icon instead</button></div><small class="field-hint">Pictures are automatically cropped and optimized to 320 × 320.</small></div></div><div class="form-actions"><button class="button button-primary" data-save-aesthetic>Save group theme</button></div>`,
+    `<span class="eyebrow">Edit group</span><h2>${esc(activeRoom.title)}</h2><p>Manage appearance and membership together.</p><div class="group-aesthetic-editor"><div class="group-theme-preview" data-theme-preview data-group-theme="${esc(activeRoom.groupTheme || "aurora")}" style="--room-accent:${roomColor(activeRoom)};--room-secondary:${roomSecondaryColor(activeRoom)}"><div class="group-picture-preview" data-group-preview>${pendingImage ? `<img src="${esc(pendingImage)}" alt="">` : roomIcon(activeRoom)}</div><strong>${esc(activeRoom.title)}</strong><small>Group preview</small></div><div class="group-theme-fields"><div class="grid grid-2"><div class="field"><label>Primary colour</label><input type="color" value="${roomColor(activeRoom)}" data-group-color></div><div class="field"><label>Secondary colour</label><input type="color" value="${roomSecondaryColor(activeRoom)}" data-group-secondary></div></div><div class="grid grid-2"><div class="field"><label>Theme style</label><select data-group-theme><option value="aurora">Aurora glow</option><option value="spotlight">Stage spotlight</option><option value="velvet">Velvet curtain</option><option value="solid">Clean colour</option></select></div><div class="field"><label>Icon identifier</label><input data-group-icon maxlength="4" value="${esc(activeRoom.groupIcon || roomIcon(activeRoom))}" placeholder="🎭"></div></div><div class="field"><label>Shared conversation-card backdrop</label><select data-group-backdrop><option value="">Colour theme only</option>${chatBackgrounds.filter(item => item[0] !== "room").map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}</select></div><label class="checkbox-row"><input type="checkbox" data-show-backdrop ${activeRoom.showBackdropHint !== false ? "checked" : ""}> Show a subtle backdrop hint on the Community card for everyone</label><small class="field-hint">Turn this off if illustrated cards become distracting. Personal backgrounds inside chats remain private.</small><div class="group-icon-choices" data-icon-choices>${["🎭", "🎤", "🎼", "💃", "✨", "🎬", "📋", "💡", "🎧", "🎨", "👗", "📣"].map((icon) => `<button type="button" data-icon="${icon}">${icon}</button>`).join("")}</div><div class="form-actions"><label class="button button-secondary">Choose picture<input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" data-group-image></label><button class="button button-ghost" type="button" data-remove-picture>Use icon instead</button></div><small class="field-hint">Pictures are automatically cropped and optimized to 320 × 320.</small></div></div><section class="group-member-editor"><div><h3>Members <span data-member-count></span></h3><p class="field-hint">${editableMembership ? activeRoom.autoManaged ? "Changes update the matching People & Access assignment." : "Added members receive access immediately. Previous messages are preserved when someone is removed." : "This department Space follows People & Access. Change its department assignments there."}</p></div>${editableMembership ? `<div class="membership-name-toggle"><button type="button" class="button button-small button-primary" data-edit-name-mode="full">Full names</button><button type="button" class="button button-small button-ghost" data-edit-name-mode="username">Usernames</button><button type="button" class="button button-small button-ghost" data-select-all>Select all</button><button type="button" class="button button-small button-ghost" data-clear-members>Clear</button></div><div class="membership-people" data-group-members></div>` : ""}</section><div class="form-actions"><button class="button button-primary" data-save-aesthetic>Save group</button></div>`,
     { wide: true },
   );
   const preview = modal.querySelector("[data-group-preview]"),
@@ -693,8 +697,26 @@ async function customizeRoom() {
     backdrop = modal.querySelector("[data-group-backdrop]"),
     showBackdrop = modal.querySelector("[data-show-backdrop]"),
     icon = modal.querySelector("[data-group-icon]");
+  const renderMembers = () => {
+    const host = modal.querySelector("[data-group-members]");
+    modal.querySelector("[data-member-count]").textContent = `(${selectedMembers.size})`;
+    if (!host) return;
+    host.innerHTML = [...people.entries()].filter(([, profile]) => profile.status !== "Disabled").sort((a,b)=>(a[1].displayName||a[1].username||"").localeCompare(b[1].displayName||b[1].username||"")).map(([id, profile]) => {
+      const fullName = profile.displayName || profile.fullName || profile.username || id,
+        username = profile.username || id,
+        photo = profile.photoURL || (profile.photoFileID ? `drivefile:${profile.photoFileID}` : ""),
+        locked = id === userId;
+      return `<label class="checkbox-row membership-person">${BRM.avatar(fullName, photo, "small")}<span><strong>${esc(nameMode === "username" ? username : fullName)}</strong><small>${esc(nameMode === "username" ? fullName : `@${username}`)}</small></span><input type="checkbox" value="${esc(id)}" ${selectedMembers.has(id) ? "checked" : ""} ${locked ? "disabled" : ""}></label>`;
+    }).join("");
+    host.querySelectorAll("input").forEach(input => input.onchange = () => { input.checked ? selectedMembers.add(input.value) : selectedMembers.delete(input.value); modal.querySelector("[data-member-count]").textContent = `(${selectedMembers.size})`; });
+    BRM.hydrateProfilePhotos(host);
+  };
   theme.value = activeRoom.groupTheme || "aurora";
   backdrop.value = activeRoom.groupBackdrop || "";
+  renderMembers();
+  modal.querySelectorAll("[data-edit-name-mode]").forEach(button => button.onclick=()=>{nameMode=button.dataset.editNameMode;modal.querySelectorAll("[data-edit-name-mode]").forEach(item=>{item.classList.toggle("button-primary",item===button);item.classList.toggle("button-ghost",item!==button)});renderMembers();});
+  modal.querySelector("[data-select-all]")?.addEventListener("click",()=>{[...people.keys()].forEach(id=>selectedMembers.add(id));renderMembers();});
+  modal.querySelector("[data-clear-members]")?.addEventListener("click",()=>{selectedMembers.clear();selectedMembers.add(userId);renderMembers();});
   const updatePreview = () => {
     themePreview.style.setProperty("--room-accent", color.value);
     themePreview.style.setProperty("--room-secondary", secondary.value);
@@ -740,6 +762,7 @@ async function customizeRoom() {
     };
     if (pendingImage) changes.groupImage = pendingImage;
     else if (removeImage || activeRoom.groupImage) changes.groupImage = "";
+    if (editableMembership && !activeRoom.autoManaged) changes.memberIds = [...selectedMembers];
     await updateDoc(
       doc(
         db,
@@ -750,6 +773,9 @@ async function customizeRoom() {
       ),
       changes,
     );
+    if (editableMembership && activeRoom.autoManaged && activeRoom.sourceType === "assignment") {
+      await communityAccessRequest({action:"saveSpaceMembership",spaceKey:activeRoom.sourceId,memberIds:[...selectedMembers]});
+    }
     activeRoom = { ...activeRoom, ...changes };
     openRoom(activeRoom);
     modal.closeModal();
