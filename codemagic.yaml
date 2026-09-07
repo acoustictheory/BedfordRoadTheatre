@@ -42,6 +42,26 @@ workflows:
       - name: Get Flutter packages
         script: flutter pub get
 
+      - name: Validate Swift package manifests
+        script: |
+          set -euo pipefail
+          MANIFEST_ROOTS=("$CM_BUILD_DIR/mobile-app/ios" "$FLUTTER_ROOT/.pub-cache" "$HOME/.pub-cache")
+          for root in "${MANIFEST_ROOTS[@]}"; do
+            [ -d "$root" ] || continue
+            while IFS= read -r -d '' manifest; do
+              first_line="$(head -n 1 "$manifest" || true)"
+              if [[ "$first_line" != *"swift-tools-version:"* ]]; then
+                echo "Repairing missing Swift tools declaration: $manifest"
+                temporary_manifest="${manifest}.codemagic-tmp"
+                {
+                  echo '// swift-tools-version: 5.9'
+                  cat "$manifest"
+                } > "$temporary_manifest"
+                mv "$temporary_manifest" "$manifest"
+              fi
+            done < <(find "$root" -type f -iname 'Package.swift' -print0)
+          done
+
       - name: Install CocoaPods dependencies when present
         script: |
           set -euo pipefail
