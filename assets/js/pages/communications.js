@@ -825,6 +825,38 @@ async function createRoom() {
     BRM.toast("Conversation created.");
   };
 }
+async function startPrivateMessage() {
+  try {
+    const request = async (body) => {
+      const response = await fetch(BRM_CONFIG.FIREBASE_COMMUNICATION_DIRECT_URL, {
+        method: "POST",
+        headers: {"Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser.getIdToken()}`},
+        body: JSON.stringify({ productionId, ...body }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Private messaging is unavailable.");
+      return result;
+    };
+    const { targets } = await request({ action: "targets" });
+    if (!targets?.length) throw new Error("No available person was found for a private message.");
+    const modal = BRM.openModal(
+      `<span class="eyebrow">PRIVATE MESSAGE</span><h2>${BRM.isAdmin() ? "Choose a member" : "Message an administrator"}</h2><p>${BRM.isAdmin() ? "You can privately message any active member." : "This conversation will only include you and the administrator you choose."}</p><div class="private-message-targets">${targets.map(person => `<button type="button" class="button button-ghost" data-private-target="${esc(person.id)}"><strong>${esc(person.name)}</strong>${person.administrator ? "<small>Administrator</small>" : ""}</button>`).join("")}</div>`,
+    );
+    modal.querySelectorAll("[data-private-target]").forEach(button => {
+      button.onclick = async () => {
+        button.disabled = true;
+        try {
+          const result = await request({ action: "open", targetUserId: button.dataset.privateTarget });
+          modal.closeModal();
+          const room = { id: result.conversationId, ...result.conversation };
+          rooms = [room, ...rooms.filter(item => item.id !== room.id)];
+          renderRooms();
+          openRoom(room);
+        } catch (error) { button.disabled = false; BRM.toast(error.message, "error"); }
+      };
+    });
+  } catch (error) { BRM.toast(error.message, "error"); }
+}
 async function reconcile(assignments) {
   const response = await fetch(BRM_CONFIG.FIREBASE_COMMUNICATION_GROUPS_URL, {
       method: "POST",
@@ -1022,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", () =>
       })
       .catch(() => {});
     document.querySelector("#app-main").innerHTML =
-      `<header class="community-header"><div><span class="eyebrow">BEDFORD COMMUNITY</span><h1>Community Messages</h1><p>${BRM.isAdmin() ? "Admin view · all assigned Spaces" : "Spaces and administrator conversations"}</p></div><div class="community-actions"><button class="icon-button" data-settings title="Notification settings">⚙</button>${BRM.isAdmin() ? '<button class="icon-button" data-manage title="Manage automatic Spaces">♚</button><button class="icon-button" data-new title="New conversation">＋</button>' : ""}</div></header><section class="panel communications" data-communications><aside class="conversation-list"><div class="conversation-list-head"><div class="unread-overview"><span class="unread-orbit">✓</span><div><strong data-unread-total>Inbox is caught up</strong><small>Official messages for your production</small></div></div><input class="search-input" data-room-search placeholder="Search Spaces and conversations"></div><div data-room-list></div></aside><section class="chat-pane"><header class="chat-head"><button class="button button-ghost button-small comm-mobile-back" data-back>‹ Messages</button><span class="chat-avatar" data-chat-avatar>🎭</span><div class="chat-identity"><strong data-chat-title>Select a conversation</strong><small data-chat-subtitle style="display:block"></small></div><input class="chat-message-search" data-message-search type="search" placeholder="Search messages" aria-label="Search this conversation">${BRM.isAdmin() ? '<button class="icon-button chat-aesthetic-button" data-customize-room title="Edit group theme, icon and picture" disabled>✦</button>' : ""}</header><div class="pinned-message hidden" data-pinned-message></div><div class="message-stream" data-messages><div class="empty-chat"><span class="empty-chat-icon">●</span><strong>Your Bedford community</strong><small>Choose a Space to begin.</small></div></div><form class="composer"><div class="typing-indicator" data-typing></div><div class="reply-preview hidden" data-reply-preview></div><button type="button" class="composer-plus" title="Attachments coming next">＋</button><textarea name="message" maxlength="4000" placeholder="Message this Space…" required></textarea><button class="send-button" aria-label="Send">➤</button></form></section></section>`;
+      `<header class="community-header"><div><span class="eyebrow">BEDFORD COMMUNITY</span><h1>Community Messages</h1><p>${BRM.isAdmin() ? "Admin view · all assigned Spaces" : "Spaces and administrator conversations"}</p></div><div class="community-actions"><button class="icon-button" data-settings title="Notification settings">⚙</button><button class="icon-button" data-private-message title="${BRM.isAdmin() ? "Private message a member" : "Message an administrator"}">✉</button>${BRM.isAdmin() ? '<button class="icon-button" data-manage title="Manage automatic Spaces">♚</button><button class="icon-button" data-new title="New group conversation">＋</button>' : ""}</div></header><section class="panel communications" data-communications><aside class="conversation-list"><div class="conversation-list-head"><div class="unread-overview"><span class="unread-orbit">✓</span><div><strong data-unread-total>Inbox is caught up</strong><small>Official messages for your production</small></div></div><input class="search-input" data-room-search placeholder="Search Spaces and conversations"></div><div data-room-list></div></aside><section class="chat-pane"><header class="chat-head"><button class="button button-ghost button-small comm-mobile-back" data-back>‹ Messages</button><span class="chat-avatar" data-chat-avatar>🎭</span><div class="chat-identity"><strong data-chat-title>Select a conversation</strong><small data-chat-subtitle style="display:block"></small></div><input class="chat-message-search" data-message-search type="search" placeholder="Search messages" aria-label="Search this conversation">${BRM.isAdmin() ? '<button class="icon-button chat-aesthetic-button" data-customize-room title="Edit group theme, icon and picture" disabled>✦</button>' : ""}</header><div class="pinned-message hidden" data-pinned-message></div><div class="message-stream" data-messages><div class="empty-chat"><span class="empty-chat-icon">●</span><strong>Your Bedford community</strong><small>Choose a Space to begin.</small></div></div><form class="composer"><div class="typing-indicator" data-typing></div><div class="reply-preview hidden" data-reply-preview></div><button type="button" class="composer-plus" title="Attachments coming next">＋</button><textarea name="message" maxlength="4000" placeholder="Message this Space…" required></textarea><button class="send-button" aria-label="Send">➤</button></form></section></section>`;
     document.querySelector("[data-message-search]").insertAdjacentHTML("afterend", '<button class="icon-button chat-background-button" data-chat-background title="Choose your chat background">▦</button>');
     document.querySelector(".composer").onsubmit = send;
     document.querySelector('.composer textarea[name="message"]').oninput =
@@ -1032,6 +1064,7 @@ document.addEventListener("DOMContentLoaded", () =>
         .querySelector("[data-communications]")
         .classList.remove("chat-open");
     document.querySelector("[data-settings]").onclick = settings;
+    document.querySelector("[data-private-message]").onclick = startPrivateMessage;
     document.querySelector("[data-chat-background]").onclick = chooseChatBackground;
     document.querySelector("[data-room-search]").oninput = renderRooms;
     document.querySelector("[data-message-search]").oninput = (event) => {

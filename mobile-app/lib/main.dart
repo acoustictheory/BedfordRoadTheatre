@@ -28,6 +28,8 @@ const deviceEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/registerCommunicationDevice';
 const appSignInEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/legacyAppSignIn';
+const directMessageEndpoint =
+    'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/openCommunicationDirect';
 const androidFirebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyB5eWavkOwFDop33rAZM0E2NLOQ_JxhYiY',
   appId: '1:499470162310:android:c6e16ca9b51cf73c37b407',
@@ -2393,6 +2395,128 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
     super.dispose();
   }
 
+  Future<void> openPrivateMessage() async {
+    try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (token == null) throw Exception('Sign in again to continue.');
+      final targetsResponse = await http.post(
+        Uri.parse(directMessageEndpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'productionId': widget.portal.productionId,
+          'action': 'targets',
+        }),
+      );
+      final targetsResult =
+          jsonDecode(targetsResponse.body) as Map<String, dynamic>;
+      if (targetsResponse.statusCode < 200 ||
+          targetsResponse.statusCode >= 300 ||
+          targetsResult['success'] != true) {
+        throw Exception(
+          '${targetsResult['error'] ?? 'Private messages are unavailable.'}',
+        );
+      }
+      final targets = (targetsResult['targets'] as List? ?? const [])
+          .whereType<Map>()
+          .map((value) => Map<String, dynamic>.from(value))
+          .toList();
+      if (!mounted) return;
+      if (targets.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No available person was found for a private message.',
+            ),
+          ),
+        );
+        return;
+      }
+      final target = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(
+                  widget.portal.admin
+                      ? 'New private message'
+                      : 'Message an administrator',
+                ),
+                subtitle: Text(
+                  widget.portal.admin ? 'Choose any active member.' : 'Your message is private between you and this administrator.',
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: targets.length,
+                  itemBuilder: (_, index) {
+                    final person = targets[index];
+                    return ListTile(
+                      leading: UserProfileAvatar(
+                        userId: '${person['id'] ?? ''}',
+                        name: '${person['name'] ?? 'Member'}',
+                      ),
+                      title: Text('${person['name'] ?? 'Member'}'),
+                      subtitle: person['administrator'] == true
+                          ? const Text('Administrator')
+                          : null,
+                      onTap: () => Navigator.pop(sheetContext, person),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (target == null || !mounted) return;
+      final response = await http.post(
+        Uri.parse(directMessageEndpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'productionId': widget.portal.productionId,
+          'targetUserId': target['id'],
+          'action': 'open',
+        }),
+      );
+      final result = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300 ||
+          result['success'] != true) {
+        throw Exception(
+          '${result['error'] ?? 'The private conversation could not open.'}',
+        );
+      }
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            widget.portal,
+            '${result['conversationId']}',
+            Map<String, dynamic>.from(result['conversation'] as Map),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final collection = FirebaseFirestore.instance.collection(
@@ -2466,6 +2590,14 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                       selected: unreadOnly,
                       onSelected: (value) => setState(() => unreadOnly = value),
                     ),
+                    const SizedBox(width: 5),
+                    IconButton.filledTonal(
+                      onPressed: openPrivateMessage,
+                      tooltip: widget.portal.admin
+                          ? 'Private message a member'
+                          : 'Message an administrator',
+                      icon: const Icon(Icons.person_add_alt_1),
+                    ),
                     if (widget.portal.admin) ...[
                       const SizedBox(width: 5),
                       IconButton.filled(
@@ -2474,7 +2606,7 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                           collection,
                           userId: widget.portal.userId,
                         ),
-                        tooltip: 'Create conversation',
+                        tooltip: 'Create group conversation',
                         icon: const Icon(Icons.add_comment),
                       ),
                     ],
@@ -3369,6 +3501,7 @@ class _ChatState extends State<ChatScreen> {
                           ),
                         ),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (i['replyTo'] is Map)

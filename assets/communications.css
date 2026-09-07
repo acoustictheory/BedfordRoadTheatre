@@ -869,3 +869,4 @@
     padding-top: 16px;
   }
 }
+.private-message-targets{display:grid;gap:.6rem;max-height:min(55vh,32rem);overflow:auto;margin-top:1rem}.private-message-targets .button{display:flex;align-items:center;justify-content:space-between;text-align:left}.private-message-targets small{opacity:.7;margin-left:1rem}

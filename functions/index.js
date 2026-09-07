@@ -364,6 +364,42 @@ export const reconcileCommunicationGroups = onRequest({region:'northamerica-nort
   try{const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,''),decoded=await getAuth().verifyIdToken(bearer),user=(await db.collection('users').doc(principalId(decoded)).get()).data();if(!isFullAdministrator(user))throw new Error('Administrator access required.');const productionId=clean(request.body?.productionId,120);if(!productionId)throw new Error('Production is required.');if(Array.isArray(request.body?.assignments)){const batch=db.batch();for(const item of request.body.assignments.slice(0,500)){const uid=clean(item.userId,120);if(uid)batch.set(db.collection('productions').doc(productionId).collection('communicationAssignments').doc(uid),{userId:uid,spaceKeys:validCommunicationSpaceKeys(item.spaceKeys),updatedAt:FieldValue.serverTimestamp()},{merge:true});}await batch.commit();}response.json({success:true,...await reconcileCommunicationSpaces(productionId),fixedSpaces:fixedCommunicationSpaces.map(([id,title])=>({id,title}))});}catch(error){response.status(403).json({success:false,error:error.message});}
 });
 
+export const openCommunicationDirect = onRequest({region:'northamerica-northeast2',timeoutSeconds:30,memory:'256MiB',cors:false},async(request,response)=>{
+  appCors(request,response);
+  response.set('Cache-Control','no-store');
+  if(request.method==='OPTIONS'){response.status(204).send('');return;}
+  if(request.method!=='POST'){response.status(405).json({success:false,error:'POST required.'});return;}
+  try {
+    const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,'');
+    if(!bearer) throw new Error('Sign in is required.');
+    const decoded=await getAuth().verifyIdToken(bearer), callerId=principalId(decoded);
+    const callerSnap=await db.collection('users').doc(callerId).get(), caller=callerSnap.data();
+    if(!isActiveUser(caller)) throw new Error('Active membership is required.');
+    const callerAdmin=isFullAdministrator(caller), usersSnap=await db.collection('users').get();
+    const activeUsers=usersSnap.docs.filter(document=>isActiveUser(document.data())&&document.id!==callerId);
+    const allowedTargets=callerAdmin?activeUsers:activeUsers.filter(document=>isFullAdministrator(document.data()));
+    const profileSnaps=await Promise.all(allowedTargets.map(document=>db.collection('profiles').doc(document.id).get()));
+    const targetRows=allowedTargets.map((document,index)=>{
+      const user=document.data(), profile=profileSnaps[index].data()||{};
+      const name=clean(profile.displayName||profile.DisplayName||`${profile.firstName||profile.FirstName||''} ${profile.lastName||profile.LastName||''}`||user.username||'Member',120);
+      return {id:document.id,name:name||clean(user.username,40)||'Member',administrator:isFullAdministrator(user)};
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+    if(request.body?.action==='targets'){response.json({success:true,targets:targetRows});return;}
+    const productionId=clean(request.body?.productionId,120), targetUserId=clean(request.body?.targetUserId,128);
+    if(!productionId) throw new Error('Production is required.');
+    const target=targetRows.find(item=>item.id===targetUserId);
+    if(!target) throw new Error(callerAdmin?'Choose an active member.':'Private messages may only be started with an administrator.');
+    const callerProfile=(await db.collection('profiles').doc(callerId).get()).data()||{};
+    const callerName=clean(callerProfile.displayName||callerProfile.DisplayName||`${callerProfile.firstName||callerProfile.FirstName||''} ${callerProfile.lastName||callerProfile.LastName||''}`||caller.username||'Member',120)||'Member';
+    const memberIds=[callerId,targetUserId].sort(), id=`direct-${crypto.createHash('sha256').update(memberIds.join('|')).digest('hex').slice(0,24)}`;
+    const conversation={title:`${callerName} & ${target.name}`,type:'direct',description:'Private conversation',memberIds,adminIds:callerAdmin?[callerId]:[targetUserId],createdBy:callerId,status:'Active',category:'production',groupColor:'#6d4aff',groupSecondaryColor:'#b22a8f',groupTheme:'aurora',groupIcon:'💬',updatedAt:FieldValue.serverTimestamp()};
+    const ref=db.collection('productions').doc(productionId).collection('communicationConversations').doc(id);
+    const prior=await ref.get();
+    await ref.set({...conversation,...(!prior.exists?{createdAt:FieldValue.serverTimestamp()}: {})},{merge:true});
+    response.json({success:true,conversationId:id,conversation:{...conversation,updatedAt:new Date().toISOString(),createdAt:prior.exists?null:new Date().toISOString()}});
+  } catch(error) { response.status(403).json({success:false,error:error.message||'Private messaging is unavailable.'}); }
+});
+
 export const notifyCommunicationMessage = onDocumentCreated({
   document:'productions/{productionId}/communicationConversations/{conversationId}/messages/{messageId}',
   region:'northamerica-northeast2',memory:'256MiB'
