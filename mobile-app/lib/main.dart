@@ -4133,6 +4133,16 @@ class _ChatState extends State<ChatScreen> {
                 setState(() => replyingTo = message);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Copy message'),
+              onTap: () {
+                Clipboard.setData(
+                  ClipboardData(text: '${message['text'] ?? ''}'),
+                );
+                Navigator.pop(sheetContext);
+              },
+            ),
             if (mine || widget.portal.admin)
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
@@ -4140,6 +4150,21 @@ class _ChatState extends State<ChatScreen> {
                 onTap: () {
                   Navigator.pop(sheetContext);
                   editMessage(reference, '${message['text'] ?? ''}');
+                },
+              ),
+            if (widget.portal.admin)
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: Colors.red,
+                ),
+                title: const Text(
+                  'Delete permanently',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  deleteProductionItem(context, reference, 'this message');
                 },
               ),
           ],
@@ -4511,6 +4536,14 @@ class _ChatState extends State<ChatScreen> {
                           mine = i['senderId'] == widget.portal.userId;
                       final senderId = '${i['senderId'] ?? ''}';
                       final senderName = '${i['senderName'] ?? 'Member'}';
+                      final olderSender = n + 1 < s.data!.docs.length
+                          ? '${s.data!.docs[n + 1].data()['senderId'] ?? ''}'
+                          : '';
+                      final newerSender = n > 0
+                          ? '${s.data!.docs[n - 1].data()['senderId'] ?? ''}'
+                          : '';
+                      final startsGroup = olderSender != senderId;
+                      final endsGroup = newerSender != senderId;
                       final messageTime = dateField(i, const ['createdAt']);
                       final seenBy = !mine || messageTime == null
                           ? const <String>[]
@@ -4528,8 +4561,11 @@ class _ChatState extends State<ChatScreen> {
                                 .map((entry) => entry.key)
                                 .toList();
                       final bubble = Container(
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        padding: const EdgeInsets.fromLTRB(10, 7, 9, 6),
+                        margin: EdgeInsets.only(
+                          top: startsGroup ? 5 : 0,
+                          bottom: endsGroup ? 2 : 0,
+                        ),
+                        padding: const EdgeInsets.fromLTRB(11, 6, 9, 5),
                         constraints: BoxConstraints(
                           maxWidth: MediaQuery.sizeOf(c).width * .76,
                         ),
@@ -4575,59 +4611,17 @@ class _ChatState extends State<ChatScreen> {
                                   ),
                                 ),
                               ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: CommunityMemberName(
-                                    userId: senderId,
-                                    fallback: senderName,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
+                            if (!mine && startsGroup) ...[
+                              CommunityMemberName(
+                                userId: senderId,
+                                fallback: senderName,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                if (i['editedAt'] != null)
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 5),
-                                    child: Text(
-                                      'edited',
-                                      style: TextStyle(fontSize: 9),
-                                    ),
-                                  ),
-                                if (widget.portal.admin)
-                                  PopupMenuButton<String>(
-                                    padding: EdgeInsets.zero,
-                                    iconSize: 16,
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 30,
-                                      height: 28,
-                                    ),
-                                    onSelected: (action) => action == 'edit'
-                                        ? editMessage(
-                                            messageDocument.reference,
-                                            '${i['text'] ?? ''}',
-                                          )
-                                        : deleteProductionItem(
-                                            context,
-                                            messageDocument.reference,
-                                            'this message',
-                                          ),
-                                    itemBuilder: (_) => const [
-                                      PopupMenuItem(
-                                        value: 'edit',
-                                        child: Text('Edit message'),
-                                      ),
-                                      PopupMenuItem(
-                                        value: 'delete',
-                                        child: Text('Delete permanently'),
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
+                              ),
+                              const SizedBox(height: 2),
+                            ],
                             if ('${i['text'] ?? ''}'.isNotEmpty &&
                                 i['attachment'] is! Map)
                               Text(
@@ -4687,7 +4681,7 @@ class _ChatState extends State<ChatScreen> {
                                           .toList(),
                                 ),
                               ),
-                            if (mine && seenBy.isNotEmpty)
+                            if (mine && endsGroup && seenBy.isNotEmpty)
                               InkWell(
                                 onTap: () => showSeenDetails(seenBy),
                                 borderRadius: BorderRadius.circular(12),
@@ -4739,8 +4733,9 @@ class _ChatState extends State<ChatScreen> {
                                   ),
                                 ),
                               ),
-                            if (dateField(i, const ['createdAt']) != null ||
-                                mine)
+                            if (endsGroup &&
+                                (dateField(i, const ['createdAt']) != null ||
+                                    mine))
                               Padding(
                                 padding: const EdgeInsets.only(top: 2),
                                 child: Row(
@@ -4785,10 +4780,13 @@ class _ChatState extends State<ChatScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             if (!mine) ...[
-                              UserProfileAvatar(
-                                userId: senderId,
-                                name: senderName,
-                              ),
+                              if (endsGroup)
+                                UserProfileAvatar(
+                                  userId: senderId,
+                                  name: senderName,
+                                )
+                              else
+                                const SizedBox(width: 28),
                               const SizedBox(width: 5),
                             ],
                             Flexible(
@@ -4800,15 +4798,6 @@ class _ChatState extends State<ChatScreen> {
                                 child: bubble,
                               ),
                             ),
-                            if (mine) ...[
-                              const SizedBox(width: 5),
-                              ProfileAvatar(
-                                name: widget.portal.name,
-                                fileId: widget.portal.photoFileId,
-                                url: widget.portal.photoUrl,
-                                radius: 14,
-                              ),
-                            ],
                           ],
                         ),
                       );

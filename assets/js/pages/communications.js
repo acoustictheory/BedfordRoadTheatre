@@ -278,15 +278,19 @@ function renderActiveMessages() {
       : activeMessages;
   stream.innerHTML = visibleMessages.length
     ? visibleMessages
-        .map((message) => {
+        .map((message, index) => {
           const mine = message.senderId === userId,
+            previous = visibleMessages[index - 1],
+            next = visibleMessages[index + 1],
+            startsGroup = !previous || previous.senderId !== message.senderId,
+            endsGroup = !next || next.senderId !== message.senderId,
             messageTime = message.createdAt?.seconds || 0,
             seenBy = (activeRoom?.memberIds || []).filter(
               (id) =>
                 id !== message.senderId &&
                 (roomReads.get(id)?.lastReadAt?.seconds || 0) >= messageTime,
             ),
-            receipts = message._pending
+            receipts = !endsGroup ? "" : message._pending
               ? '<div class="message-seen pending"><span>Sending…</span></div>'
               : seenBy.length
               ? `<button type="button" class="message-seen" data-seen-message="${esc(message.id)}" title="See read details"><span>Seen</span>${seenBy
@@ -311,7 +315,8 @@ function renderActiveMessages() {
             ? `<div class="message-reply-quote"><strong>${esc(message.replyTo.senderName || "Member")}</strong><span>${esc(message.replyTo.text)}</span></div>`
             : "";
           const canEdit = mine || BRM.isAdmin();
-          return `<div class="message-row ${mine ? "mine" : ""}" data-message-id="${esc(message.id)}">${mine ? "" : personAvatar(message.senderId)}<div class="message-stack"><article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-meta">${message.pinned ? "📌 " : ""}${esc(person(message.senderId).displayName || message.senderName)} · ${clock(message.createdAt || message.clientCreatedAt)}${message.editedAt ? " · edited" : ""}</div><div>${esc(message.text).replace(/\n/g, "<br>")}</div></article>${reactions}<div class="message-tools"><button type="button" class="message-menu-toggle" data-message-menu="${esc(message.id)}" aria-label="Message options" aria-expanded="false">•••</button><div class="message-actions" role="menu"><button type="button" data-reply-message="${esc(message.id)}">Reply</button><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}" aria-label="React ${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-copy-message="${esc(message.id)}">Copy</button>${canEdit ? `<button type="button" data-edit-message="${esc(message.id)}">Edit</button>` : ""}${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">Delete</button>` : ""}</div></div>${receipts}</div>${mine ? personAvatar(message.senderId) : ""}</div>`;
+          const sender = !mine && startsGroup ? `<div class="message-sender">${esc(person(message.senderId).displayName || message.senderName)}</div>` : "";
+          return `<div class="message-row ${mine ? "mine" : ""} ${startsGroup ? "group-start" : "group-middle"} ${endsGroup ? "group-end" : ""}" data-message-id="${esc(message.id)}">${!mine ? (endsGroup ? personAvatar(message.senderId) : '<span class="avatar-spacer"></span>') : ""}<div class="message-stack">${sender}<article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-body">${esc(message.text).replace(/\n/g, "<br>")}</div><div class="message-footer">${message.pinned ? "📌 " : ""}${message.editedAt ? "edited · " : ""}${clock(message.createdAt || message.clientCreatedAt)}${mine ? " ✓" : ""}</div></article>${reactions}<div class="message-tools"><button type="button" class="message-menu-toggle" data-message-menu="${esc(message.id)}" aria-label="Message options" aria-expanded="false">•••</button><div class="message-actions" role="menu"><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}" aria-label="React ${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-reply-message="${esc(message.id)}">↩ Reply</button><button type="button" data-copy-message="${esc(message.id)}">▣ Copy</button>${canEdit ? `<button type="button" data-edit-message="${esc(message.id)}">✎ Edit</button>` : ""}${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">⌖ ${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">⌫ Delete</button>` : ""}</div></div>${receipts}</div></div>`;
         })
         .join("")
     : `<div class="empty-chat">${messageSearch ? "No messages match your search." : "Start the conversation."}</div>`;

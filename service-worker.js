@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260907-full-names5';
+const BUILD_ID = 'bedford-frontend-20260907-compact-chat6';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
