@@ -40,6 +40,15 @@ service cloud.firestore {
       allow read: if activeMember();
       allow write: if admin();
 
+      match /scoreAnnotations/{annotationId} {
+        allow read: if activeMember() && (resource.data.ownerUserId == principalId() || admin());
+        allow create: if activeMember() && (request.resource.data.ownerUserId == principalId() || admin());
+        allow update: if activeMember()
+          && request.resource.data.ownerUserId == resource.data.ownerUserId
+          && (resource.data.ownerUserId == principalId() || admin());
+        allow delete: if admin() || (activeMember() && resource.data.ownerUserId == principalId());
+      }
+
       // Low-risk shared information can be read by active production members.
       match /announcements/{document} { allow read: if activeMember(); allow write: if admin(); }
       match /announcementAudiences/{document} { allow read: if activeMember(); allow write: if admin(); }

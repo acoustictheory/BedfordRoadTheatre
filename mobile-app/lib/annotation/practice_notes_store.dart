@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScoreAnnotationLayerDefinition {
@@ -252,14 +254,40 @@ class PracticeBookmark {
 }
 
 class PracticeNotesStore {
-  PracticeNotesStore(this.songId);
+  PracticeNotesStore(
+    this.songId, {
+    required this.productionId,
+    this.ownerUserId,
+  });
 
   final int songId;
+  final String productionId;
+  final String? ownerUserId;
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
+  String get owner =>
+      ownerUserId ?? FirebaseAuth.instance.currentUser?.uid ?? 'local';
+  String get prefix => 'practice.$owner.$songId';
+  DocumentReference<Map<String, dynamic>>? get cloud {
+    if (owner == 'local' || productionId.isEmpty) return null;
+    return FirebaseFirestore.instance
+        .collection('productions/$productionId/scoreAnnotations')
+        .doc('${owner}_$songId');
+  }
 
   Future<List<ScoreInkMark>> loadInk() async {
-    var text = await _prefs.getString('practice.$songId.ink.v2');
+    var text = await _prefs.getString('$prefix.ink.v2');
+    if (text == null && ownerUserId == null) {
+      text = await _prefs.getString('practice.$songId.ink.v2');
+    }
     text ??= await _prefs.getString('practice.$songId.ink.v1');
+    try {
+      final snapshot = await cloud?.get();
+      final remote = snapshot?.data()?['marks'] as List?;
+      if (remote != null) {
+        text = jsonEncode(remote);
+        await _prefs.setString('$prefix.ink.v2', text);
+      }
+    } catch (_) {}
     if (text == null || text.isEmpty) return [];
     try {
       final data = jsonDecode(text) as List;
@@ -272,13 +300,28 @@ class PracticeNotesStore {
     }
   }
 
-  Future<void> saveInk(List<ScoreInkMark> marks) => _prefs.setString(
-    'practice.$songId.ink.v2',
-    jsonEncode(marks.map((e) => e.toJson()).toList()),
-  );
+  Future<void> saveInk(List<ScoreInkMark> marks) async {
+    final encoded = marks.map((e) => e.toJson()).toList();
+    await _prefs.setString('$prefix.ink.v2', jsonEncode(encoded));
+    try {
+      await cloud?.set({
+        'ownerUserId': owner,
+        'documentId': '$songId',
+        'marks': encoded,
+        'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
 
   Future<List<ScoreAnnotationLayerDefinition>> loadLayers() async {
-    final text = await _prefs.getString('practice.$songId.annotationLayers.v1');
+    var text = await _prefs.getString('$prefix.annotationLayers.v1');
+    if (text == null && ownerUserId == null)
+      text = await _prefs.getString('practice.$songId.annotationLayers.v1');
+    try {
+      final remote = (await cloud?.get())?.data()?['layers'] as List?;
+      if (remote != null) text = jsonEncode(remote);
+    } catch (_) {}
     final custom = <ScoreAnnotationLayerDefinition>[];
     if (text != null && text.isNotEmpty) {
       try {
@@ -297,16 +340,22 @@ class PracticeNotesStore {
     return [...defaultScoreAnnotationLayers, ...custom];
   }
 
-  Future<void> saveLayers(List<ScoreAnnotationLayerDefinition> layers) =>
-      _prefs.setString(
-        'practice.$songId.annotationLayers.v1',
-        jsonEncode(
-          layers
-              .where((layer) => !layer.builtIn)
-              .map((layer) => layer.toJson())
-              .toList(),
-        ),
-      );
+  Future<void> saveLayers(List<ScoreAnnotationLayerDefinition> layers) async {
+    final encoded = layers
+        .where((layer) => !layer.builtIn)
+        .map((layer) => layer.toJson())
+        .toList();
+    await _prefs.setString('$prefix.annotationLayers.v1', jsonEncode(encoded));
+    try {
+      await cloud?.set({
+        'ownerUserId': owner,
+        'documentId': '$songId',
+        'layers': encoded,
+        'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
 
   Future<List<PracticeBookmark>> loadBookmarks() async {
     final text = await _prefs.getString('practice.$songId.bookmarks.v1');

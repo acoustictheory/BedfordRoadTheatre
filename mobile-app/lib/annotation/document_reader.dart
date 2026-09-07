@@ -169,8 +169,14 @@ class DocumentLibraryScreen extends StatelessWidget {
 }
 
 class AnnotatedDocumentScreen extends StatefulWidget {
-  const AnnotatedDocumentScreen({super.key, required this.document});
+  const AnnotatedDocumentScreen({
+    super.key,
+    required this.document,
+    this.ownerUserId,
+    this.ownerName,
+  });
   final ProductionDocument document;
+  final String? ownerUserId, ownerName;
   @override
   State<AnnotatedDocumentScreen> createState() =>
       _AnnotatedDocumentScreenState();
@@ -179,6 +185,12 @@ class AnnotatedDocumentScreen extends StatefulWidget {
 class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   late final PracticeNotesStore store = PracticeNotesStore(
     widget.document.storeId,
+    productionId:
+        RegExp(r'production-documents/([^/]+)')
+            .firstMatch(widget.document.storagePath)
+            ?.group(1) ??
+        '',
+    ownerUserId: widget.ownerUserId,
   );
   final controller = PdfViewerController();
   final audio = AudioPlayer();
@@ -223,6 +235,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   Color scoreFlowSecondary = const Color(0xff00e9ff);
   Color scoreFlowSurface = const Color(0xff12101f);
   String scoreFlowPreset = 'Descendants Neon';
+  bool administrator = false;
 
   @override
   void initState() {
@@ -231,6 +244,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
     unawaited(load());
     unawaited(loadTracks());
     unawaited(loadScoreFlowAppearance());
+    unawaited(loadAdministratorState());
     positionSubscription = audio.positionStream.listen((position) {
       if (loopA != null && loopB != null && position >= loopB!) {
         unawaited(seekPair(loopA!));
@@ -246,6 +260,78 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
     audio.durationStream.listen((value) {
       if (mounted && value != null) setState(() => audioDuration = value);
     });
+  }
+
+  Future<void> loadAdministratorState() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final data =
+        (await FirebaseFirestore.instance.collection('users').doc(uid).get())
+            .data() ??
+        {};
+    if (mounted)
+      setState(
+        () => administrator =
+            data['isFullAdmin'] == true ||
+            data['IsFullAdmin'] == true ||
+            '${data['IsFullAdmin']}'.toUpperCase() == 'TRUE',
+      );
+  }
+
+  Future<void> chooseAnnotationOwner() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('communityMembers')
+        .where('status', isEqualTo: 'Active')
+        .get();
+    if (!mounted) return;
+    final chosen = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text('Review singer annotations'),
+              subtitle: Text(
+                'Choose whose private working copy to open. Administrator edits are recorded.',
+              ),
+            ),
+            ...snapshot.docs.map((document) {
+              final data = document.data(),
+                  name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'
+                      .trim();
+              return ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                title: Text(
+                  name.isEmpty
+                      ? '${data['displayName'] ?? data['username'] ?? document.id}'
+                      : name,
+                ),
+                subtitle: Text('@${data['username'] ?? document.id}'),
+                onTap: () => Navigator.pop(sheetContext, {
+                  'id': document.id,
+                  'name': name.isEmpty
+                      ? '${data['displayName'] ?? document.id}'
+                      : name,
+                }),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnnotatedDocumentScreen(
+          document: widget.document,
+          ownerUserId: chosen['id'],
+          ownerName: chosen['name'],
+        ),
+      ),
+    );
   }
 
   Future<void> restoreReadingState() async {
@@ -2016,6 +2102,14 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
         ),
       ),
       actions: [
+        if (administrator)
+          IconButton(
+            tooltip: widget.ownerName == null
+                ? 'Review singer annotations'
+                : 'Reviewing ${widget.ownerName}',
+            onPressed: chooseAnnotationOwner,
+            icon: const Icon(Icons.supervisor_account_outlined),
+          ),
         if (songNumber != null)
           IconButton(
             tooltip: 'Next song',
