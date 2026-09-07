@@ -89,7 +89,16 @@ service cloud.firestore {
           allow create: if canParticipate()
             && request.resource.data.senderId == principalId()
             && request.resource.data.text is string
-            && request.resource.data.text.size() <= 4000;
+            && request.resource.data.text.size() <= 4000
+            && (!('attachment' in request.resource.data)
+              || (request.resource.data.attachment is map
+                && request.resource.data.attachment.storagePath is string
+                && request.resource.data.attachment.storagePath.matches(
+                  'chat-attachments/' + productionId + '/' + conversationId + '/' + messageId + '/.*'
+                )
+                && request.resource.data.attachment.kind in ['image', 'video', 'audio', 'file']
+                && request.resource.data.attachment.size is int
+                && request.resource.data.attachment.size <= 104857600));
           allow update: if admin() || (canParticipate()
             && resource.data.senderId == principalId()
             && request.resource.data.senderId == resource.data.senderId

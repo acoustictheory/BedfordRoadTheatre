@@ -785,7 +785,7 @@ window.BRM = window.BRM || {};
       hubCard("tracks.html", "Music & Tracks", "Rehearsal audio and practice", "♪", "production"),
       hubCard("resources.html", resourcesLabel, "Links and production documents", "▤", "production"),
     ].join("");
-    const personalCards = [hubCard("libretto-reader.html", "Descendants Libretto", "ScoreFlow rehearsal reader", "▤", "personal"), hubCard("journal.html", "Private Journal", "Reflection and rehearsal records", "✎", "personal"), hubCard("directory.html", "Company Directory", "Find cast and crew", "◎", "personal"), hubCard("storage.html", "Offline & Storage", "Downloads and device storage", "⇩", "personal"), hubCard("downloads/BedfordRoadMusical-2.12.1.apk", "Android App", "Download the latest release", "↓", "personal")].join("");
+    const personalCards = [hubCard("libretto-reader.html", "Descendants Libretto", "ScoreFlow rehearsal reader", "▤", "personal"), hubCard("journal.html", "Private Journal", "Reflection and rehearsal records", "✎", "personal"), hubCard("directory.html", "Company Directory", "Find cast and crew", "◎", "personal"), hubCard("storage.html", "Offline & Storage", "Downloads and device storage", "⇩", "personal"), hubCard("downloads/BedfordRoadMusical-2.13.0.apk", "Android App", "Download the latest release", "↓", "personal")].join("");
     shell.innerHTML = `
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">

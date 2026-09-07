@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +19,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 import 'annotation/document_reader.dart';
 import 'portal_models.dart';
@@ -1396,7 +1400,10 @@ class _CommunityPreview extends StatelessWidget {
                   return Container(
                     width: 245,
                     margin: const EdgeInsets.only(right: 9),
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -3046,6 +3053,8 @@ class _ChatState extends State<ChatScreen> {
   Map<String, List<Map<String, dynamic>>> messageReactions = {};
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? reactionSubscription;
   bool sending = false;
+  bool uploading = false;
+  double uploadProgress = 0;
   String background = 'midnight';
 
   @override
@@ -3340,6 +3349,226 @@ class _ChatState extends State<ChatScreen> {
     );
   }
 
+  String attachmentKind(String extension) {
+    final value = extension.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(value))
+      return 'image';
+    if (['mp4', 'mov', 'm4v', 'webm', 'avi'].contains(value)) return 'video';
+    if (['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac'].contains(value))
+      return 'audio';
+    return 'file';
+  }
+
+  String attachmentContentType(String kind, String extension) {
+    final value = extension.toLowerCase();
+    if (kind == 'image') return value == 'jpg' ? 'image/jpeg' : 'image/$value';
+    if (kind == 'video')
+      return value == 'mov' ? 'video/quicktime' : 'video/$value';
+    if (kind == 'audio') return value == 'mp3' ? 'audio/mpeg' : 'audio/$value';
+    if (value == 'pdf') return 'application/pdf';
+    return 'application/octet-stream';
+  }
+
+  Future<void> chooseAttachment() async {
+    if (uploading || sending) return;
+    final picked = await FilePicker.pickFile(type: FileType.any);
+    if (picked == null || picked.path == null) return;
+    final pickedSize = await picked.length();
+    if (pickedSize > 100 * 1024 * 1024) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Attachments must be 100 MB or smaller.'),
+          ),
+        );
+      return;
+    }
+    final extension = picked.extension?.toLowerCase() ?? '';
+    final kind = attachmentKind(extension);
+    final reply = replyingTo;
+    final messageReference = messages.doc();
+    final safeName = picked.name.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_');
+    final storagePath =
+        'chat-attachments/${widget.portal.productionId}/${widget.roomId}/${messageReference.id}/$safeName';
+    final storageReference = FirebaseStorage.instance.ref(storagePath);
+    setState(() {
+      uploading = true;
+      uploadProgress = 0;
+      replyingTo = null;
+    });
+    try {
+      final upload = storageReference.putFile(
+        File(picked.path!),
+        SettableMetadata(
+          contentType: attachmentContentType(kind, extension),
+          customMetadata: {
+            'senderId': widget.portal.userId,
+            'conversationId': widget.roomId,
+          },
+        ),
+      );
+      upload.snapshotEvents.listen((snapshot) {
+        if (mounted && snapshot.totalBytes > 0) {
+          setState(
+            () => uploadProgress =
+                snapshot.bytesTransferred / snapshot.totalBytes,
+          );
+        }
+      });
+      await upload;
+      await messageReference.set({
+        'senderId': widget.portal.userId,
+        'senderName': widget.portal.name,
+        'text': '📎 ${picked.name}',
+        'attachment': {
+          'kind': kind,
+          'name': picked.name,
+          'size': pickedSize,
+          'contentType': attachmentContentType(kind, extension),
+          'storagePath': storagePath,
+        },
+        'createdAt': FieldValue.serverTimestamp(),
+        'clientCreatedAt': DateTime.now().toIso8601String(),
+        if (reply != null)
+          'replyTo': {
+            'messageId': '${reply['_id'] ?? ''}',
+            'senderId': '${reply['senderId'] ?? ''}',
+            'senderName': '${reply['senderName'] ?? 'Member'}',
+            'text': '${reply['text'] ?? 'Attachment'}',
+          },
+      });
+    } catch (error) {
+      await storageReference.delete().catchError((_) {});
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: ${error.toString()}')),
+        );
+    } finally {
+      if (mounted)
+        setState(() {
+          uploading = false;
+          uploadProgress = 0;
+        });
+    }
+  }
+
+  Future<void> downloadAttachment(Map<String, dynamic> attachment) async {
+    final storagePath = '${attachment['storagePath'] ?? ''}';
+    if (storagePath.isEmpty) return;
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final downloads = Directory(
+        '${directory.path}${Platform.pathSeparator}Chat Downloads',
+      );
+      await downloads.create(recursive: true);
+      final safeName = '${attachment['name'] ?? 'attachment'}'.replaceAll(
+        RegExp(r'[^A-Za-z0-9._ -]'),
+        '_',
+      );
+      final file = File('${downloads.path}${Platform.pathSeparator}$safeName');
+      if (!file.existsSync()) {
+        if (mounted)
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Downloading $safeName…')));
+        await FirebaseStorage.instance.ref(storagePath).writeToFile(file);
+      }
+      await OpenFilex.open(file.path);
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not download attachment: $error')),
+        );
+    }
+  }
+
+  Widget attachmentCard(Map<String, dynamic> attachment, Color color) {
+    final kind = '${attachment['kind'] ?? 'file'}';
+    final name = '${attachment['name'] ?? 'Attachment'}';
+    final bytes = (attachment['size'] as num?)?.toInt() ?? 0;
+    final size = bytes >= 1024 * 1024
+        ? '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB'
+        : '${(bytes / 1024).ceil()} KB';
+    final icon = switch (kind) {
+      'image' => Icons.image_outlined,
+      'video' => Icons.play_circle_outline,
+      'audio' => Icons.audio_file_outlined,
+      _ => Icons.attach_file,
+    };
+    return Container(
+      margin: const EdgeInsets.only(top: 5),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (kind == 'video')
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withValues(alpha: .72), Colors.black54],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.video_file_outlined,
+                    size: 42,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(9, 7, 7, 7),
+            child: Row(
+              children: [
+                Icon(icon, size: 21),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '$size · Not saved on this device',
+                        style: const TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => downloadAttachment(attachment),
+                  tooltip: 'Download and open',
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 34,
+                    height: 34,
+                  ),
+                  icon: const Icon(Icons.download_rounded, size: 19),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> send() async {
     final v = text.text.trim();
     if (v.isEmpty || sending) return;
@@ -3476,10 +3705,10 @@ class _ChatState extends State<ChatScreen> {
                       final senderId = '${i['senderId'] ?? ''}';
                       final senderName = '${i['senderName'] ?? 'Member'}';
                       final bubble = Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.fromLTRB(10, 7, 9, 6),
                         constraints: BoxConstraints(
-                          maxWidth: MediaQuery.sizeOf(c).width * .78,
+                          maxWidth: MediaQuery.sizeOf(c).width * .76,
                         ),
                         decoration: BoxDecoration(
                           color: mine
@@ -3546,7 +3775,11 @@ class _ChatState extends State<ChatScreen> {
                                 if (widget.portal.admin)
                                   PopupMenuButton<String>(
                                     padding: EdgeInsets.zero,
-                                    iconSize: 18,
+                                    iconSize: 16,
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 30,
+                                      height: 28,
+                                    ),
                                     onSelected: (action) => action == 'edit'
                                         ? editMessage(
                                             messageDocument.reference,
@@ -3571,7 +3804,22 @@ class _ChatState extends State<ChatScreen> {
                               ],
                             ),
                             const SizedBox(height: 3),
-                            Text('${i['text'] ?? ''}'),
+                            if ('${i['text'] ?? ''}'.isNotEmpty &&
+                                i['attachment'] is! Map)
+                              Text(
+                                '${i['text'] ?? ''}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.22,
+                                ),
+                              ),
+                            if (i['attachment'] is Map)
+                              attachmentCard(
+                                Map<String, dynamic>.from(
+                                  i['attachment'] as Map,
+                                ),
+                                color,
+                              ),
                             if ((messageReactions[messageDocument.id] ?? [])
                                 .isNotEmpty)
                               Padding(
@@ -3615,34 +3863,45 @@ class _ChatState extends State<ChatScreen> {
                                           .toList(),
                                 ),
                               ),
-                            if (dateField(i, const ['createdAt']) != null)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  DateFormat.jm().format(
-                                    dateField(i, const ['createdAt'])!,
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.white60,
-                                  ),
-                                ),
-                              ),
-                            if (mine)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  messageDocument.metadata.hasPendingWrites
-                                      ? 'Sending…'
-                                      : 'Sent',
-                                  style: const TextStyle(fontSize: 9),
+                            if (dateField(i, const ['createdAt']) != null ||
+                                mine)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (dateField(i, const ['createdAt']) !=
+                                        null)
+                                      Text(
+                                        DateFormat.jm().format(
+                                          dateField(i, const ['createdAt'])!,
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.white60,
+                                        ),
+                                      ),
+                                    if (mine) ...[
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        messageDocument
+                                                .metadata
+                                                .hasPendingWrites
+                                            ? Icons.schedule
+                                            : Icons.done,
+                                        size: 11,
+                                        color: Colors.white60,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                           ],
                         ),
                       );
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 1),
                         child: Row(
                           mainAxisAlignment: mine
                               ? MainAxisAlignment.end
@@ -3654,7 +3913,7 @@ class _ChatState extends State<ChatScreen> {
                                 userId: senderId,
                                 name: senderName,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 5),
                             ],
                             Flexible(
                               child: GestureDetector(
@@ -3666,12 +3925,12 @@ class _ChatState extends State<ChatScreen> {
                               ),
                             ),
                             if (mine) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 5),
                               ProfileAvatar(
                                 name: widget.portal.name,
                                 fileId: widget.portal.photoFileId,
                                 url: widget.portal.photoUrl,
-                                radius: 18,
+                                radius: 14,
                               ),
                             ],
                           ],
@@ -3688,7 +3947,7 @@ class _ChatState extends State<ChatScreen> {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.fromLTRB(7, 6, 7, 6),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -3727,6 +3986,17 @@ class _ChatState extends State<ChatScreen> {
                         ),
                       Row(
                         children: [
+                          IconButton(
+                            onPressed: uploading ? null : chooseAttachment,
+                            tooltip: 'Add photo, video, audio, or file',
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 42,
+                              height: 42,
+                            ),
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                          const SizedBox(width: 3),
                           Expanded(
                             child: TextField(
                               controller: text,
@@ -3735,18 +4005,40 @@ class _ChatState extends State<ChatScreen> {
                               onSubmitted: (_) => send(),
                               decoration: const InputDecoration(
                                 hintText: 'Message this space…',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                  vertical: 10,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(20),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           IconButton.filled(
-                            onPressed: sending ? null : send,
+                            onPressed: sending || uploading ? null : send,
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 44,
+                              height: 44,
+                            ),
                             icon: Icon(
                               sending ? Icons.hourglass_top : Icons.send,
                             ),
                           ),
                         ],
                       ),
+                      if (uploading)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(45, 4, 45, 0),
+                          child: LinearProgressIndicator(
+                            value: uploadProgress > 0 ? uploadProgress : null,
+                          ),
+                        ),
                     ],
                   ),
                 ),
