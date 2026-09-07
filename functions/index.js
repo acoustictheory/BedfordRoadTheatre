@@ -37,6 +37,22 @@ const fixedCommunicationSpaces = [
   ['tickets-box-office','Tickets & Box Office'],
   ['wardrobe-crew','Wardrobe Crew']
 ];
+const communityPositionCatalog = [
+  ['principal-cast','Principal Cast',['general-cast']],['ensemble-cast','Ensemble Cast',['general-cast']],
+  ['featured-dancer','Featured Dancer',['general-cast','featured-dancers','choreography']],['student-choreographer','Student Choreographer',['choreography']],
+  ['stage-manager','Stage Manager',['stage-crew']],['assistant-stage-manager','Assistant Stage Manager',['stage-crew']],
+  ['scenic-painter','Scenic Painter',['scenic-painting']],['hair-makeup-crew','Hair & Makeup Crew',['hair-makeup']],
+  ['projections-video-crew','Projections & Video Crew',['projections-video']],['photography-videography-crew','Photography & Videography Crew',['photography-videography']],
+  ['tickets-box-office-crew','Tickets & Box Office Crew',['tickets-box-office']],['wardrobe-crew','Wardrobe Crew',['wardrobe-crew']],
+  ...['keyboard-1','keyboard-2','keyboard-3','drums','flute','oboe','clarinet','tenor-sax','violin','cello','guitar-1','guitar-2','bass','trumpet']
+    .map(key=>[`pit-${key}`,`Pit · ${key.split('-').map(part=>part.charAt(0).toUpperCase()+part.slice(1)).join(' ')}`,['pit-orchestra']])
+].map(([key,label,spaceKeys])=>({key,label,spaceKeys}));
+const communityPositionMap = new Map(communityPositionCatalog.map(position=>[position.key,position]));
+const communitySpacePolicies = Object.fromEntries(fixedCommunicationSpaces.map(([key,title])=>[key,{
+  key,title,mode:key==='pit-orchestra'?'invite-only':key==='musical-theatre'||key==='theatre-arts'?'automatic':'requestable',
+  restricted:key==='pit-orchestra'
+}]));
+function validCommunityPositionKeys(keys) { return [...new Set(Array.isArray(keys)?keys.map(String):[])].filter(key=>communityPositionMap.has(key)); }
 const communicationSpaceAliases = new Map([
   ['musical-theatre-10','musical-theatre'],['musical-theatre-20','musical-theatre'],['musical-theatre-30','musical-theatre'],
   ['theatre-arts-20','theatre-arts'],['theatre-arts-30','theatre-arts']
@@ -99,8 +115,8 @@ async function reconcileCommunicationSpaces(productionId) {
   ]);
   const admins=users.docs.filter(d=>isFullAdministrator(d.data())).map(d=>d.id);
   const byDepartment=new Map(); memberships.docs.forEach(d=>{const row=d.data();if(String(row.status||'Active')!=='Active')return;const key=String(row.departmentID||row.departmentId||'');if(key)(byDepartment.get(key)||byDepartment.set(key,[]).get(key)).push(String(row.userID||row.userId||''));});
-  const assigned=new Map(fixedCommunicationSpaces.map(([key])=>[key,[]])); assignments.docs.forEach(d=>{const row=d.data();for(const rawKey of row.spaceKeys||[]){const key=normalizeCommunicationSpaceKey(rawKey);if(assigned.has(key))assigned.get(key).push(String(row.userId||d.id));}});
-  const spaces=[],generalCastMembers=[];
+  const assigned=new Map([...fixedCommunicationSpaces.map(([key])=>[key,[]]),['general-cast',[]]]); assignments.docs.forEach(d=>{const row=d.data(),uid=String(row.userId||d.id),blocked=new Set(validCommunicationSpaceKeys(row.blockedSpaceKeys));for(const rawKey of row.spaceKeys||[]){const key=normalizeCommunicationSpaceKey(rawKey);if(assigned.has(key)&&!blocked.has(key))assigned.get(key).push(uid);}for(const positionKey of validCommunityPositionKeys(row.positionKeys)){for(const key of communityPositionMap.get(positionKey).spaceKeys){const normalized=normalizeCommunicationSpaceKey(key);if(assigned.has(normalized)&&!blocked.has(normalized))assigned.get(normalized).push(uid);}}});
+  const spaces=[],generalCastMembers=[...(assigned.get('general-cast')||[])];
   departments.docs.forEach(d=>{const row=d.data(),status=row.status||row.Status,slug=String(row.slug||row.Slug||'').toLowerCase();if(status!=='Active'||slug==='administration'||slug==='directing')return;const sourceId=row.departmentID||row.DepartmentID||d.id,members=byDepartment.get(String(sourceId))||[];if(slug==='ensemble'||slug==='principal-cast'||slug==='general-cast'){generalCastMembers.push(...members);return;}const fixedKey=normalizeCommunicationSpaceKey(slug);if(assigned.has(fixedKey)){assigned.get(fixedKey).push(...members);return;}const category=slug==='pit-orchestra'?'ensemble':'production';spaces.push({key:`department-${slug}`,title:communicationNameMap[slug]||row.name||row.Name||slug,category,sourceType:'department',sourceId,members});});
   spaces.push({key:'ensemble-general-cast',title:'Cast',category:'ensemble',sourceType:'ensemble',sourceId:'general-cast',members:generalCastMembers});
   fixedCommunicationSpaces.forEach(([key,title])=>{const category=key==='musical-theatre'||key==='theatre-arts'?'class':key==='choreography'||key==='featured-dancers'||key==='pit-orchestra'?'ensemble':'production';spaces.push({key:`assignment-${key}`,title,category,sourceType:'assignment',sourceId:key,members:assigned.get(key)||[]});});
@@ -308,6 +324,7 @@ export const registerStudent = onRequest({ region:'northamerica-northeast2', sec
       const productionId = productionQuery.docs[0].id;
       const now = new Date().toISOString();
       const requested = Array.isArray(body.requestedDepartmentIds) ? [...new Set(body.requestedDepartmentIds.map(String))].slice(0,30) : [];
+      const requestedPositions=validCommunityPositionKeys(body.requestedPositionKeys);
       const mirror = {requestId,userId:uid,profileId,productionId,username,email:clean(body.email,160).toLowerCase(),firstName:clean(body.firstName,80),lastName:clean(body.lastName,80),displayName:clean(body.displayName || `${body.firstName || ''} ${body.lastName || ''}`,120),registrationCode:code,requestedDepartmentIds:requested,departmentRequestNote:clean(body.departmentRequestNote,500),createdAt:now};
       const mirrorToken = Buffer.from(JSON.stringify(mirror)).toString('base64url');
       const mirrorSignature = crypto.createHmac('sha256',syncKey.value().trim()).update(mirrorToken).digest('hex');
@@ -326,13 +343,54 @@ export const registerStudent = onRequest({ region:'northamerica-northeast2', sec
         transaction.set(requestRef,{userId:uid,createdAt:now,publicResult});
         const classKeys=validCommunicationSpaceKeys(body.classSpaceKeys);
         transaction.set(db.collection('productions').doc(productionId).collection('communicationAssignments').doc(uid),{userId:uid,spaceKeys:classKeys,updatedAt:now});
+        for(const positionKey of requestedPositions){const position=communityPositionMap.get(positionKey),requestDocument=db.collection('productions').doc(productionId).collection('communityAccessRequests').doc();transaction.set(requestDocument,{userId:uid,positionKey,spaceKey:position.spaceKeys[0],reason:clean(body.communityRequestNote||body.departmentRequestNote,500),status:'Pending',source:'registration',createdAt:now,updatedAt:now});}
       });
+      await reconcileCommunicationSpaces(productionId);
       response.json(publicResult);
     } catch (error) { await getAuth().deleteUser(uid).catch(()=>{}); throw error; }
   } catch (error) {
     const duplicate = error.code === 'auth/email-already-exists' || error.code === 'auth/uid-already-exists';
     response.status(duplicate ? 409 : 400).json({success:false,error:duplicate?'That username is already registered. Sign in or ask an administrator for help.':error.message});
   }
+});
+
+export const communityAccess = onRequest({region:'northamerica-northeast2',timeoutSeconds:60,memory:'256MiB',cors:false},async(request,response)=>{
+  appCors(request,response);response.set('Cache-Control','no-store');
+  if(request.method==='OPTIONS'){response.status(204).send('');return;}if(request.method!=='POST'){response.status(405).json({success:false,error:'POST required.'});return;}
+  try{
+    const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,''),decoded=await getAuth().verifyIdToken(bearer),uid=principalId(decoded),user=(await db.collection('users').doc(uid).get()).data();
+    if(!isActiveUser(user))throw new Error('Active membership is required.');
+    const productionId=clean(request.body?.productionId,128),action=clean(request.body?.action,40);if(!productionId)throw new Error('Production is required.');
+    const production=db.collection('productions').doc(productionId),assignmentRef=production.collection('communicationAssignments').doc(uid),requests=production.collection('communityAccessRequests');
+    if(action==='catalog'){
+      const [assignmentSnap,requestSnap]=await Promise.all([assignmentRef.get(),requests.where('userId','==',uid).get()]);
+      response.json({success:true,positions:communityPositionCatalog,spaces:Object.values(communitySpacePolicies),assignment:assignmentSnap.data()||{userId:uid,spaceKeys:[],positionKeys:[],blockedSpaceKeys:[]},requests:requestSnap.docs.map(d=>({id:d.id,...d.data()}))});return;
+    }
+    if(action==='request'){
+      const positionKey=clean(request.body?.positionKey,80),spaceKey=normalizeCommunicationSpaceKey(clean(request.body?.spaceKey,80)),position=communityPositionMap.get(positionKey),policy=communitySpacePolicies[spaceKey];
+      if(!position&&!policy)throw new Error('Choose a valid position or Space.');
+      const effectiveSpace=position?.spaceKeys?.[0]||spaceKey,existing=await requests.where('userId','==',uid).get();
+      if(existing.docs.some(d=>{const row=d.data();return positionKey?row.positionKey===positionKey:row.spaceKey===effectiveSpace;}))throw new Error('That request is already waiting for review.');
+      const ref=await requests.add({userId:uid,positionKey:positionKey||'',spaceKey:effectiveSpace,reason:clean(request.body?.reason,500),status:'Pending',source:'community',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});response.json({success:true,requestId:ref.id});return;
+    }
+    if(!isFullAdministrator(user))throw new Error('Administrator access required.');
+    if(action==='adminState'){
+      const [assignmentSnap,requestSnap,userSnap,profileSnap]=await Promise.all([production.collection('communicationAssignments').get(),requests.get(),db.collection('users').get(),db.collection('profiles').get()]);
+      const profiles=new Map(profileSnap.docs.map(d=>[String(d.data().userID||d.data().UserID||d.id),d.data()]));
+      response.json({success:true,positions:communityPositionCatalog,spaces:Object.values(communitySpacePolicies),assignments:assignmentSnap.docs.map(d=>({id:d.id,...d.data()})),requests:requestSnap.docs.map(d=>({id:d.id,...d.data()})),people:userSnap.docs.filter(d=>isActiveUser(d.data())).map(d=>({id:d.id,name:profiles.get(d.id)?.displayName||profiles.get(d.id)?.DisplayName||d.data().username||d.id,photoURL:profiles.get(d.id)?.photoURL||profiles.get(d.id)?.PhotoURL||''}))});return;
+    }
+    if(action==='saveInvolvement'){
+      const targetUserId=clean(request.body?.userId,128);if(!targetUserId)throw new Error('Choose a person.');
+      await production.collection('communicationAssignments').doc(targetUserId).set({userId:targetUserId,positionKeys:validCommunityPositionKeys(request.body?.positionKeys),spaceKeys:validCommunicationSpaceKeys(request.body?.spaceKeys),blockedSpaceKeys:validCommunicationSpaceKeys(request.body?.blockedSpaceKeys),updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});
+      await reconcileCommunicationSpaces(productionId);response.json({success:true});return;
+    }
+    if(action==='review'){
+      const requestId=clean(request.body?.requestId,128),decision=request.body?.decision==='Approved'?'Approved':'Declined',ref=requests.doc(requestId),snapshot=await ref.get();if(!snapshot.exists)throw new Error('Request not found.');const row=snapshot.data();
+      if(decision==='Approved'){const target=production.collection('communicationAssignments').doc(row.userId);if(row.positionKey)await target.set({userId:row.userId,positionKeys:FieldValue.arrayUnion(row.positionKey),updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});else if(row.spaceKey)await target.set({userId:row.userId,spaceKeys:FieldValue.arrayUnion(row.spaceKey),updatedAt:FieldValue.serverTimestamp(),updatedBy:uid},{merge:true});}
+      await ref.set({status:decision,reviewNote:clean(request.body?.reviewNote,500),reviewedBy:uid,reviewedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});await reconcileCommunicationSpaces(productionId);response.json({success:true});return;
+    }
+    throw new Error('Unsupported access action.');
+  }catch(error){response.status(403).json({success:false,error:error.message});}
 });
 
 export const registerCommunicationDevice = onRequest({region:'northamerica-northeast2',timeoutSeconds:30,memory:'256MiB',cors:false}, async (request,response) => {

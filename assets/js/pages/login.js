@@ -83,6 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
     "afterend",
     `<div class="field span-2 class-registration"><label>Are you currently in a Bedford theatre class?</label><p class="field-hint" style="margin:0 0 10px">Select every class program that applies, or choose “Not currently in a theatre class.” Your selection controls the Class Spaces shown in the app.</p><div class="grid grid-2"><label class="checkbox-row"><input type="checkbox" name="classSpaceKeys" value="none" data-no-class> Not currently in a theatre class</label><label class="checkbox-row"><input type="checkbox" name="classSpaceKeys" value="musical-theatre"> Musical Theatre 10/20/30</label><label class="checkbox-row"><input type="checkbox" name="classSpaceKeys" value="theatre-arts"> Theatre Arts 20/30</label></div></div>`,
   );
+  emailField?.closest('.form-grid')?.insertAdjacentHTML('beforeend', `
+    <div class="field span-2 community-registration"><label>What are you involved in?</label><p class="field-hint">These choices send access requests for administrator approval. You can request more Spaces after signing in.</p><div class="grid grid-2">${[
+      ['principal-cast','Principal Cast'],['ensemble-cast','Ensemble Cast'],['featured-dancer','Featured Dancer'],['student-choreographer','Student Choreographer'],['stage-manager','Stage Manager'],['assistant-stage-manager','Assistant Stage Manager'],['scenic-painter','Scenic Painter'],['hair-makeup-crew','Hair & Makeup Crew'],['projections-video-crew','Projections & Video Crew'],['photography-videography-crew','Photography & Videography Crew'],['tickets-box-office-crew','Tickets & Box Office Crew'],['wardrobe-crew','Wardrobe Crew']
+    ].map(([key,label])=>`<label class="checkbox-row"><input type="checkbox" name="requestedPositionKeys" value="${key}"> ${label}</label>`).join('')}</div><details style="margin-top:12px"><summary><strong>Pit Orchestra position</strong></summary><div class="grid grid-2" style="margin-top:10px">${[
+      ['pit-keyboard-1','Keyboard 1'],['pit-keyboard-2','Keyboard 2'],['pit-keyboard-3','Keyboard 3'],['pit-drums','Drums'],['pit-flute','Flute'],['pit-oboe','Oboe'],['pit-clarinet','Clarinet'],['pit-tenor-sax','Tenor Sax'],['pit-violin','Violin'],['pit-cello','Cello'],['pit-guitar-1','Guitar 1'],['pit-guitar-2','Guitar 2'],['pit-bass','Bass'],['pit-trumpet','Trumpet']
+    ].map(([key,label])=>`<label class="checkbox-row"><input type="checkbox" name="requestedPositionKeys" value="${key}"> ${label}</label>`).join('')}</div></details></div>`);
   registrationForm
     ?.querySelectorAll('input[name="classSpaceKeys"]')
     .forEach((input) =>
@@ -250,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.classSpaceKeys = formData
       .getAll("classSpaceKeys")
       .filter((key) => key !== "none");
+    form.requestedPositionKeys = formData.getAll("requestedPositionKeys");
 
     if (form.password !== form.confirmPassword) {
       BRM.toast("Passwords do not match.", "error");

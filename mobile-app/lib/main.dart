@@ -34,6 +34,8 @@ const appSignInEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/legacyAppSignIn';
 const directMessageEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/openCommunicationDirect';
+const communityAccessEndpoint =
+    'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/communityAccess';
 const androidFirebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyB5eWavkOwFDop33rAZM0E2NLOQ_JxhYiY',
   appId: '1:499470162310:android:c6e16ca9b51cf73c37b407',
@@ -2418,6 +2420,191 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
     super.dispose();
   }
 
+  Future<Map<String, dynamic>> communityAccess(
+    Map<String, dynamic> body,
+  ) async {
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    if (token == null) throw Exception('Sign in again to continue.');
+    final response = await http.post(
+      Uri.parse(communityAccessEndpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'productionId': widget.portal.productionId, ...body}),
+    );
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        result['success'] != true) {
+      throw Exception(
+        '${result['error'] ?? 'Community access is unavailable.'}',
+      );
+    }
+    return result;
+  }
+
+  Future<void> openCommunityAccess() async {
+    try {
+      final data = await communityAccess({
+        'action': widget.portal.admin ? 'adminState' : 'catalog',
+      });
+      if (!mounted) return;
+      final positions = (data['positions'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      if (widget.portal.admin) {
+        final requests = (data['requests'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .where((e) => e['status'] == 'Pending')
+            .toList();
+        final people = {
+          for (final value
+              in (data['people'] as List? ?? const []).whereType<Map>())
+            '${value['id']}': '${value['name'] ?? 'Member'}',
+        };
+        await showModalBottomSheet(
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: true,
+          builder: (sheetContext) => SafeArea(
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: .72,
+              builder: (_, controller) => ListView(
+                controller: controller,
+                children: [
+                  const ListTile(
+                    title: Text('Community access requests'),
+                    subtitle: Text(
+                      'Approve a verified position to synchronize its Spaces.',
+                    ),
+                  ),
+                  if (requests.isEmpty)
+                    const ListTile(
+                      leading: Icon(Icons.done_all),
+                      title: Text('No requests are waiting'),
+                    ),
+                  ...requests.map((request) {
+                    final position = positions
+                        .cast<Map<String, dynamic>?>()
+                        .firstWhere(
+                          (p) => p?['key'] == request['positionKey'],
+                          orElse: () => null,
+                        );
+                    return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(people['${request['userId']}'] ?? 'Member'),
+                      subtitle: Text(
+                        '${position?['label'] ?? request['spaceKey']}${('${request['reason'] ?? ''}').isEmpty ? '' : ' · ${request['reason']}'}',
+                      ),
+                      trailing: Wrap(
+                        children: [
+                          IconButton(
+                            tooltip: 'Decline',
+                            icon: const Icon(Icons.close),
+                            onPressed: () async {
+                              await communityAccess({
+                                'action': 'review',
+                                'requestId': request['id'],
+                                'decision': 'Declined',
+                              });
+                              if (sheetContext.mounted)
+                                Navigator.pop(sheetContext);
+                            },
+                          ),
+                          IconButton.filled(
+                            tooltip: 'Approve',
+                            icon: const Icon(Icons.check),
+                            onPressed: () async {
+                              await communityAccess({
+                                'action': 'review',
+                                'requestId': request['id'],
+                                'decision': 'Approved',
+                              });
+                              if (sheetContext.mounted)
+                                Navigator.pop(sheetContext);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      } else {
+        final pending = (data['requests'] as List? ?? const [])
+            .whereType<Map>()
+            .where((e) => e['status'] == 'Pending')
+            .map((e) => '${e['positionKey']}')
+            .toSet();
+        await showModalBottomSheet(
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: true,
+          builder: (sheetContext) => SafeArea(
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: .8,
+              builder: (_, controller) => ListView(
+                controller: controller,
+                children: [
+                  const ListTile(
+                    title: Text('Discover production Spaces'),
+                    subtitle: Text(
+                      'Request a position. Restricted Spaces appear after administrator approval.',
+                    ),
+                  ),
+                  ...positions.map(
+                    (position) => ListTile(
+                      leading: Icon(
+                        '${position['key']}'.startsWith('pit-')
+                            ? Icons.music_note
+                            : Icons.groups,
+                      ),
+                      title: Text('${position['label']}'),
+                      subtitle: Text(
+                        pending.contains('${position['key']}')
+                            ? 'Pending approval'
+                            : 'Tap to request access',
+                      ),
+                      enabled: !pending.contains('${position['key']}'),
+                      onTap: () async {
+                        await communityAccess({
+                          'action': 'request',
+                          'positionKey': position['key'],
+                        });
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                        if (mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Access request sent.'),
+                            ),
+                          );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    }
+  }
+
   Future<void> openPrivateMessage() async {
     try {
       final token = await FirebaseAuth.instance.currentUser?.getIdToken();
@@ -2620,6 +2807,18 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                           ? 'Private message a member'
                           : 'Message an administrator',
                       icon: const Icon(Icons.person_add_alt_1),
+                    ),
+                    const SizedBox(width: 5),
+                    IconButton.filledTonal(
+                      onPressed: openCommunityAccess,
+                      tooltip: widget.portal.admin
+                          ? 'Review access requests'
+                          : 'Discover Spaces',
+                      icon: Icon(
+                        widget.portal.admin
+                            ? Icons.admin_panel_settings_outlined
+                            : Icons.explore_outlined,
+                      ),
                     ),
                     if (widget.portal.admin) ...[
                       const SizedBox(width: 5),

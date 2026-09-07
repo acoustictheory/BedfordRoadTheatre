@@ -871,6 +871,36 @@ async function reconcile(assignments) {
     throw new Error(result.error || "Spaces could not synchronize.");
   return result;
 }
+async function communityAccessRequest(body) {
+  const response = await fetch(BRM_CONFIG.FIREBASE_COMMUNITY_ACCESS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser.getIdToken()}` },
+    body: JSON.stringify({ productionId, ...body }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.success) throw new Error(result.error || "Community access could not be updated.");
+  return result;
+}
+async function discoverSpaces() {
+  try {
+    const data = await communityAccessRequest({ action: "catalog" }), pending = new Set((data.requests || []).filter(item => item.status === "Pending").map(item => item.positionKey || item.spaceKey));
+    const groups = [
+      ["Production & cast", data.positions.filter(item => !item.key.startsWith("pit-"))],
+      ["Pit Orchestra", data.positions.filter(item => item.key.startsWith("pit-"))],
+    ];
+    const modal = BRM.openModal(`<span class="eyebrow">DISCOVER SPACES</span><h2>Request production access</h2><p>Choose what you are involved in. An administrator verifies restricted assignments before the Space appears.</p>${groups.map(([title,items])=>`<section class="access-choice-section"><h3>${esc(title)}</h3><div class="member-picker">${items.map(item=>`<button type="button" class="access-request-card" data-position-request="${esc(item.key)}" ${pending.has(item.key)?'disabled':''}><strong>${esc(item.label)}</strong><small>${pending.has(item.key)?'Pending approval':item.spaceKeys.map(key=>key==='general-cast'?'Cast':data.spaces.find(space=>space.key===key)?.title||key).join(' · ')}</small></button>`).join('')}</div></section>`).join('')}`,{wide:true});
+    modal.querySelectorAll('[data-position-request]').forEach(button=>button.onclick=async()=>{const reason=prompt('Optional: tell the administrator why you need this access.')||'';button.disabled=true;try{await communityAccessRequest({action:'request',positionKey:button.dataset.positionRequest,reason});button.querySelector('small').textContent='Pending approval';BRM.toast('Access request sent.','success');}catch(error){button.disabled=false;BRM.toast(error.message,'error');}});
+  } catch(error) { BRM.toast(error.message,"error"); }
+}
+async function openAccessCenter() {
+  try {
+    const data=await communityAccessRequest({action:'adminState'}), assignments=new Map((data.assignments||[]).map(item=>[item.userId||item.id,item])), pending=(data.requests||[]).filter(item=>item.status==='Pending'), personMap=new Map((data.people||[]).map(item=>[item.id,item]));
+    const modal=BRM.openModal(`<span class="eyebrow">PEOPLE & ACCESS</span><h2>Community access centre</h2><p>Assign what a person does; Community Spaces update automatically.</p><div class="access-admin-layout"><section><h3>${pending.length} pending request${pending.length===1?'':'s'}</h3><div class="data-list">${pending.map(item=>{const person=personMap.get(item.userId)||{name:'Member'},position=data.positions.find(value=>value.key===item.positionKey);return `<article class="data-card"><div class="data-card-main">${BRM.avatar(person.name,person.photoURL,'small')}<strong>${esc(person.name)}</strong><p>${esc(position?.label||item.spaceKey)}${item.reason?` · ${esc(item.reason)}`:''}</p></div><div><button class="button button-primary button-small" data-review="${item.id}" data-decision="Approved">Approve</button> <button class="button button-danger button-small" data-review="${item.id}" data-decision="Declined">Decline</button></div></article>`}).join('')||'<p class="field-hint">No requests are waiting.</p>'}</div></section><section><h3>Assign positions</h3><div class="field"><label>Person</label><select data-access-person>${data.people.map(person=>`<option value="${esc(person.id)}">${esc(person.name)}</option>`).join('')}</select></div><div class="member-picker" data-position-picker></div><div class="form-actions"><button class="button button-primary" data-save-access>Save involvement</button></div></section></div>`,{wide:true});
+    const select=modal.querySelector('[data-access-person]'),picker=modal.querySelector('[data-position-picker]'),render=()=>{const selected=new Set(assignments.get(select.value)?.positionKeys||[]);picker.innerHTML=data.positions.map(item=>`<label class="checkbox-row"><input type="checkbox" value="${esc(item.key)}" ${selected.has(item.key)?'checked':''}> ${esc(item.label)}</label>`).join('')};select.onchange=render;render();
+    modal.querySelector('[data-save-access]').onclick=async event=>{event.currentTarget.disabled=true;try{const prior=assignments.get(select.value)||{};await communityAccessRequest({action:'saveInvolvement',userId:select.value,positionKeys:[...picker.querySelectorAll('input:checked')].map(input=>input.value),spaceKeys:prior.spaceKeys||[],blockedSpaceKeys:prior.blockedSpaceKeys||[]});BRM.toast('Involvement saved and Spaces synchronized.','success');modal.closeModal();}catch(error){event.currentTarget.disabled=false;BRM.toast(error.message,'error')}};
+    modal.querySelectorAll('[data-review]').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await communityAccessRequest({action:'review',requestId:button.dataset.review,decision:button.dataset.decision});button.closest('.data-card').remove();BRM.toast(`Request ${button.dataset.decision.toLowerCase()}.`,'success');}catch(error){button.disabled=false;BRM.toast(error.message,'error')}});
+  } catch(error) { BRM.toast(error.message,'error'); }
+}
 async function manageSpaces() {
   const [profilesSnap, usersSnap, assignmentSnap] = await Promise.all([
       getDocs(collection(db, "profiles")),
@@ -1054,7 +1084,7 @@ document.addEventListener("DOMContentLoaded", () =>
       })
       .catch(() => {});
     document.querySelector("#app-main").innerHTML =
-      `<header class="community-header"><div><span class="eyebrow">BEDFORD COMMUNITY</span><h1>Community Messages</h1><p>${BRM.isAdmin() ? "Admin view · all assigned Spaces" : "Spaces and administrator conversations"}</p></div><div class="community-actions"><button class="icon-button" data-settings title="Notification settings">⚙</button><button class="icon-button" data-private-message title="${BRM.isAdmin() ? "Private message a member" : "Message an administrator"}">✉</button>${BRM.isAdmin() ? '<button class="icon-button" data-manage title="Manage automatic Spaces">♚</button><button class="icon-button" data-new title="New group conversation">＋</button>' : ""}</div></header><section class="panel communications" data-communications><aside class="conversation-list"><div class="conversation-list-head"><div class="unread-overview"><span class="unread-orbit">✓</span><div><strong data-unread-total>Inbox is caught up</strong><small>Official messages for your production</small></div></div><input class="search-input" data-room-search placeholder="Search Spaces and conversations"></div><div data-room-list></div></aside><section class="chat-pane"><header class="chat-head"><button class="button button-ghost button-small comm-mobile-back" data-back>‹ Messages</button><span class="chat-avatar" data-chat-avatar>🎭</span><div class="chat-identity"><strong data-chat-title>Select a conversation</strong><small data-chat-subtitle style="display:block"></small></div><input class="chat-message-search" data-message-search type="search" placeholder="Search messages" aria-label="Search this conversation">${BRM.isAdmin() ? '<button class="icon-button chat-aesthetic-button" data-customize-room title="Edit group theme, icon and picture" disabled>✦</button>' : ""}</header><div class="pinned-message hidden" data-pinned-message></div><div class="message-stream" data-messages><div class="empty-chat"><span class="empty-chat-icon">●</span><strong>Your Bedford community</strong><small>Choose a Space to begin.</small></div></div><form class="composer"><div class="typing-indicator" data-typing></div><div class="reply-preview hidden" data-reply-preview></div><button type="button" class="composer-plus" title="Attachments coming next">＋</button><textarea name="message" maxlength="4000" placeholder="Message this Space…" required></textarea><button class="send-button" aria-label="Send">➤</button></form></section></section>`;
+      `<header class="community-header"><div><span class="eyebrow">BEDFORD COMMUNITY</span><h1>Community Messages</h1><p>${BRM.isAdmin() ? "Admin view · all assigned Spaces" : "Spaces and administrator conversations"}</p></div><div class="community-actions"><button class="icon-button" data-discover title="Discover and request Spaces">⌕</button><button class="icon-button" data-settings title="Notification settings">⚙</button><button class="icon-button" data-private-message title="${BRM.isAdmin() ? "Private message a member" : "Message an administrator"}">✉</button>${BRM.isAdmin() ? '<button class="icon-button" data-access-center title="People and Community access">♟</button><button class="icon-button" data-manage title="Manage direct Space grants">♚</button><button class="icon-button" data-new title="New group conversation">＋</button>' : ""}</div></header><section class="panel communications" data-communications><aside class="conversation-list"><div class="conversation-list-head"><div class="unread-overview"><span class="unread-orbit">✓</span><div><strong data-unread-total>Inbox is caught up</strong><small>Official messages for your production</small></div></div><input class="search-input" data-room-search placeholder="Search Spaces and conversations"></div><div data-room-list></div></aside><section class="chat-pane"><header class="chat-head"><button class="button button-ghost button-small comm-mobile-back" data-back>‹ Messages</button><span class="chat-avatar" data-chat-avatar>🎭</span><div class="chat-identity"><strong data-chat-title>Select a conversation</strong><small data-chat-subtitle style="display:block"></small></div><input class="chat-message-search" data-message-search type="search" placeholder="Search messages" aria-label="Search this conversation">${BRM.isAdmin() ? '<button class="icon-button chat-aesthetic-button" data-customize-room title="Edit group theme, icon and picture" disabled>✦</button>' : ""}</header><div class="pinned-message hidden" data-pinned-message></div><div class="message-stream" data-messages><div class="empty-chat"><span class="empty-chat-icon">●</span><strong>Your Bedford community</strong><small>Choose a Space to begin.</small></div></div><form class="composer"><div class="typing-indicator" data-typing></div><div class="reply-preview hidden" data-reply-preview></div><button type="button" class="composer-plus" title="Attachments coming next">＋</button><textarea name="message" maxlength="4000" placeholder="Message this Space…" required></textarea><button class="send-button" aria-label="Send">➤</button></form></section></section>`;
     document.querySelector("[data-message-search]").insertAdjacentHTML("afterend", '<button class="icon-button chat-background-button" data-chat-background title="Choose your chat background">▦</button>');
     document.querySelector(".composer").onsubmit = send;
     document.querySelector('.composer textarea[name="message"]').oninput =
@@ -1064,6 +1094,7 @@ document.addEventListener("DOMContentLoaded", () =>
         .querySelector("[data-communications]")
         .classList.remove("chat-open");
     document.querySelector("[data-settings]").onclick = settings;
+    document.querySelector("[data-discover]").onclick = discoverSpaces;
     document.querySelector("[data-private-message]").onclick = startPrivateMessage;
     document.querySelector("[data-chat-background]").onclick = chooseChatBackground;
     document.querySelector("[data-room-search]").oninput = renderRooms;
@@ -1078,6 +1109,7 @@ document.addEventListener("DOMContentLoaded", () =>
     document
       .querySelector("[data-manage]")
       ?.addEventListener("click", manageSpaces);
+    document.querySelector("[data-access-center]")?.addEventListener("click", openAccessCenter);
     await attachDevice();
     if (BRM.isAdmin())
       reconcile()

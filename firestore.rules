@@ -146,6 +146,13 @@ service cloud.firestore {
         allow read: if admin() || (activeMember() && principalId() == userId);
         allow write: if admin();
       }
+      match /communityAccessRequests/{requestId} {
+        allow read: if admin() || (activeMember() && resource.data.userId == principalId());
+        allow create: if activeMember()
+          && request.resource.data.userId == principalId()
+          && request.resource.data.status == 'Pending';
+        allow update, delete: if admin();
+      }
 
       // Reads, acknowledgements, journals, recruitment, measurements, audit data,
       // and department workspaces stay private until their per-feature rules ship.
