@@ -34,6 +34,7 @@ let productionId,
   stopReads,
   stopReactions,
   stopTyping,
+  stopPeople,
   activeMessages = [],
   roomReads = new Map(),
   messageReactions = new Map(),
@@ -150,7 +151,7 @@ const esc = (v) => BRM.escape(String(v ?? "")),
     return matches.find(([term]) => value.includes(term))?.[1] || "musical-theatre";
   },
   person = (id) =>
-    people.get(String(id)) || { displayName: "Member", photoURL: "" },
+    people.get(String(id)) || { displayName: "Unknown person", photoURL: "" },
   personAvatar = (id, size = "small") => {
     const profile = person(id);
     return BRM.avatar(profile.displayName, profile.photoURL, size);
@@ -285,7 +286,9 @@ function renderActiveMessages() {
                 id !== message.senderId &&
                 (roomReads.get(id)?.lastReadAt?.seconds || 0) >= messageTime,
             ),
-            receipts = seenBy.length
+            receipts = message._pending
+              ? '<div class="message-seen pending"><span>Sending…</span></div>'
+              : seenBy.length
               ? `<button type="button" class="message-seen" data-seen-message="${esc(message.id)}" title="See read details"><span>Seen</span>${seenBy
                   .slice(0, 8)
                   .map((id) => personAvatar(id, "small"))
@@ -307,7 +310,7 @@ function renderActiveMessages() {
           const reply = message.replyTo?.text
             ? `<div class="message-reply-quote"><strong>${esc(message.replyTo.senderName || "Member")}</strong><span>${esc(message.replyTo.text)}</span></div>`
             : "";
-          return `<div class="message-row ${mine ? "mine" : ""}" data-message-id="${esc(message.id)}">${mine ? "" : personAvatar(message.senderId)}<div class="message-stack"><article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-meta">${message.pinned ? "📌 " : ""}${esc(person(message.senderId).displayName || message.senderName)} · ${clock(message.createdAt)}</div><div>${esc(message.text).replace(/\n/g, "<br>")}</div></article>${reactions}<div class="message-actions"><button type="button" data-reply-message="${esc(message.id)}">↩ Reply</button><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-copy-message="${esc(message.id)}">Copy</button>${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">Delete</button>` : ""}</div>${receipts}</div>${mine ? personAvatar(message.senderId) : ""}</div>`;
+          return `<div class="message-row ${mine ? "mine" : ""}" data-message-id="${esc(message.id)}">${mine ? "" : personAvatar(message.senderId)}<div class="message-stack"><article class="message ${mine ? "mine" : ""} ${message.pinned ? "pinned" : ""}">${reply}<div class="message-meta">${message.pinned ? "📌 " : ""}${esc(person(message.senderId).displayName || message.senderName)} · ${clock(message.createdAt || message.clientCreatedAt)}</div><div>${esc(message.text).replace(/\n/g, "<br>")}</div></article>${reactions}<div class="message-actions"><button type="button" data-reply-message="${esc(message.id)}">↩ Reply</button><span class="quick-reactions">${["👍", "❤️", "😂", "🎭"].map((emoji) => `<button type="button" data-react-message="${esc(message.id)}" data-react-emoji="${emoji}">${emoji}</button>`).join("")}</span><button type="button" data-copy-message="${esc(message.id)}">Copy</button>${BRM.isAdmin() ? `<button type="button" data-pin-message="${esc(message.id)}">${message.pinned ? "Unpin" : "Pin"}</button><button type="button" class="danger" data-delete-message="${esc(message.id)}">Delete</button>` : ""}</div>${receipts}</div>${mine ? personAvatar(message.senderId) : ""}</div>`;
         })
         .join("")
     : `<div class="empty-chat">${messageSearch ? "No messages match your search." : "Start the conversation."}</div>`;
@@ -367,6 +370,12 @@ function showReadDetails(messageId) {
   const sentAt = message.createdAt?.seconds || 0,
     readers = (activeRoom?.memberIds || []).filter(id => id !== message.senderId && (roomReads.get(id)?.lastReadAt?.seconds || 0) >= sentAt),
     modal = BRM.openModal(`<span class="eyebrow">Message details</span><h2>Seen by ${readers.length}</h2><div class="seen-detail-list">${readers.length ? readers.map(id => { const read = roomReads.get(id)?.lastReadAt?.toDate?.(); return `<div class="seen-detail-person">${personAvatar(id)}<span><strong>${esc(person(id).displayName)}</strong><small>${read ? `Seen ${read.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "Seen"}</small></span><b>✓✓</b></div>`; }).join("") : "<p>No one has seen this message yet.</p>"}</div>`);
+  BRM.hydrateProfilePhotos(modal);
+}
+function showRoomMembers() {
+  if (!activeRoom) return;
+  const members = (activeRoom.memberIds || []).map(id => ({ id, ...person(id) }));
+  const modal = BRM.openModal(`<span class="eyebrow">${esc(activeRoom.title)}</span><h2>${members.length} ${members.length === 1 ? "person" : "people"}</h2><div class="seen-detail-list">${members.map(member => { const roles = (member.departments || []).map(item => item.role && item.role !== "Member" ? `${item.name} · ${item.role}` : item.name).filter(Boolean).join(" · "); return `<div class="seen-detail-person">${personAvatar(member.id)}<span><strong>${esc(member.displayName)}</strong><small>${esc(roles || (member.administrator ? "Administrator" : "Production member"))}</small></span></div>`; }).join("") || "<p>No people are currently assigned.</p>"}</div>`);
   BRM.hydrateProfilePhotos(modal);
 }
 function messageDocument(messageId) {
@@ -496,6 +505,7 @@ function openRoom(room) {
     room.type === "direct"
       ? "Private conversation"
       : `${room.memberIds?.length || 0} members · Admin managed`;
+  document.querySelector("[data-chat-subtitle]").onclick = showRoomMembers;
   const aestheticButton = document.querySelector("[data-customize-room]");
   if (aestheticButton) aestheticButton.disabled = false;
   stopMessages?.();
@@ -580,7 +590,7 @@ function openRoom(room) {
     ),
     (snap) => {
       activeMessages = snap.docs
-        .map((entry) => ({ id: entry.id, ...entry.data() }))
+        .map((entry) => ({ id: entry.id, ...entry.data(), _pending: entry.metadata.hasPendingWrites }))
         .reverse();
       renderActiveMessages();
       setDoc(
@@ -595,7 +605,7 @@ function openRoom(room) {
         ),
         {
           lastReadAt: serverTimestamp(),
-          lastMessageId: snap.docs.at(-1)?.id || null,
+          lastMessageId: snap.docs[0]?.id || null,
         },
         { merge: true },
       ).catch(() => {});
@@ -726,7 +736,7 @@ async function send(e) {
   if (!text) return;
   box.value = "";
   const senderName =
-    BRM.context?.profile?.DisplayName || BRM.context?.username || "Member";
+    person(userId).displayName || BRM.context?.profile?.DisplayName || BRM.context?.username || "Unknown person";
   const replyTo = replyingTo
     ? {
         messageId: replyingTo.id,
@@ -740,38 +750,22 @@ async function send(e) {
   renderReplyComposer();
   clearTimeout(typingTimer);
   deleteDoc(typingDocument()).catch(() => {});
-  await addDoc(
-    collection(
+  const messageRef = doc(collection(
       db,
       "productions",
       productionId,
       "communicationConversations",
       activeRoom.id,
       "messages",
-    ),
-    {
+    ));
+  await setDoc(messageRef, {
       senderId: userId,
       senderName,
       text,
       ...(replyTo ? { replyTo } : {}),
       createdAt: serverTimestamp(),
-    },
-  );
-  await updateDoc(
-    doc(
-      db,
-      "productions",
-      productionId,
-      "communicationConversations",
-      activeRoom.id,
-    ),
-    {
-      lastMessage: text.slice(0, 180),
-      lastMessageAt: serverTimestamp(),
-      lastSenderId: userId,
-      updatedAt: serverTimestamp(),
-    },
-  );
+      clientCreatedAt: new Date().toISOString(),
+    });
 }
 async function createRoom() {
   const profiles = (await getDocs(collection(db, "profiles"))).docs.map((d) =>
@@ -839,6 +833,7 @@ async function startPrivateMessage() {
     };
     const { targets } = await request({ action: "targets" });
     if (!targets?.length) throw new Error("No available person was found for a private message.");
+    targets.forEach(target => people.set(String(target.id), { ...person(target.id), displayName: target.name, photoURL: target.photoURL || person(target.id).photoURL, photoFileID: target.photoFileID || person(target.id).photoFileID, administrator: target.administrator }));
     const modal = BRM.openModal(
       `<span class="eyebrow">PRIVATE MESSAGE</span><h2>${BRM.isAdmin() ? "Choose a member" : "Message an administrator"}</h2><p>${BRM.isAdmin() ? "You can privately message any active member." : "This conversation will only include you and the administrator you choose."}</p><div class="private-message-targets">${targets.map(target => `<button type="button" class="button button-ghost" data-private-target="${esc(target.id)}">${personAvatar(target.id)}<strong>${esc(target.name)}</strong>${target.administrator ? "<small>Administrator</small>" : ""}</button>`).join("")}</div>`,
     );
@@ -1052,34 +1047,36 @@ document.addEventListener("DOMContentLoaded", () =>
     if (!productionId) throw new Error("Active production unavailable.");
     const currentProfile = context.profile || {};
     people.set(String(userId), {
-      displayName: currentProfile.DisplayName || context.username || "Member",
+      displayName: currentProfile.DisplayName || context.username || "Unknown person",
       photoURL: currentProfile.PhotoURL || "",
+    });
+    stopPeople = onSnapshot(collection(db, "communityMembers"), (memberSnapshot) => {
+      memberSnapshot.docs.forEach((entry) => people.set(entry.id, entry.data()));
+      renderRooms();
+      renderActiveMessages();
+      renderTyping();
     });
     getDocs(collection(db, "profiles"))
       .then((profileSnapshot) => {
-        people = new Map([
-          ...people,
-          ...profileSnapshot.docs.map((entry) => {
+        profileSnapshot.docs.forEach((entry) => {
             const profile = entry.data(),
               id = profile.userID || profile.UserID || entry.id;
-            return [
-              String(id),
-              {
+            if (!people.has(String(id)) || people.get(String(id)).displayName === "Unknown person") {
+              people.set(String(id), {
                 displayName:
                   profile.displayName ||
                   profile.DisplayName ||
                   `${profile.firstName || profile.FirstName || ""} ${profile.lastName || profile.LastName || ""}`.trim() ||
-                  "Member",
+                  "Unknown person",
                 photoURL:
                   profile.photoURL ||
                   profile.PhotoURL ||
                   (profile.photoFileID || profile.PhotoFileID
                     ? `drivefile:${profile.photoFileID || profile.PhotoFileID}`
                     : ""),
-              },
-            ];
-          }),
-        ]);
+              });
+            }
+          });
         renderActiveMessages();
       })
       .catch(() => {});

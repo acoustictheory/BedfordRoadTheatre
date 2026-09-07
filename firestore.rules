@@ -30,6 +30,12 @@ service cloud.firestore {
           .hasOnly(['theme', 'Theme', 'themePreferences', 'photoFileId',
             'photoFileID', 'photoURL', 'updatedAt']);
     }
+    // Sanitized, canonical identity used by Community. Private contact and
+    // emergency information is deliberately never copied here.
+    match /communityMembers/{userId} {
+      allow read: if activeMember();
+      allow write: if false;
+    }
     match /productions/{productionId} {
       allow read: if activeMember();
       allow write: if admin();

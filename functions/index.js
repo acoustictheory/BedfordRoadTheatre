@@ -20,9 +20,9 @@ const allowedTables = new Set([
   'BlockingMovements','BlockingSnapshotVersions','BlockingActivity','CostumeCharacters','CostumeChanges','CostumeMeasurements',
   'CostumeFittings','CostumePieces','CostumeDeadlines','CostumeImages','CostumeSuggestions','CostumeActivity','ScenicSets',
   'ScenicElements','ScenicTransitions','ScenicDeadlines','ScenicImages','ScenicSuggestions','ScenicActivity','PropsInventory',
-  'PropsPresets','PropsDeadlines','PropsImages','PropsSuggestions','PropsActivity','RegistrationCodes'
+  'PropsPresets','PropsDeadlines','PropsImages','PropsSuggestions','PropsActivity','RegistrationCodes','Users','Profiles','Departments'
 ]);
-const globalTables = new Set(['RegistrationCodes']);
+const globalTables = new Set(['RegistrationCodes','Users','Profiles']);
 const fixedCommunicationSpaces = [
   ['musical-theatre','Musical Theatre 10/20/30'],
   ['theatre-arts','Theatre Arts 20/30'],
@@ -110,8 +110,8 @@ async function reconcileCommunicationSpaces(productionId) {
   const production=db.collection('productions').doc(productionId);
   let departments=await production.collection('departments').get();
   if(departments.empty) departments=await db.collection('departments').get();
-  const [memberships,assignments,users]=await Promise.all([
-    production.collection('userDepartments').get(),production.collection('communicationAssignments').get(),db.collection('users').get()
+  const [memberships,assignments,users,profiles]=await Promise.all([
+    production.collection('userDepartments').get(),production.collection('communicationAssignments').get(),db.collection('users').get(),db.collection('profiles').get()
   ]);
   const admins=users.docs.filter(d=>isFullAdministrator(d.data())).map(d=>d.id);
   const byDepartment=new Map(); memberships.docs.forEach(d=>{const row=d.data();if(String(row.status||'Active')!=='Active')return;const key=String(row.departmentID||row.departmentId||'');if(key)(byDepartment.get(key)||byDepartment.set(key,[]).get(key)).push(String(row.userID||row.userId||''));});
@@ -121,6 +121,13 @@ async function reconcileCommunicationSpaces(productionId) {
   spaces.push({key:'ensemble-general-cast',title:'Cast',category:'ensemble',sourceType:'ensemble',sourceId:'general-cast',members:generalCastMembers});
   fixedCommunicationSpaces.forEach(([key,title])=>{const category=key==='musical-theatre'||key==='theatre-arts'?'class':key==='choreography'||key==='featured-dancers'||key==='pit-orchestra'?'ensemble':'production';spaces.push({key:`assignment-${key}`,title,category,sourceType:'assignment',sourceId:key,members:assigned.get(key)||[]});});
   const batch=db.batch(),now=FieldValue.serverTimestamp(),roomCollection=production.collection('communicationConversations'),desiredIds=new Set(spaces.map(space=>`space-${space.key}`));
+  const profilesByUser=new Map(); profiles.docs.forEach(document=>{const profile=document.data(),id=String(profile.userID||profile.UserID||document.id);if(id)profilesByUser.set(id,profile);});
+  const departmentsById=new Map(); departments.docs.forEach(document=>{const row=document.data(),id=String(row.departmentID||row.DepartmentID||document.id);departmentsById.set(id,row);});
+  const membershipsByUser=new Map(); memberships.docs.forEach(document=>{const row=document.data(),id=String(row.userID||row.userId||'');if(!id||String(row.status||row.Status||'Active').toLowerCase()!=='active')return;(membershipsByUser.get(id)||membershipsByUser.set(id,[]).get(id)).push(row);});
+  const assignmentsByUser=new Map(assignments.docs.map(document=>[String(document.data().userId||document.id),document.data()]));
+  const memberUpdates=[];
+  users.docs.forEach(document=>{const account=document.data(),id=document.id,profile=profilesByUser.get(id)||{},membershipRows=membershipsByUser.get(id)||[],assignment=assignmentsByUser.get(id)||{};const firstName=clean(profile.firstName||profile.FirstName,80),lastName=clean(profile.lastName||profile.LastName,80),assembledName=`${firstName} ${lastName}`.trim(),displayName=clean(profile.displayName||profile.DisplayName||assembledName||account.username||account.Username||id,120)||id;memberUpdates.push({ref:db.collection('communityMembers').doc(id),data:{userId:id,displayName,firstName,lastName,photoURL:clean(profile.photoURL||profile.PhotoURL,2000),photoFileID:clean(profile.photoFileID||profile.PhotoFileID,300),pronouns:clean(profile.pronouns||profile.Pronouns,80),grade:clean(profile.grade||profile.Grade,40),status:isActiveUser(account)?'Active':'Disabled',administrator:isFullAdministrator(account),departments:membershipRows.map(row=>{const departmentId=String(row.departmentID||row.DepartmentID||''),department=departmentsById.get(departmentId)||{};return {id:departmentId,name:clean(department.name||department.Name,120),role:clean(row.roleLabel||row.RoleLabel||'Member',120)};}),positionKeys:validCommunityPositionKeys(assignment.positionKeys),spaceKeys:validCommunicationSpaceKeys(assignment.spaceKeys),updatedAt:now}});});
+  for(let offset=0;offset<memberUpdates.length;offset+=400){const identityBatch=db.batch();memberUpdates.slice(offset,offset+400).forEach(item=>identityBatch.set(item.ref,item.data,{merge:true}));await identityBatch.commit();}
   const existingRooms=await roomCollection.get();
   existingRooms.docs.filter(document=>document.data().autoManaged===true&&!desiredIds.has(document.id)).forEach(document=>batch.set(document.ref,{status:'Archived',updatedAt:now},{merge:true}));
   spaces.forEach(space=>{const members=[...new Set([...admins,...space.members].filter(Boolean))];batch.set(roomCollection.doc(`space-${space.key}`),{title:space.title,type:'space',description:`Official ${space.title} space`,memberIds:members,adminIds:admins,category:space.category,sourceType:space.sourceType,sourceId:space.sourceId,autoManaged:true,status:'Active',updatedAt:now,createdAt:now},{merge:true});});
@@ -136,11 +143,14 @@ export const syncTable = onRequest({ region: 'northamerica-northeast2', secrets:
     const userId = String(request.body.userId || '');
     if (!/^USR-[A-Za-z0-9-]+$/.test(userId)) { response.status(400).json({ success:false, error:'Invalid user.' }); return; }
     try { await getAuth().deleteUser(userId); } catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
-    const profiles = await db.collection('profiles').where('UserID', '==', userId).get();
+    const [profiles,productions] = await Promise.all([db.collection('profiles').where('UserID', '==', userId).get(),db.collection('productions').get()]);
     const cleanup = db.batch();
     cleanup.delete(db.collection('users').doc(userId));
+    cleanup.delete(db.collection('profiles').doc(userId));
+    cleanup.delete(db.collection('communityMembers').doc(userId));
     profiles.docs.forEach(document => cleanup.delete(document.ref));
     await cleanup.commit();
+    for(const production of productions.docs){const rooms=await production.ref.collection('communicationConversations').where('memberIds','array-contains',userId).get(),roomCleanup=db.batch();roomCleanup.delete(production.ref.collection('communicationAssignments').doc(userId));rooms.docs.forEach(room=>roomCleanup.set(room.ref,{memberIds:FieldValue.arrayRemove(userId),updatedAt:FieldValue.serverTimestamp()},{merge:true}));await roomCleanup.commit();}
     response.json({ success:true, operation:'deleteUser', userId }); return;
   }
   if (request.body?.operation === 'createUser') {
@@ -173,7 +183,7 @@ export const syncTable = onRequest({ region: 'northamerica-northeast2', secrets:
     await batch.commit();
   }
   let communicationSync=null;
-  if(productionId&&(table==='UserDepartments'||table==='Departments')) communicationSync=await reconcileCommunicationSpaces(productionId);
+  if(productionId&&['Users','Profiles','UserDepartments','Departments'].includes(table)) communicationSync=await reconcileCommunicationSpaces(productionId);
   response.json({ success: true, table, rows: records.length, deleted: operations.filter(item => item.type === 'delete').length, communicationSync });
 });
 
@@ -439,8 +449,8 @@ export const openCommunicationDirect = onRequest({region:'northamerica-northeast
     const profilesByUser=new Map(); profilesSnap.docs.forEach(document=>{const profile=document.data(),id=clean(profile.userID||profile.UserID||document.id,128);if(id)profilesByUser.set(id,profile);});
     const targetRows=allowedTargets.map((document,index)=>{
       const user=document.data(), profile=profilesByUser.get(document.id)||{};
-      const name=clean(profile.displayName||profile.DisplayName||`${profile.firstName||profile.FirstName||''} ${profile.lastName||profile.LastName||''}`||user.username||'Member',120);
-      return {id:document.id,name:name||clean(user.username,40)||'Member',administrator:isFullAdministrator(user)};
+      const assembledName=`${profile.firstName||profile.FirstName||''} ${profile.lastName||profile.LastName||''}`.trim(),name=clean(profile.displayName||profile.DisplayName||assembledName||user.username||user.Username||document.id,120);
+      return {id:document.id,name:name||document.id,photoURL:clean(profile.photoURL||profile.PhotoURL,2000),photoFileID:clean(profile.photoFileID||profile.PhotoFileID,300),administrator:isFullAdministrator(user)};
     }).sort((a,b)=>a.name.localeCompare(b.name));
     if(request.body?.action==='targets'){response.json({success:true,targets:targetRows});return;}
     const productionId=clean(request.body?.productionId,120), targetUserId=clean(request.body?.targetUserId,128);
@@ -448,7 +458,8 @@ export const openCommunicationDirect = onRequest({region:'northamerica-northeast
     const target=targetRows.find(item=>item.id===targetUserId);
     if(!target) throw new Error(callerAdmin?'Choose an active member.':'Private messages may only be started with an administrator.');
     const callerProfile=profilesByUser.get(callerId)||{};
-    const callerName=clean(callerProfile.displayName||callerProfile.DisplayName||`${callerProfile.firstName||callerProfile.FirstName||''} ${callerProfile.lastName||callerProfile.LastName||''}`||caller.username||'Member',120)||'Member';
+    const callerAssembledName=`${callerProfile.firstName||callerProfile.FirstName||''} ${callerProfile.lastName||callerProfile.LastName||''}`.trim();
+    const callerName=clean(callerProfile.displayName||callerProfile.DisplayName||callerAssembledName||caller.username||caller.Username||callerId,120)||callerId;
     const memberIds=[callerId,targetUserId].sort(), id=`direct-${crypto.createHash('sha256').update(memberIds.join('|')).digest('hex').slice(0,24)}`;
     const conversation={title:`${callerName} & ${target.name}`,type:'direct',description:'Private conversation',memberIds,adminIds:callerAdmin?[callerId]:[targetUserId],createdBy:callerId,status:'Active',category:'production',groupColor:'#6d4aff',groupSecondaryColor:'#b22a8f',groupTheme:'aurora',groupIcon:'💬',updatedAt:FieldValue.serverTimestamp()};
     const ref=db.collection('productions').doc(productionId).collection('communicationConversations').doc(id);
@@ -476,16 +487,17 @@ export const notifyCommunicationMessage = onDocumentCreated({
   },{merge:true});
   const room=roomSnap.data(), recipients=(room.memberIds||[]).filter(id=>id!==message.senderId);
   if (!recipients.length) return;
-  const [devices,settings]=await Promise.all([
-    db.collection('communicationDevices').where('userId','in',recipients.slice(0,30)).get(),
+  const recipientChunks=[];for(let offset=0;offset<recipients.length;offset+=30)recipientChunks.push(recipients.slice(offset,offset+30));
+  const [deviceSnapshots,settings]=await Promise.all([
+    Promise.all(recipientChunks.map(chunk=>db.collection('communicationDevices').where('userId','in',chunk).get())),
     Promise.all(recipients.map(id=>db.collection('productions').doc(productionId).collection('communicationSettings').doc(id).get()))
   ]);
   const muted=new Set(settings.filter(s=>s.exists && s.data().notifications===false).map(s=>s.id));
-  const targets=devices.docs.filter(d=>d.data().enabled!==false&&!muted.has(d.data().userId)&&d.data().token);
+  const targets=deviceSnapshots.flatMap(snapshot=>snapshot.docs).filter(d=>d.data().enabled!==false&&!muted.has(d.data().userId)&&d.data().token);
   if (!targets.length) return;
   const data={type:'communication',productionId,conversationId,messageId:event.params.messageId,
     conversationTitle:String(room.title||'Bedford Musical'),senderName:String(message.senderName||'New message'),body:String(message.text||'New message').slice(0,500)};
-  const result=await getMessaging().sendEach(targets.map(device=>({token:device.data().token,data:{...data,bubbles:String(device.data().bubbles!==false)},android:{priority:'high'}})));
+  const result=await getMessaging().sendEach(targets.map(device=>({token:device.data().token,data:{...data,bubbles:String(device.data().bubbles!==false)},android:{priority:'high'},apns:{headers:{'apns-priority':'10'},payload:{aps:{sound:'default','content-available':1}}}})));
   const batch=db.batch(); result.responses.forEach((r,i)=>{if(!r.success&&/registration-token-not-registered|invalid-registration-token/.test(r.error?.code||''))batch.delete(targets[i].ref);});
   await batch.commit();
 });

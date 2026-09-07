@@ -764,6 +764,13 @@ final Map<String, Future<Map<String, dynamic>>> _profiles = {};
 
 Future<Map<String, dynamic>> loadUserProfile(String userId) =>
     _profiles.putIfAbsent(userId, () async {
+      try {
+        final member = await FirebaseFirestore.instance
+            .collection('communityMembers')
+            .doc(userId)
+            .get();
+        if (member.exists) return member.data() ?? {};
+      } catch (_) {}
       final profiles = FirebaseFirestore.instance.collection('profiles');
       final direct = await profiles.doc(userId).get();
       if (direct.exists) return direct.data() ?? {};
@@ -797,17 +804,47 @@ class UserProfileAvatar extends StatelessWidget {
   final String userId, name;
   final double radius;
   @override
-  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
-    future: loadUserProfile(userId),
-    builder: (context, snapshot) {
-      final profile = snapshot.data ?? const <String, dynamic>{};
-      return ProfileAvatar(
-        name: profileDisplayName(profile, name),
-        fileId: profilePhotoReference(profile),
-        url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
-        radius: radius,
+  Widget build(BuildContext context) => StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    stream: FirebaseFirestore.instance.collection('communityMembers').doc(userId).snapshots(),
+    builder: (context, memberSnapshot) {
+      final member = memberSnapshot.data?.data();
+      if (member != null) {
+        return ProfileAvatar(
+          name: profileDisplayName(member, name),
+          fileId: profilePhotoReference(member),
+          url: '${member['photoURL'] ?? ''}',
+          radius: radius,
+        );
+      }
+      return FutureBuilder<Map<String, dynamic>>(
+        future: loadUserProfile(userId),
+        builder: (context, snapshot) {
+          final profile = snapshot.data ?? const <String, dynamic>{};
+          return ProfileAvatar(
+            name: profileDisplayName(profile, name),
+            fileId: profilePhotoReference(profile),
+            url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
+            radius: radius,
+          );
+        },
       );
     },
+  );
+}
+
+class CommunityMemberName extends StatelessWidget {
+  const CommunityMemberName({super.key, required this.userId, required this.fallback, this.style});
+  final String userId, fallback;
+  final TextStyle? style;
+  @override
+  Widget build(BuildContext context) => StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    stream: FirebaseFirestore.instance.collection('communityMembers').doc(userId).snapshots(),
+    builder: (_, snapshot) => Text(
+      profileDisplayName(snapshot.data?.data() ?? const {}, fallback),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    ),
   );
 }
 
@@ -2460,10 +2497,10 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
             .map((e) => Map<String, dynamic>.from(e))
             .where((e) => e['status'] == 'Pending')
             .toList();
-        final people = {
+        final people = <String, Map<String, dynamic>>{
           for (final value
               in (data['people'] as List? ?? const []).whereType<Map>())
-            '${value['id']}': '${value['name'] ?? 'Member'}',
+            '${value['id']}': Map<String, dynamic>.from(value),
         };
         await showModalBottomSheet(
           context: context,
@@ -2494,9 +2531,11 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                           (p) => p?['key'] == request['positionKey'],
                           orElse: () => null,
                         );
+                    final requestUserId = '${request['userId'] ?? ''}';
+                    final requestPerson = people[requestUserId] ?? const <String, dynamic>{};
                     return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person)),
-                      title: Text(people['${request['userId']}'] ?? 'Member'),
+                      leading: UserProfileAvatar(userId: requestUserId, name: '${requestPerson['name'] ?? 'Unknown person'}'),
+                      title: Text('${requestPerson['name'] ?? 'Unknown person'}'),
                       subtitle: Text(
                         '${position?['label'] ?? request['spaceKey']}${('${request['reason'] ?? ''}').isEmpty ? '' : ' · ${request['reason']}'}',
                       ),
@@ -3417,6 +3456,51 @@ class _ChatState extends State<ChatScreen> {
     );
   }
 
+  Future<void> showRoomMembers() async {
+    final userIds = (widget.room['memberIds'] as List? ?? const [])
+        .map((value) => '$value')
+        .where((value) => value.isNotEmpty)
+        .toList();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+          children: [
+            ListTile(
+              title: Text('${userIds.length} ${userIds.length == 1 ? 'person' : 'people'}'),
+              subtitle: Text('${widget.room['title'] ?? 'Conversation'} members'),
+            ),
+            for (final id in userIds)
+              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance.collection('communityMembers').doc(id).snapshots(),
+                builder: (_, snapshot) {
+                  final profile = snapshot.data?.data() ?? const <String, dynamic>{};
+                  final departments = (profile['departments'] as List? ?? const [])
+                      .whereType<Map>()
+                      .map((item) {
+                        final name = '${item['name'] ?? ''}'.trim();
+                        final role = '${item['role'] ?? ''}'.trim();
+                        return role.isNotEmpty && role != 'Member' ? '$name · $role' : name;
+                      })
+                      .where((value) => value.isNotEmpty)
+                      .join(' · ');
+                  return ListTile(
+                    leading: UserProfileAvatar(userId: id, name: profileDisplayName(profile, 'Unknown person'), radius: 20),
+                    title: CommunityMemberName(userId: id, fallback: 'Unknown person'),
+                    subtitle: Text(departments.isNotEmpty ? departments : profile['administrator'] == true ? 'Administrator' : 'Production member'),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> chooseBackground() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -3985,6 +4069,11 @@ class _ChatState extends State<ChatScreen> {
         title: Text('${widget.room['title'] ?? 'Conversation'}'),
         actions: [
           IconButton(
+            onPressed: showRoomMembers,
+            tooltip: 'Conversation members',
+            icon: const Icon(Icons.group_outlined),
+          ),
+          IconButton(
             onPressed: chooseBackground,
             tooltip: 'Chat background',
             icon: const Icon(Icons.wallpaper),
@@ -4107,19 +4196,12 @@ class _ChatState extends State<ChatScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Flexible(
-                                  child: FutureBuilder<Map<String, dynamic>>(
-                                    future: loadUserProfile(senderId),
-                                    builder: (_, profileSnapshot) => Text(
-                                      profileDisplayName(
-                                        profileSnapshot.data ?? {},
-                                        senderName,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                  child: CommunityMemberName(
+                                    userId: senderId,
+                                    fallback: senderName,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ),

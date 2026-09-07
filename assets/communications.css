@@ -274,6 +274,13 @@
   min-width: 0;
   flex: 1;
 }
+.chat-identity [data-chat-subtitle] {
+  cursor: pointer;
+  width: fit-content;
+}
+.chat-identity [data-chat-subtitle]:hover {
+  text-decoration: underline;
+}
 .chat-aesthetic-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
