@@ -148,6 +148,25 @@
     )
   );
 }
+.conversation-row.has-backdrop-hint { background-size:cover;background-position:center;background-blend-mode:multiply; }
+.conversation-row.has-backdrop-hint strong { color:#fff;text-shadow:0 1px 7px #000; }
+.conversation-row.has-backdrop-hint small { color:#ffffffc9;text-shadow:0 1px 6px #000; }
+.conversation-row[data-card-backdrop="royal-villain"] { background-image:linear-gradient(90deg,#080910cc,#080910b8),url("images/chat-backgrounds/royal-villain.jpg"); }
+.conversation-row[data-card-backdrop="enchanted-stage"] { background-image:linear-gradient(90deg,#100806cc,#100806b8),url("images/chat-backgrounds/enchanted-stage.jpg"); }
+.conversation-row[data-card-backdrop="dragon-fire"] { background-image:linear-gradient(90deg,#0b0715cc,#0b0715b8),url("images/chat-backgrounds/dragon-fire.jpg"); }
+.conversation-row[data-card-backdrop="auradon-castle"] { background-image:linear-gradient(90deg,#07152acc,#07152ab8),url("images/chat-backgrounds/auradon-castle.jpg"); }
+.conversation-row[data-card-backdrop="isle-graffiti"] { background-image:linear-gradient(90deg,#071016cc,#071016b8),url("images/chat-backgrounds/isle-graffiti.jpg"); }
+.conversation-row[data-card-backdrop="magic-mirror"] { background-image:linear-gradient(90deg,#100916cc,#100916b8),url("images/chat-backgrounds/magic-mirror.jpg"); }
+.conversation-row[data-card-backdrop="spotlight-score"] { background-image:linear-gradient(90deg,#0b0905cc,#0b0905b8),url("images/chat-backgrounds/spotlight-score.jpg"); }
+.conversation-row[data-card-backdrop="red-curtain"] { background-image:linear-gradient(90deg,#150609cc,#150609b8),url("images/chat-backgrounds/red-curtain.jpg"); }
+.conversation-row[data-card-backdrop="spring-opening-night"] { background-image:linear-gradient(90deg,#08130bcc,#08130bb8),url("images/chat-backgrounds/spring-opening-night.jpg"); }
+.conversation-row[data-card-backdrop="summer-showtime"] { background-image:linear-gradient(90deg,#11100acc,#11100ab8),url("images/chat-backgrounds/summer-showtime.jpg"); }
+.conversation-row[data-card-backdrop="autumn-playbill"] { background-image:linear-gradient(90deg,#160a05cc,#160a05b8),url("images/chat-backgrounds/autumn-playbill.jpg"); }
+.conversation-row[data-card-backdrop="winter-gala"] { background-image:linear-gradient(90deg,#071426cc,#071426b8),url("images/chat-backgrounds/winter-gala.jpg"); }
+.conversation-row[data-card-backdrop="symphony-night"] { background-image:linear-gradient(90deg,#100b05cc,#100b05b8),url("images/chat-backgrounds/symphony-night.jpg"); }
+.conversation-row[data-card-backdrop="piano-nocturne"] { background-image:linear-gradient(90deg,#07101dcc,#07101db8),url("images/chat-backgrounds/piano-nocturne.jpg"); }
+.conversation-row[data-card-backdrop="jazz-stage"] { background-image:linear-gradient(90deg,#09111dcc,#09111db8),url("images/chat-backgrounds/jazz-stage.jpg"); }
+.conversation-row[data-card-backdrop="choral-harmony"] { background-image:linear-gradient(90deg,#07171acc,#07171ab8),url("images/chat-backgrounds/choral-harmony.jpg"); }
 .conversation-row.active {
   background: linear-gradient(
     100deg,

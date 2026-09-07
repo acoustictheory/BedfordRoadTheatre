@@ -2023,6 +2023,8 @@ Future<void> editConversation(
   var style = '${existing?['groupThemeStyle'] ?? 'gradient'}';
   var direction = '${existing?['gradientDirection'] ?? 'diagonal'}';
   var lightText = existing?['lightForeground'] != false;
+  var groupBackdrop = '${existing?['groupBackdrop'] ?? ''}';
+  var showBackdropHint = existing?['showBackdropHint'] != false;
   final saved = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -2088,6 +2090,38 @@ Future<void> editConversation(
                 value: lightText,
                 onChanged: (value) => setDialogState(() => lightText = value),
                 title: const Text('Light foreground text'),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: groupBackdrop,
+                decoration: const InputDecoration(
+                  labelText: 'Shared card backdrop',
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: '',
+                    child: Text('Colour theme only'),
+                  ),
+                  ..._chatBackgrounds
+                      .where((item) => item.$4 != null)
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: item.$1,
+                          child: Text(item.$2),
+                        ),
+                      ),
+                ],
+                onChanged: (value) =>
+                    setDialogState(() => groupBackdrop = value ?? ''),
+              ),
+              SwitchListTile(
+                value: showBackdropHint,
+                onChanged: (value) =>
+                    setDialogState(() => showBackdropHint = value),
+                title: const Text('Show backdrop hint on Community card'),
+                subtitle: const Text(
+                  'Everyone sees it. Turn off if illustrated cards are distracting.',
+                ),
               ),
               const SizedBox(height: 8),
               const Align(
@@ -2177,6 +2211,8 @@ Future<void> editConversation(
     'groupThemeStyle': style,
     'gradientDirection': direction,
     'lightForeground': lightText,
+    'groupBackdrop': groupBackdrop,
+    'showBackdropHint': showBackdropHint,
     'status': 'Active',
     'updatedAt': FieldValue.serverTimestamp(),
   };
@@ -2493,6 +2529,12 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                               : direction == 'vertical'
                               ? Alignment.bottomCenter
                               : Alignment.bottomRight;
+                          final backdropAsset =
+                              room['showBackdropHint'] == false
+                              ? null
+                              : chatBackgroundAsset(
+                                  '${room['groupBackdrop'] ?? ''}',
+                                );
                           return Container(
                             margin: const EdgeInsets.only(bottom: 11),
                             decoration: BoxDecoration(
@@ -2514,6 +2556,16 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                                   offset: const Offset(0, 8),
                                 ),
                               ],
+                              image: backdropAsset == null
+                                  ? null
+                                  : DecorationImage(
+                                      image: AssetImage(backdropAsset),
+                                      fit: BoxFit.cover,
+                                      colorFilter: const ColorFilter.mode(
+                                        Color(0x99000000),
+                                        BlendMode.darken,
+                                      ),
+                                    ),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(14),
@@ -2740,7 +2792,7 @@ const _chatBackgrounds = <(String, String, IconData, String?, String)>[
 ];
 
 BoxDecoration chatBackgroundDecoration(String id, Color accent) {
-  final image = _chatBackgrounds.where((item) => item.$1 == id).firstOrNull?.$4;
+  final image = chatBackgroundAsset(id);
   if (image != null) {
     return BoxDecoration(
       color: const Color(0xff090a0f),
@@ -2797,6 +2849,9 @@ BoxDecoration chatBackgroundDecoration(String id, Color accent) {
     ),
   };
 }
+
+String? chatBackgroundAsset(String id) =>
+    _chatBackgrounds.where((item) => item.$1 == id).firstOrNull?.$4;
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen(this.portal, this.roomId, this.room, {super.key});

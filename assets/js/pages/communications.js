@@ -202,7 +202,8 @@ function chooseChatBackground() {
   modal.querySelectorAll("[data-background]").forEach(button => button.onclick = () => { localStorage.setItem(backgroundKey(), button.dataset.background); applyChatBackground(); modal.closeModal(); });
 }
 function roomTile(r) {
-  return `<button class="conversation-row ${r.id === activeRoom?.id ? "active" : ""}" data-group-theme="${esc(r.groupTheme || "aurora")}" style="--room-accent:${roomColor(r)};--room-secondary:${roomSecondaryColor(r)}" data-room="${esc(r.id)}">${roomAvatar(r)}<span><strong>${esc(r.title || "Conversation")}</strong><small style="display:block">${esc(r.lastMessage || r.description || "Official group space")}</small></span>${r.unreadCount ? `<span class="unread-pill">${r.unreadCount}</span>` : '<span class="room-chevron">›</span>'}</button>`;
+  const backdrop = r.showBackdropHint !== false ? String(r.groupBackdrop || "") : "";
+  return `<button class="conversation-row ${r.id === activeRoom?.id ? "active" : ""} ${backdrop ? "has-backdrop-hint" : ""}" data-card-backdrop="${esc(backdrop)}" data-group-theme="${esc(r.groupTheme || "aurora")}" style="--room-accent:${roomColor(r)};--room-secondary:${roomSecondaryColor(r)}" data-room="${esc(r.id)}">${roomAvatar(r)}<span><strong>${esc(r.title || "Conversation")}</strong><small style="display:block">${esc(r.lastMessage || r.description || "Official group space")}</small></span>${r.unreadCount ? `<span class="unread-pill">${r.unreadCount}</span>` : '<span class="room-chevron">›</span>'}</button>`;
 }
 function renderRooms() {
   const host = document.querySelector("[data-room-list]"),
@@ -624,7 +625,7 @@ async function customizeRoom() {
   let pendingImage = activeRoom.groupImage || "",
     removeImage = false;
   const modal = BRM.openModal(
-    `<span class="eyebrow">Group theme studio</span><h2>${esc(activeRoom.title)}</h2><p>Build a recognizable visual identity for this conversation.</p><div class="group-aesthetic-editor"><div class="group-theme-preview" data-theme-preview data-group-theme="${esc(activeRoom.groupTheme || "aurora")}" style="--room-accent:${roomColor(activeRoom)};--room-secondary:${roomSecondaryColor(activeRoom)}"><div class="group-picture-preview" data-group-preview>${pendingImage ? `<img src="${esc(pendingImage)}" alt="">` : roomIcon(activeRoom)}</div><strong>${esc(activeRoom.title)}</strong><small>Group preview</small></div><div class="group-theme-fields"><div class="grid grid-2"><div class="field"><label>Primary colour</label><input type="color" value="${roomColor(activeRoom)}" data-group-color></div><div class="field"><label>Secondary colour</label><input type="color" value="${roomSecondaryColor(activeRoom)}" data-group-secondary></div></div><div class="grid grid-2"><div class="field"><label>Theme style</label><select data-group-theme><option value="aurora">Aurora glow</option><option value="spotlight">Stage spotlight</option><option value="velvet">Velvet curtain</option><option value="solid">Clean colour</option></select></div><div class="field"><label>Icon identifier</label><input data-group-icon maxlength="4" value="${esc(activeRoom.groupIcon || roomIcon(activeRoom))}" placeholder="🎭"></div></div><div class="group-icon-choices" data-icon-choices>${["🎭", "🎤", "🎼", "💃", "✨", "🎬", "📋", "💡", "🎧", "🎨", "👗", "📣"].map((icon) => `<button type="button" data-icon="${icon}">${icon}</button>`).join("")}</div><div class="form-actions"><label class="button button-secondary">Choose picture<input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" data-group-image></label><button class="button button-ghost" type="button" data-remove-picture>Use icon instead</button></div><small class="field-hint">Pictures are automatically cropped and optimized to 320 × 320.</small></div></div><div class="form-actions"><button class="button button-primary" data-save-aesthetic>Save group theme</button></div>`,
+    `<span class="eyebrow">Group theme studio</span><h2>${esc(activeRoom.title)}</h2><p>Build a recognizable visual identity for this conversation.</p><div class="group-aesthetic-editor"><div class="group-theme-preview" data-theme-preview data-group-theme="${esc(activeRoom.groupTheme || "aurora")}" style="--room-accent:${roomColor(activeRoom)};--room-secondary:${roomSecondaryColor(activeRoom)}"><div class="group-picture-preview" data-group-preview>${pendingImage ? `<img src="${esc(pendingImage)}" alt="">` : roomIcon(activeRoom)}</div><strong>${esc(activeRoom.title)}</strong><small>Group preview</small></div><div class="group-theme-fields"><div class="grid grid-2"><div class="field"><label>Primary colour</label><input type="color" value="${roomColor(activeRoom)}" data-group-color></div><div class="field"><label>Secondary colour</label><input type="color" value="${roomSecondaryColor(activeRoom)}" data-group-secondary></div></div><div class="grid grid-2"><div class="field"><label>Theme style</label><select data-group-theme><option value="aurora">Aurora glow</option><option value="spotlight">Stage spotlight</option><option value="velvet">Velvet curtain</option><option value="solid">Clean colour</option></select></div><div class="field"><label>Icon identifier</label><input data-group-icon maxlength="4" value="${esc(activeRoom.groupIcon || roomIcon(activeRoom))}" placeholder="🎭"></div></div><div class="field"><label>Shared conversation-card backdrop</label><select data-group-backdrop><option value="">Colour theme only</option>${chatBackgrounds.filter(item => item[0] !== "room").map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}</select></div><label class="checkbox-row"><input type="checkbox" data-show-backdrop ${activeRoom.showBackdropHint !== false ? "checked" : ""}> Show a subtle backdrop hint on the Community card for everyone</label><small class="field-hint">Turn this off if illustrated cards become distracting. Personal backgrounds inside chats remain private.</small><div class="group-icon-choices" data-icon-choices>${["🎭", "🎤", "🎼", "💃", "✨", "🎬", "📋", "💡", "🎧", "🎨", "👗", "📣"].map((icon) => `<button type="button" data-icon="${icon}">${icon}</button>`).join("")}</div><div class="form-actions"><label class="button button-secondary">Choose picture<input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" data-group-image></label><button class="button button-ghost" type="button" data-remove-picture>Use icon instead</button></div><small class="field-hint">Pictures are automatically cropped and optimized to 320 × 320.</small></div></div><div class="form-actions"><button class="button button-primary" data-save-aesthetic>Save group theme</button></div>`,
     { wide: true },
   );
   const preview = modal.querySelector("[data-group-preview]"),
@@ -632,8 +633,11 @@ async function customizeRoom() {
     color = modal.querySelector("[data-group-color]"),
     secondary = modal.querySelector("[data-group-secondary]"),
     theme = modal.querySelector("[data-group-theme]"),
+    backdrop = modal.querySelector("[data-group-backdrop]"),
+    showBackdrop = modal.querySelector("[data-show-backdrop]"),
     icon = modal.querySelector("[data-group-icon]");
   theme.value = activeRoom.groupTheme || "aurora";
+  backdrop.value = activeRoom.groupBackdrop || "";
   const updatePreview = () => {
     themePreview.style.setProperty("--room-accent", color.value);
     themePreview.style.setProperty("--room-secondary", secondary.value);
@@ -673,6 +677,8 @@ async function customizeRoom() {
       groupSecondaryColor: secondary.value,
       groupTheme: theme.value,
       groupIcon: icon.value.trim().slice(0, 4) || "🎭",
+      groupBackdrop: backdrop.value,
+      showBackdropHint: showBackdrop.checked,
       updatedAt: serverTimestamp(),
     };
     if (pendingImage) changes.groupImage = pendingImage;
