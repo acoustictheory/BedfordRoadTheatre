@@ -99,6 +99,8 @@ const COMPLETE_SHELL = [
   "assets/js/pages/journal-review.js",
   "assets/js/pages/journal.js",
   "assets/js/pages/install.js",
+  "assets/qr/android-app-download-qr.svg",
+  "assets/qr/ios-testflight-qr.svg",
   "assets/js/pages/login.js",
   "assets/js/pages/profile.js",
   "assets/js/pages/resources.js",
