@@ -335,7 +335,9 @@ export const registerStudent = onRequest({ region:'northamerica-northeast2', sec
       const now = new Date().toISOString();
       const requested = Array.isArray(body.requestedDepartmentIds) ? [...new Set(body.requestedDepartmentIds.map(String))].slice(0,30) : [];
       const requestedPositions=validCommunityPositionKeys(body.requestedPositionKeys);
-      const mirror = {requestId,userId:uid,profileId,productionId,username,email:clean(body.email,160).toLowerCase(),firstName:clean(body.firstName,80),lastName:clean(body.lastName,80),displayName:clean(body.displayName || `${body.firstName || ''} ${body.lastName || ''}`,120),registrationCode:code,requestedDepartmentIds:requested,departmentRequestNote:clean(body.departmentRequestNote,500),createdAt:now};
+      const preferredDevice=['iphone','ipad','android-phone','android-tablet','none'].includes(clean(body.preferredDevice,30))?clean(body.preferredDevice,30):'';
+      if(!preferredDevice) throw new Error('Choose the device you will use for the Bedford app.');
+      const mirror = {requestId,userId:uid,profileId,productionId,username,email:clean(body.email,160).toLowerCase(),firstName:clean(body.firstName,80),lastName:clean(body.lastName,80),displayName:clean(body.displayName || `${body.firstName || ''} ${body.lastName || ''}`,120),preferredDevice,registrationCode:code,requestedDepartmentIds:requested,departmentRequestNote:clean(body.departmentRequestNote,500),createdAt:now};
       const mirrorToken = Buffer.from(JSON.stringify(mirror)).toString('base64url');
       const mirrorSignature = crypto.createHmac('sha256',syncKey.value().trim()).update(mirrorToken).digest('hex');
       const publicResult = {success:true,userId:uid,username,message:'Your Firebase account is ready. Finishing your production access…',mirrorToken,mirrorSignature};
