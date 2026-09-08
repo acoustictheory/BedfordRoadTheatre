@@ -71,6 +71,8 @@ body { margin: 0; min-height: 100vh; min-height:100dvh; color: var(--text); back
   radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--secondary) 9%, transparent), transparent 30rem),
   var(--bg); font-family: var(--font-body); line-height: 1.5; }
 body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.26; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size:56px 56px; mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 70%); }
+body[data-page="home"],body[data-page="login"]{color-scheme:dark;--bg:#070709;--bg-alt:#10090c;--surface:rgba(25,18,21,.94);--surface-strong:#1d1518;--surface-soft:rgba(255,255,255,.052);--text:#fff8fa;--muted:#c8b7bc;--faint:#806d73;--primary:#c90020;--primary-strong:#ff3654;--primary-soft:rgba(201,0,32,.16);--secondary:#fff;--accent:#e0c7cd;--border:rgba(255,223,230,.13);--border-strong:rgba(255,87,112,.3);--glow:0 0 46px rgba(213,0,35,.23)}
+body[data-page="home"] [data-theme-cycle],body[data-page="login"] [data-theme-cycle]{display:none!important}
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; }
