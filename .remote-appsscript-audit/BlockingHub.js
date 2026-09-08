@@ -1333,7 +1333,7 @@ function saveBlockingCast_(context,payload) {
   assert_(character,'Choose an active character.','INVALID_CHARACTER');
   var characterKey=String(character.CharacterKey||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   var characterNameKey=String(character.CharacterName||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-  var isDoubleCast=characterKey==='mal'||characterKey==='evie'||characterNameKey==='mal'||characterNameKey==='evie';
+  var isDoubleCast=characterKey==='mal'||characterKey==='evie'||characterKey==='carlos'||characterNameKey==='mal'||characterNameKey==='evie'||characterNameKey==='carlos';
   var requestedGroup=String(payload.castGroup||existing&&existing.CastGroup||'').toUpperCase().replace(/[^AB]/g,'');
   var castGroup=isDoubleCast?(requestedGroup==='B'?'B':'A'):'Single';
   var duplicate=listRecords_('BlockingCast',function(r){
