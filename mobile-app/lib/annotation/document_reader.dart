@@ -200,6 +200,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   StreamSubscription<List<ScoreInkMark>>? annotationCloudSubscription;
   Timer? annotationSaveTimer;
   List<ScoreInkMark>? pendingAnnotationSave;
+  String annotationSyncStatus = 'Loading annotations';
+  String? annotationSyncError;
   List<Map<String, dynamic>> audioTracks = [];
   String activeTrackId = '';
   Map<String, dynamic>? guideTrack, practiceTrack;
@@ -268,8 +270,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   }
 
   Future<void> loadAdministratorState() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final uid = await store.resolveOwner();
+    if (uid == 'local') return;
     final data =
         (await FirebaseFirestore.instance.collection('users').doc(uid).get())
             .data() ??
@@ -744,6 +746,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
             target,
             scoreFlowSongTitles[target - 1],
           ),
+          ownerUserId: widget.ownerUserId,
+          ownerName: widget.ownerName,
         ),
         transitionsBuilder: (_, animation, __, child) => SlideTransition(
           position:
@@ -808,6 +812,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
             chosen,
             scoreFlowSongTitles[chosen - 1],
           ),
+          ownerUserId: widget.ownerUserId,
+          ownerName: widget.ownerName,
         ),
       ),
     );
@@ -937,31 +943,78 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
 
   void setMarks(List<ScoreInkMark> value) {
     if (!mounted) return;
-    setState(() => marks = value);
+    setState(() {
+      marks = value;
+      annotationSyncStatus = 'Saving on device…';
+      annotationSyncError = null;
+    });
     pendingAnnotationSave = List<ScoreInkMark>.of(value);
     annotationSaveTimer?.cancel();
     annotationSaveTimer = Timer(const Duration(milliseconds: 220), () {
       final pending = pendingAnnotationSave;
       pendingAnnotationSave = null;
-      if (pending != null) unawaited(store.saveInk(pending));
+      if (pending != null) unawaited(saveAnnotationDraft(pending));
     });
   }
 
-  Future<void> flushAnnotationSave() async {
+  Future<void> saveAnnotationDraft(List<ScoreInkMark> pending) async {
+    final result = await store.saveInk(pending);
+    if (!mounted) return;
+    setState(() {
+      annotationSyncStatus = result.cloudQueued
+          ? 'Saved • syncing'
+          : result.localSaved
+          ? 'Saved on device'
+          : 'Save failed';
+      annotationSyncError = result.message;
+    });
+  }
+
+  Future<AnnotationSaveResult> flushAnnotationSave() async {
     annotationSaveTimer?.cancel();
     annotationSaveTimer = null;
     final pending = pendingAnnotationSave;
     pendingAnnotationSave = null;
-    await store.saveInk(pending ?? marks, waitForServer: true);
+    if (mounted) {
+      setState(() {
+        annotationSyncStatus = 'Syncing…';
+        annotationSyncError = null;
+      });
+    }
+    final result = await store.saveInk(pending ?? marks, waitForServer: true);
     await store.saveLayers(layers);
+    if (mounted) {
+      setState(() {
+        annotationSyncStatus = result.serverConfirmed
+            ? 'Synced'
+            : result.localSaved
+            ? 'Saved on device'
+            : 'Save failed';
+        annotationSyncError = result.message;
+      });
+    }
+    return result;
   }
 
   void startCloudAnnotationSync() {
     annotationCloudSubscription?.cancel();
-    annotationCloudSubscription = store.watchInk().listen((cloudMarks) {
-      if (!mounted || annotate || pendingAnnotationSave != null) return;
-      setState(() => marks = cloudMarks);
-    });
+    annotationCloudSubscription = store.watchInk().listen(
+      (cloudMarks) {
+        if (!mounted || annotate || pendingAnnotationSave != null) return;
+        setState(() {
+          marks = cloudMarks;
+          annotationSyncStatus = 'Synced';
+          annotationSyncError = null;
+        });
+      },
+      onError: (Object error) {
+        if (!mounted) return;
+        setState(() {
+          annotationSyncStatus = 'Cloud unavailable';
+          annotationSyncError = '$error';
+        });
+      },
+    );
   }
 
   Future<void> refreshAnnotationsFromCloud() async {
@@ -2154,6 +2207,23 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         ),
       ),
       actions: [
+        IconButton(
+          tooltip: annotationSyncError == null
+              ? annotationSyncStatus
+              : '$annotationSyncStatus\n$annotationSyncError',
+          onPressed: annotationSyncError == null
+              ? null
+              : () => ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(annotationSyncError!))),
+          icon: Icon(
+            annotationSyncError != null
+                ? Icons.cloud_off_outlined
+                : annotationSyncStatus == 'Synced'
+                ? Icons.cloud_done_outlined
+                : Icons.cloud_sync_outlined,
+          ),
+        ),
         if (administrator)
           IconButton(
             tooltip: widget.ownerName == null
@@ -2399,7 +2469,18 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         ? null
         : FloatingActionButton.small(
             onPressed: () async {
-              if (annotate) await flushAnnotationSave();
+              if (annotate) {
+                final result = await flushAnnotationSave();
+                if (mounted && !result.serverConfirmed) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result.message ?? 'Saved on this device. Cloud sync is still pending.',
+                      ),
+                    ),
+                  );
+                }
+              }
               if (mounted) setState(() => annotate = !annotate);
             },
             tooltip: annotate ? 'Finish annotating' : 'Annotate score',

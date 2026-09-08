@@ -1,9 +1,24 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class AnnotationSaveResult {
+  const AnnotationSaveResult({
+    required this.localSaved,
+    required this.cloudQueued,
+    required this.serverConfirmed,
+    this.message,
+  });
+
+  final bool localSaved;
+  final bool cloudQueued;
+  final bool serverConfirmed;
+  final String? message;
+}
 
 class ScoreAnnotationLayerDefinition {
   const ScoreAnnotationLayerDefinition({
@@ -279,13 +294,30 @@ class PracticeNotesStore {
   final String productionId;
   final String? ownerUserId;
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
-  String get owner =>
-      ownerUserId ?? FirebaseAuth.instance.currentUser?.uid ?? 'local';
-  // v3 intentionally starts clean after the cross-device identity repair.
-  // Older local-only/v2 data is not imported because it may have diverged
-  // independently on several devices.
-  String get prefix => 'practice.v3.$owner.$songId';
-  DocumentReference<Map<String, dynamic>>? get cloud {
+  Future<String>? _resolvedOwner;
+
+  Future<String> resolveOwner() => _resolvedOwner ??= _resolveOwner();
+
+  Future<String> _resolveOwner() async {
+    if (ownerUserId != null && ownerUserId!.trim().isNotEmpty) {
+      return ownerUserId!.trim();
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'local';
+    try {
+      final token = await user.getIdTokenResult();
+      final principal = '${token.claims?['legacyUserId'] ?? ''}'.trim();
+      if (principal.isNotEmpty) return principal;
+    } catch (_) {
+      // The stable Firebase uid remains a safe offline fallback. A later app
+      // launch retries claim resolution before choosing the storage key.
+    }
+    return user.uid;
+  }
+
+  String _prefix(String owner) => 'practice.v4.$owner.$songId';
+
+  DocumentReference<Map<String, dynamic>>? _cloud(String owner) {
     if (owner == 'local' || productionId.isEmpty) return null;
     return FirebaseFirestore.instance
         .collection('productions/$productionId/scoreAnnotations')
@@ -300,25 +332,58 @@ class PracticeNotesStore {
         .toList();
   }
 
-  Stream<List<ScoreInkMark>> watchInk() {
-    final reference = cloud;
-    if (reference == null) return const Stream.empty();
-    return reference
+  Stream<List<ScoreInkMark>> watchInk() async* {
+    final reference = _cloud(await resolveOwner());
+    if (reference == null) return;
+    yield* reference
         .snapshots()
         .where((snapshot) => snapshot.exists)
         .map((snapshot) => decodeMarks(snapshot.data()?['marks']));
   }
 
   Future<List<ScoreInkMark>> loadInk() async {
+    final owner = await resolveOwner();
+    final prefix = _prefix(owner);
     var text = await _prefs.getString('$prefix.ink.v2');
     try {
-      final snapshot = await cloud?.get();
-      final remote = snapshot?.data()?['marks'] as List?;
+      var snapshot = await _cloud(owner)?.get();
+      var remote = snapshot?.data()?['marks'] as List?;
+      final authUid = FirebaseAuth.instance.currentUser?.uid;
+      if (remote == null &&
+          ownerUserId == null &&
+          authUid != null &&
+          authUid != owner) {
+        // Recover annotations written by releases that incorrectly keyed the
+        // document to Firebase uid instead of the portal account id.
+        snapshot = await _cloud(authUid)?.get();
+        remote = snapshot?.data()?['marks'] as List?;
+        if (remote != null) {
+          await _cloud(owner)?.set({
+            ...?snapshot?.data(),
+            'ownerUserId': owner,
+            'migratedFromAuthUid': authUid,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
       if (remote != null) {
         text = jsonEncode(remote);
         await _prefs.setString('$prefix.ink.v2', text);
       }
-    } catch (_) {}
+    } catch (_) {
+      // Cloud errors are surfaced by explicit saves. Loading still falls back
+      // to the device copy so ScoreFlow remains usable offline.
+    }
+    if (text == null) {
+      final authUid = FirebaseAuth.instance.currentUser?.uid;
+      for (final legacyOwner in <String>{owner, if (authUid != null) authUid}) {
+        text = await _prefs.getString(
+          'practice.v3.$legacyOwner.$songId.ink.v2',
+        );
+        if (text != null) break;
+      }
+      if (text != null) await _prefs.setString('$prefix.ink.v2', text);
+    }
     if (text == null || text.isEmpty) return [];
     try {
       return decodeMarks(jsonDecode(text));
@@ -327,20 +392,37 @@ class PracticeNotesStore {
     }
   }
 
-  Future<void> saveInk(
+  Future<AnnotationSaveResult> saveInk(
     List<ScoreInkMark> marks, {
     bool waitForServer = false,
   }) async {
+    final owner = await resolveOwner();
+    final prefix = _prefix(owner);
     final encoded = marks.map((e) => e.toJson()).toList();
     final json = jsonEncode(encoded);
+    var localSaved = false;
     try {
       await _prefs.setString('$prefix.ink.v2', json);
-    } catch (_) {
-      // A very large legacy annotation set can exceed a platform preference
-      // transaction. Never allow an autosave failure to terminate ScoreFlow.
+      localSaved = true;
+    } catch (error) {
+      return AnnotationSaveResult(
+        localSaved: false,
+        cloudQueued: false,
+        serverConfirmed: false,
+        message: 'Device save failed: $error',
+      );
+    }
+    final reference = _cloud(owner);
+    if (reference == null) {
+      return AnnotationSaveResult(
+        localSaved: localSaved,
+        cloudQueued: false,
+        serverConfirmed: false,
+        message: 'Saved on this device, but no signed-in cloud account exists.',
+      );
     }
     try {
-      await cloud?.set({
+      await reference.set({
         'ownerUserId': owner,
         'documentId': '$songId',
         'schemaVersion': 3,
@@ -352,17 +434,46 @@ class PracticeNotesStore {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (waitForServer) {
-        await FirebaseFirestore.instance.waitForPendingWrites().timeout(
-          const Duration(milliseconds: 1500),
-        );
+        try {
+          await FirebaseFirestore.instance.waitForPendingWrites().timeout(
+            const Duration(seconds: 3),
+          );
+          return AnnotationSaveResult(
+            localSaved: localSaved,
+            cloudQueued: true,
+            serverConfirmed: true,
+          );
+        } on TimeoutException {
+          return AnnotationSaveResult(
+            localSaved: localSaved,
+            cloudQueued: true,
+            serverConfirmed: false,
+            message:
+                'Saved on device; cloud upload is waiting for a connection.',
+          );
+        }
       }
-    } catch (_) {}
+      return AnnotationSaveResult(
+        localSaved: localSaved,
+        cloudQueued: true,
+        serverConfirmed: false,
+      );
+    } catch (error) {
+      return AnnotationSaveResult(
+        localSaved: localSaved,
+        cloudQueued: false,
+        serverConfirmed: false,
+        message: 'Cloud save failed: $error',
+      );
+    }
   }
 
   Future<List<ScoreAnnotationLayerDefinition>> loadLayers() async {
+    final owner = await resolveOwner();
+    final prefix = _prefix(owner);
     var text = await _prefs.getString('$prefix.annotationLayers.v1');
     try {
-      final remote = (await cloud?.get())?.data()?['layers'] as List?;
+      final remote = (await _cloud(owner)?.get())?.data()?['layers'] as List?;
       if (remote != null) text = jsonEncode(remote);
     } catch (_) {}
     final custom = <ScoreAnnotationLayerDefinition>[];
@@ -384,6 +495,8 @@ class PracticeNotesStore {
   }
 
   Future<void> saveLayers(List<ScoreAnnotationLayerDefinition> layers) async {
+    final owner = await resolveOwner();
+    final prefix = _prefix(owner);
     final encoded = layers
         .where((layer) => !layer.builtIn)
         .map((layer) => layer.toJson())
@@ -397,7 +510,7 @@ class PracticeNotesStore {
       // Keep the reader alive if a device storage write is temporarily unavailable.
     }
     try {
-      await cloud?.set({
+      await _cloud(owner)?.set({
         'ownerUserId': owner,
         'documentId': '$songId',
         'layers': encoded,
