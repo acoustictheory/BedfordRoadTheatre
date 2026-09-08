@@ -281,7 +281,10 @@ class PracticeNotesStore {
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
   String get owner =>
       ownerUserId ?? FirebaseAuth.instance.currentUser?.uid ?? 'local';
-  String get prefix => 'practice.$owner.$songId';
+  // v3 intentionally starts clean after the cross-device identity repair.
+  // Older local-only/v2 data is not imported because it may have diverged
+  // independently on several devices.
+  String get prefix => 'practice.v3.$owner.$songId';
   DocumentReference<Map<String, dynamic>>? get cloud {
     if (owner == 'local' || productionId.isEmpty) return null;
     return FirebaseFirestore.instance
@@ -291,10 +294,6 @@ class PracticeNotesStore {
 
   Future<List<ScoreInkMark>> loadInk() async {
     var text = await _prefs.getString('$prefix.ink.v2');
-    if (text == null && ownerUserId == null) {
-      text = await _prefs.getString('practice.$songId.ink.v2');
-    }
-    text ??= await _prefs.getString('practice.$songId.ink.v1');
     try {
       final snapshot = await cloud?.get();
       final remote = snapshot?.data()?['marks'] as List?;
@@ -337,8 +336,6 @@ class PracticeNotesStore {
 
   Future<List<ScoreAnnotationLayerDefinition>> loadLayers() async {
     var text = await _prefs.getString('$prefix.annotationLayers.v1');
-    if (text == null && ownerUserId == null)
-      text = await _prefs.getString('practice.$songId.annotationLayers.v1');
     try {
       final remote = (await cloud?.get())?.data()?['layers'] as List?;
       if (remote != null) text = jsonEncode(remote);

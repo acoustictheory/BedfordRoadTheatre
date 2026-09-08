@@ -182,7 +182,8 @@ class AnnotatedDocumentScreen extends StatefulWidget {
       _AnnotatedDocumentScreenState();
 }
 
-class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
+class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
+    with WidgetsBindingObserver {
   late final PracticeNotesStore store = PracticeNotesStore(
     widget.document.storeId,
     productionId:
@@ -242,6 +243,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(restoreReadingState());
     unawaited(load());
     unawaited(loadTracks());
@@ -370,6 +372,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     positionSubscription?.cancel();
     annotationSaveTimer?.cancel();
     final pending = pendingAnnotationSave;
@@ -377,6 +380,17 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
     unawaited(audio.dispose());
     unawaited(companionAudio.dispose());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      unawaited(flushAnnotationSave());
+    } else if (state == AppLifecycleState.resumed && !annotate) {
+      unawaited(refreshAnnotationsFromCloud());
+    }
   }
 
   String get songTitle =>
@@ -928,6 +942,21 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
       pendingAnnotationSave = null;
       if (pending != null) unawaited(store.saveInk(pending));
     });
+  }
+
+  Future<void> flushAnnotationSave() async {
+    annotationSaveTimer?.cancel();
+    annotationSaveTimer = null;
+    final pending = pendingAnnotationSave;
+    pendingAnnotationSave = null;
+    await store.saveInk(pending ?? marks);
+    await store.saveLayers(layers);
+  }
+
+  Future<void> refreshAnnotationsFromCloud() async {
+    final refreshed = await store.loadInk();
+    if (!mounted || annotate) return;
+    setState(() => marks = refreshed);
   }
 
   void undoEdit() {
@@ -2358,7 +2387,10 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
     floatingActionButton: file == null
         ? null
         : FloatingActionButton.small(
-            onPressed: () => setState(() => annotate = !annotate),
+            onPressed: () async {
+              if (annotate) await flushAnnotationSave();
+              if (mounted) setState(() => annotate = !annotate);
+            },
             tooltip: annotate ? 'Finish annotating' : 'Annotate score',
             child: Icon(
               annotate ? Icons.visibility_rounded : Icons.edit_rounded,

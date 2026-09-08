@@ -41,12 +41,12 @@ service cloud.firestore {
       allow write: if admin();
 
       match /scoreAnnotations/{annotationId} {
-        allow read: if activeMember() && (resource.data.ownerUserId == principalId() || admin());
-        allow create: if activeMember() && (request.resource.data.ownerUserId == principalId() || admin());
+        allow read: if activeMember() && (resource.data.ownerUserId == principalId() || resource.data.ownerUserId == request.auth.uid || admin());
+        allow create: if activeMember() && (request.resource.data.ownerUserId == principalId() || request.resource.data.ownerUserId == request.auth.uid || admin());
         allow update: if activeMember()
           && request.resource.data.ownerUserId == resource.data.ownerUserId
-          && (resource.data.ownerUserId == principalId() || admin());
-        allow delete: if admin() || (activeMember() && resource.data.ownerUserId == principalId());
+          && (resource.data.ownerUserId == principalId() || resource.data.ownerUserId == request.auth.uid || admin());
+        allow delete: if admin() || (activeMember() && (resource.data.ownerUserId == principalId() || resource.data.ownerUserId == request.auth.uid));
       }
 
       // Low-risk shared information can be read by active production members.
