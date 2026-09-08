@@ -197,6 +197,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   final audio = AudioPlayer();
   final companionAudio = AudioPlayer();
   StreamSubscription<Duration>? positionSubscription;
+  StreamSubscription<List<ScoreInkMark>>? annotationCloudSubscription;
   Timer? annotationSaveTimer;
   List<ScoreInkMark>? pendingAnnotationSave;
   List<Map<String, dynamic>> audioTracks = [];
@@ -374,6 +375,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     positionSubscription?.cancel();
+    annotationCloudSubscription?.cancel();
     annotationSaveTimer?.cancel();
     final pending = pendingAnnotationSave;
     if (pending != null) unawaited(store.saveInk(pending));
@@ -921,6 +923,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         layers = loaded[1] as List<ScoreAnnotationLayerDefinition>;
         progress = 1;
       });
+      startCloudAnnotationSync();
     } catch (e) {
       if (mounted) setState(() => error = '$e');
     }
@@ -937,7 +940,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
     setState(() => marks = value);
     pendingAnnotationSave = List<ScoreInkMark>.of(value);
     annotationSaveTimer?.cancel();
-    annotationSaveTimer = Timer(const Duration(milliseconds: 450), () {
+    annotationSaveTimer = Timer(const Duration(milliseconds: 220), () {
       final pending = pendingAnnotationSave;
       pendingAnnotationSave = null;
       if (pending != null) unawaited(store.saveInk(pending));
@@ -949,8 +952,16 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
     annotationSaveTimer = null;
     final pending = pendingAnnotationSave;
     pendingAnnotationSave = null;
-    await store.saveInk(pending ?? marks);
+    await store.saveInk(pending ?? marks, waitForServer: true);
     await store.saveLayers(layers);
+  }
+
+  void startCloudAnnotationSync() {
+    annotationCloudSubscription?.cancel();
+    annotationCloudSubscription = store.watchInk().listen((cloudMarks) {
+      if (!mounted || annotate || pendingAnnotationSave != null) return;
+      setState(() => marks = cloudMarks);
+    });
   }
 
   Future<void> refreshAnnotationsFromCloud() async {

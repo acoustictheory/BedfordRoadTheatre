@@ -292,6 +292,23 @@ class PracticeNotesStore {
         .doc('${owner}_$songId');
   }
 
+  List<ScoreInkMark> decodeMarks(Object? value) {
+    if (value is! List) return const [];
+    return value
+        .whereType<Map>()
+        .map((entry) => ScoreInkMark.fromJson(Map<String, dynamic>.from(entry)))
+        .toList();
+  }
+
+  Stream<List<ScoreInkMark>> watchInk() {
+    final reference = cloud;
+    if (reference == null) return const Stream.empty();
+    return reference
+        .snapshots()
+        .where((snapshot) => snapshot.exists)
+        .map((snapshot) => decodeMarks(snapshot.data()?['marks']));
+  }
+
   Future<List<ScoreInkMark>> loadInk() async {
     var text = await _prefs.getString('$prefix.ink.v2');
     try {
@@ -304,17 +321,16 @@ class PracticeNotesStore {
     } catch (_) {}
     if (text == null || text.isEmpty) return [];
     try {
-      final data = jsonDecode(text) as List;
-      return data
-          .whereType<Map>()
-          .map((e) => ScoreInkMark.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      return decodeMarks(jsonDecode(text));
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> saveInk(List<ScoreInkMark> marks) async {
+  Future<void> saveInk(
+    List<ScoreInkMark> marks, {
+    bool waitForServer = false,
+  }) async {
     final encoded = marks.map((e) => e.toJson()).toList();
     final json = jsonEncode(encoded);
     try {
@@ -327,10 +343,19 @@ class PracticeNotesStore {
       await cloud?.set({
         'ownerUserId': owner,
         'documentId': '$songId',
+        'schemaVersion': 3,
+        'coordinateSpace': 'pdf-page-normalized-v1',
+        'markCount': encoded.length,
+        'pageNumbers': marks.map((mark) => mark.page).toSet().toList()..sort(),
         'marks': encoded,
         'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      if (waitForServer) {
+        await FirebaseFirestore.instance.waitForPendingWrites().timeout(
+          const Duration(milliseconds: 1500),
+        );
+      }
     } catch (_) {}
   }
 
