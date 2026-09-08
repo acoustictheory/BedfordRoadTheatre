@@ -36,11 +36,30 @@ function costumeMain() {
 }
 
 async function loadCostumeHub() {
-  CostumeState.data = await BRM.api(
+  const firebaseMap = { characters:'costumeCharacters', changes:'costumeChanges', pieces:'costumePieces', fittings:'costumeFittings', deadlines:'costumeDeadlines', images:'costumeImages' };
+  const cacheKey = `costumeHub:${CostumeState.includeArchived}`;
+  const cached = !CostumeState.includeArchived && BRM.readFastCache?.(cacheKey);
+  if (cached) {
+    CostumeState.data = cached;
+    window.setTimeout(async () => {
+      try {
+        const fresh = await BRM.firebaseWorkspaceOverlay(CostumeState.data, firebaseMap, false);
+        CostumeState.data = fresh;
+        BRM.writeFastCache?.(cacheKey, fresh);
+        renderCostumeHub();
+      } catch (error) { console.warn('Costume refresh failed; cached workspace retained.', error); }
+    }, 50);
+  } else {
+  const baseRequest = BRM.api(
     'costumeHub',
     { includeArchived: CostumeState.includeArchived },
     { noCache: true, forceNetwork: true }
   );
+    const firebaseRequest = BRM.firebaseWorkspaceOverlay({}, firebaseMap, CostumeState.includeArchived);
+    const base = await baseRequest;
+    CostumeState.data = await firebaseRequest.then(fresh => ({ ...base, ...fresh })).catch(() => base);
+    if (!CostumeState.includeArchived) BRM.writeFastCache?.(cacheKey, CostumeState.data);
+  }
 
   const available = filteredCostumeCharacters();
   const selectedStillExists = available.some(character =>
@@ -108,10 +127,12 @@ function characterPieces(characterId) {
     );
 }
 
-function characterMeasurements(characterId) {
-  return (CostumeState.data?.measurements || []).find(measurement =>
-    String(measurement.CharacterID) === String(characterId)
-  );
+function characterMeasurementsList(characterId) { return (CostumeState.data?.measurements || []).filter(measurement => String(measurement.CharacterID) === String(characterId)); }
+function characterMeasurements(characterId,actorUserId='') { return characterMeasurementsList(characterId).find(measurement => !actorUserId || String(measurement.ActorUserID) === String(actorUserId)); }
+function costumeCastAssignments(character) {
+  const key=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+  const wanted=[key(character?.CharacterCode),key(character?.CharacterName)].filter(Boolean);
+  return (CostumeState.data?.castAssignments||[]).filter(item=>wanted.includes(key(item.CharacterKey))||wanted.includes(key(item.CharacterName))).sort((a,b)=>String(a.CastGroup||'Single').localeCompare(String(b.CastGroup||'Single')));
 }
 
 function characterFittings(characterId) {
@@ -188,8 +209,6 @@ function renderCostumeHub() {
             ${costumeKpi(stats.quickChanges, 'Quick changes')}
             ${costumeKpi(stats.piecesNeeded, 'Pieces still needed')}
             ${costumeKpi(stats.fittingsDue, 'Fittings open')}
-            ${costumeKpi(stats.untestedQuickChanges, 'Changes to test')}
-            ${costumeKpi(stats.laundryNeeded, 'Laundry attention')}
           </div>
         </div>
       </section>
@@ -197,14 +216,10 @@ function renderCostumeHub() {
       ${renderCostumeAnnouncements(data.announcements || [])}
 
       <nav class="costume-tabs" aria-label="Costume Hub sections">
-        ${costumeTab('characters', 'Characters')}
-        ${costumeTab('quick', 'Quick Changes')}
-        ${costumeTab('pieces', 'All Pieces')}
-        ${costumeTab('fittings', 'Fittings')}
-        ${costumeTab('deadlines', 'Tasks & Deadlines')}
-        ${costumeTab('gallery', 'Design Board')}
-        ${costumeTab('suggestions', 'Suggestions')}
-        ${permissions.audit ? costumeTab('activity', 'Activity') : ''}
+        ${costumeTab('characters', 'Design')}
+        ${costumeTab('pieces', 'Build & Fit')}
+        ${costumeTab('quick', 'Wardrobe Run')}
+        ${costumeTab('gallery', 'Gallery')}
       </nav>
 
       <div data-costume-view>
@@ -257,8 +272,8 @@ function renderCostumeAnnouncements(announcements) {
 
 function renderActiveCostumeView() {
   switch (CostumeState.view) {
-    case 'quick': return renderQuickChangeBoard();
-    case 'pieces': return renderAllCostumePieces();
+    case 'quick': return `${renderQuickChangeBoard()}${renderCostumeTasksAndDeadlines()}`;
+    case 'pieces': return `${renderAllCostumePieces()}${renderAllCostumeFittings()}`;
     case 'fittings': return renderAllCostumeFittings();
     case 'deadlines': return renderCostumeTasksAndDeadlines();
     case 'gallery': return renderCostumeGallery();
@@ -585,7 +600,7 @@ function renderCostumePieceCard(piece) {
 
 function renderCharacterFittings(character) {
   const p = CostumeState.data.permissions;
-  const measurement = characterMeasurements(character.CharacterID);
+  const measurements = characterMeasurementsList(character.CharacterID);
   const fittings = characterFittings(character.CharacterID);
 
   return `
@@ -596,12 +611,12 @@ function renderCharacterFittings(character) {
       </div>
       <div class="costume-inline-actions">
         ${p.manage ? `<button class="button button-secondary button-small" data-add-fitting="${BRM.escape(character.CharacterID)}">＋ Schedule fitting</button>` : ''}
-        ${p.measurements ? `<button class="button button-primary button-small" data-edit-measurements="${BRM.escape(character.CharacterID)}">${measurement ? 'Edit measurements' : 'Add measurements'}</button>` : ''}
+        ${p.measurements ? `<button class="button button-primary button-small" data-edit-measurements="${BRM.escape(character.CharacterID)}">${measurements.length ? 'Manage measurements' : 'Add measurements'}</button>` : ''}
       </div>
     </div>
 
-    ${measurement
-      ? renderMeasurementPanel(measurement)
+    ${measurements.length
+      ? measurements.map(renderMeasurementPanel).join('')
       : p.measurements
         ? '<div class="alert alert-info">No measurements have been entered for this actor.</div>'
         : '<div class="alert alert-info">Private measurements are available only to the actor, authorized costume managers, and Full Administrators.</div>'}
@@ -1152,9 +1167,15 @@ function openPieceModal(item=null,characterId='',changeId='') {
   formSubmit(modal,'saveCostumePiece',fd=>({costumePieceId:item?.CostumePieceID||'',...Object.fromEntries(fd),assignedUserIds:fd.getAll('assignedUserIds')}),'Costume piece saved.');
 }
 
-function openMeasurementModal(characterId) {
+function openMeasurementModal(characterId,actorUserId='') {
   const character=CostumeState.data.characters.find(x=>String(x.CharacterID)===String(characterId));
-  const m=characterMeasurements(characterId)||{};
+  const assignments=costumeCastAssignments(character);
+  if(!actorUserId&&assignments.length>1){
+    const chooser=BRM.openModal(`<span class="eyebrow">Double-cast measurements</span><h2>${BRM.escape(character?.CharacterName||'Choose performer')}</h2><p>Costume designs and pieces stay shared. Measurements and fittings remain private and separate for each performer.</p><div class="data-list">${assignments.map(a=>`<button class="data-card" data-measure-actor="${BRM.escape(a.UserID)}"><div class="data-card-main"><strong>${BRM.escape(a.PersonName||'Assigned performer')}</strong><p>Cast ${BRM.escape(a.CastGroup||'A')}</p></div></button>`).join('')}</div>`);
+    chooser.querySelectorAll('[data-measure-actor]').forEach(button=>button.onclick=()=>{chooser.closeModal();openMeasurementModal(characterId,button.dataset.measureActor);});return;
+  }
+  const assignment=assignments.find(a=>String(a.UserID)===String(actorUserId))||assignments[0];
+  const m=characterMeasurements(characterId,actorUserId||assignment?.UserID)||{};
   const measurementFields=[
     ['Height','height','Height'],['Chest / Bust','chestBust','ChestBust'],['Waist','waist','Waist'],['Hips','hips','Hips'],
     ['Shoulder width','shoulderWidth','ShoulderWidth'],['Neck','neck','Neck'],['Sleeve length','sleeveLength','SleeveLength'],['Arm length','armLength','ArmLength'],
@@ -1165,8 +1186,9 @@ function openMeasurementModal(characterId) {
     <span class="eyebrow">Restricted fitting information</span><h2>${BRM.escape(character?.CharacterName||'Measurements')}</h2>
     <div class="alert alert-info">Only authorized costume managers, Full Administrators, and the linked actor can view this record.</div>
     <form data-form><div class="form-grid">
-      ${field('Actor name','actorName',m.ActorName||character?.ActorName||'')}
-      ${selectField('Actor account','actorUserId',m.ActorUserID||character?.ActorUserID||'',teamOptions())}
+      ${field('Actor name','actorName',m.ActorName||assignment?.PersonName||character?.ActorName||'')}
+      ${selectField('Actor account','actorUserId',m.ActorUserID||assignment?.UserID||character?.ActorUserID||'',teamOptions())}
+      <input type="hidden" name="castGroup" value="${BRM.escape(m.CastGroup||assignment?.CastGroup||'Single')}">
       ${field('Date measured','dateMeasured',String(m.DateMeasured||'').slice(0,10),false,'date')}
       ${measurementFields.map(([label,name,key])=>field(label,name,m[key]||'')).join('')}
       ${area('Fit notes','fitNotes',m.FitNotes||'','span-2')}
@@ -1179,10 +1201,15 @@ function openMeasurementModal(characterId) {
 
 function openFittingModal(item=null,characterId='') {
   const selected=item?.CharacterID||characterId||CostumeState.selectedCharacterId||'';
+  const fittingCharacter=(CostumeState.data.characters||[]).find(character=>String(character.CharacterID)===String(selected));
+  const fittingAssignments=costumeCastAssignments(fittingCharacter);
+  const fittingAssignment=fittingAssignments.find(assignment=>String(assignment.UserID)===String(item?.ActorUserID))||fittingAssignments[0];
   const modal=BRM.openModal(`
     <span class="eyebrow">${item?'Edit fitting':'Schedule fitting'}</span><h2>${BRM.escape(item?.FittingType||'Costume fitting')}</h2>
     <form data-form><div class="form-grid">
       ${selectField('Character','characterId',selected,characterOptions(false))}
+      ${selectField('Actor / cast','actorUserId',item?.ActorUserID||fittingAssignment?.UserID||'',fittingAssignments.length?fittingAssignments.map(assignment=>({value:assignment.UserID,label:`${assignment.PersonName} · ${assignment.CastGroup==='Single'?'Single cast':`Cast ${assignment.CastGroup}`}`})):teamOptions())}
+      <input type="hidden" name="castGroup" value="${BRM.escape(item?.CastGroup||fittingAssignment?.CastGroup||'Single')}">
       ${field('Date and time','scheduledAt',item?.ScheduledAt?String(item.ScheduledAt).slice(0,16):'',false,'datetime-local')}
       ${field('Location','location',item?.Location||'Costume Room')}
       ${field('Fitting type','fittingType',item?.FittingType||'General Fitting')}
@@ -1327,7 +1354,7 @@ async function costumeImageUrl(fileId){
   try{return await request;}finally{costumeImageLoads.delete(fileId);}
 }
 function hydrateCostumeImages(root=document){
-  root.querySelectorAll?.('[data-costume-image]').forEach(async image=>{
+  const load=async image=>{
     if(image.dataset.loaded==='true')return;
     image.dataset.loaded='true';
     try{
@@ -1338,7 +1365,10 @@ function hydrateCostumeImages(root=document){
       console.warn('Costume image failed:',error);
       image.hidden=true;
     }
-  });
+  };
+  const images=[...(root.querySelectorAll?.('[data-costume-image]')||[])];
+  if(!('IntersectionObserver'in window))images.forEach(load);
+  else{const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;observer.unobserve(entry.target);load(entry.target);}),{rootMargin:'180px 0px'});images.forEach(image=>observer.observe(image));}
 }
 
 async function compressCostumeImage(file){
