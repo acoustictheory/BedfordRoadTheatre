@@ -6258,6 +6258,12 @@ class _MoreScreenState extends State<MoreScreen> {
             path: 'storage.html',
             icon: Icons.offline_pin,
           ),
+          (
+            category: 'Resources',
+            name: 'App Installation & Updates',
+            path: 'install.html',
+            icon: Icons.system_update_alt,
+          ),
         ];
     final categories = [
       'Administration',

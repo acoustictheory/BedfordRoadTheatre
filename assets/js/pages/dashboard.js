@@ -66,9 +66,12 @@ document.addEventListener("DOMContentLoaded", () =>
           <a class="button button-primary dashboard-community-button" href="communications.html">● Open Community Messages</a>
           <a class="button button-primary" href="journal.html?new=1">✎ Write today’s reflection</a>
           <a class="button button-secondary" href="schedule.html">◷ View full schedule</a>
+          ${BRM.isAdmin() ? '<a class="button button-secondary" href="recruitment-review.html">★ Auditions &amp; Interest</a>' : ""}
           ${BRM.hasPermission("announcement.manage") ? '<button class="button button-secondary" data-new-announcement>! Post an update</button>' : ""}
         </div>
       </section>
+
+      ${dashboardInstallPrompt()}
 
       ${renderAnnouncementAttention(data.announcements || [])}
 
@@ -153,6 +156,8 @@ document.addEventListener("DOMContentLoaded", () =>
           ${data.journal?.helpReviewCount ? `<a class="panel" href="journal-review.html"><span class="eyebrow">Admin attention</span><h2>${data.journal.helpReviewCount} help request${data.journal.helpReviewCount === 1 ? "" : "s"}</h2><p style="color:var(--muted);margin:0">Students have flagged journal entries for support.</p></a>` : ""}
         </aside>
       </div>`;
+
+      connectDashboardInstallPrompt(main);
 
       main.querySelectorAll("[data-ack]").forEach((button) =>
         button.addEventListener("click", async () => {
@@ -366,4 +371,30 @@ function renderEvents(items) {
       return `<div class="timeline-item"><div class="timeline-time">${time}</div><div class="timeline-rail"></div><div class="timeline-content"><strong>${BRM.escape(event.Title)}</strong><span>${BRM.formatDate(event.StartAt)}${event.Location ? ` · ${BRM.escape(event.Location)}` : ""}</span></div></div>`;
     })
     .join("");
+}
+function dashboardInstallPrompt() {
+  if (localStorage.getItem('brmAppInstall') || localStorage.getItem('brmAppInstallAcknowledged') === 'true') return '';
+  const remindAfter = Number(localStorage.getItem('brmInstallRemindAfter') || 0);
+  if (remindAfter > Date.now()) return '';
+  const ua = navigator.userAgent || '';
+  const ios = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  const device = ios ? 'iPhone or iPad' : android ? 'Android device' : 'phone or tablet';
+  const hash = ios ? '#ios' : android ? '#android' : '';
+  return `<section class="dashboard-app-download" data-install-prompt>
+    <img src="assets/images/bedford-road-theatre-logo-192.png" alt="Bedford Road Theatre">
+    <div class="dashboard-app-copy"><span class="eyebrow">Recommended for rehearsals</span><h2>Put Bedford on your ${device}</h2><p>Get notifications, Community, ScoreFlow, audio, and offline rehearsal tools. We’ll walk you through every Apple or Android prompt.</p></div>
+    <div class="dashboard-app-actions"><a class="button button-primary" href="install.html${hash}">Installation guide</a><button class="button button-quiet button-small" type="button" data-install-dismiss>Remind me later</button><button class="button button-quiet button-small" type="button" data-install-done>I already installed it</button></div>
+  </section>`;
+}
+
+function connectDashboardInstallPrompt(main) {
+  main.querySelector('[data-install-dismiss]')?.addEventListener('click', () => {
+    localStorage.setItem('brmInstallRemindAfter', String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    main.querySelector('[data-install-prompt]')?.remove();
+  });
+  main.querySelector('[data-install-done]')?.addEventListener('click', () => {
+    localStorage.setItem('brmAppInstallAcknowledged', 'true');
+    main.querySelector('[data-install-prompt]')?.remove();
+  });
 }

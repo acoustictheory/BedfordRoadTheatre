@@ -8,6 +8,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="assets/style.css?v=20260722-requests19" />
+    <link rel="stylesheet" href="assets/install.css?v=20260907-install1" />
     <script defer src="assets/config.js?v=20260906-community-secure1"></script>
     <script defer src="assets/js/api.js?v=20260722-requests19"></script>
     <script defer src="assets/js/core.js?v=20260722-requests19"></script>
@@ -105,6 +106,18 @@
                   ><input name="email" type="email" />
                 </div>
                 <div class="field span-2">
+                  <label>What device will you use for the Bedford app?</label>
+                  <select name="preferredDevice" required>
+                    <option value="">Choose a device</option>
+                    <option value="iphone">iPhone</option>
+                    <option value="ipad">iPad</option>
+                    <option value="android-phone">Android phone</option>
+                    <option value="android-tablet">Android tablet</option>
+                    <option value="none">No mobile device</option>
+                  </select>
+                  <span class="field-hint">This helps the production team provide the correct app and setup instructions.</span>
+                </div>
+                <div class="field span-2">
                   <label>Which production areas are you involved in?</label>
                   <p class="field-hint" style="margin: 0 0 10px">
                     Select every area that applies. These choices are requests
@@ -163,6 +176,11 @@
               </button>
             </form>
           </section>
+          <a class="auth-install-link" href="install.html">
+            <img src="assets/images/bedford-road-theatre-logo-192.png" alt="" width="48" height="48" style="border-radius:12px">
+            <span><strong>Need the Bedford app?</strong><small>Step-by-step help for iPhone, iPad, and Android</small></span>
+            <span aria-hidden="true">›</span>
+          </a>
         </div>
       </section>
     </main>

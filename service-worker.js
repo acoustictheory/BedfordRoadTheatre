@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260907-compact-chat6';
+const BUILD_ID = 'bedford-frontend-20260907-install-centre1';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
@@ -47,6 +47,7 @@ const COMPLETE_SHELL = [
   "ensemble.html",
   "front-of-house.html",
   "index.html",
+  "install.html",
   "journal-review.html",
   "journal.html",
   "lighting.html",
@@ -75,6 +76,7 @@ const COMPLETE_SHELL = [
   "assets/calendar.css",
   "assets/dashboard.css",
   "assets/journal.css",
+  "assets/install.css",
   "assets/props-hub.css",
   "assets/scenic-hub.css",
   "assets/config.js",
@@ -96,6 +98,7 @@ const COMPLETE_SHELL = [
   "assets/js/pages/directory.js",
   "assets/js/pages/journal-review.js",
   "assets/js/pages/journal.js",
+  "assets/js/pages/install.js",
   "assets/js/pages/login.js",
   "assets/js/pages/profile.js",
   "assets/js/pages/resources.js",

@@ -53,6 +53,7 @@
 
 .dashboard-app-help summary { width: max-content; cursor: pointer; color: var(--text); font-weight: 800; }
 .dashboard-app-help ol { margin: 10px 0 0; padding-left: 20px; line-height: 1.6; }
+.dashboard-app-actions button{border:0;cursor:pointer}
 
 .dashboard-blocking-launch {
   position: relative;
