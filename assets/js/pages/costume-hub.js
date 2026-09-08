@@ -16,6 +16,7 @@ const CostumeState = {
 const COSTUME_BUILD = 'costume-hub-v23-20260723';
 const costumeImageUrls = new Map();
 const costumeImageLoads = new Map();
+const costumeCastCompanyName=value=>String(value||'A').toUpperCase()==='B'?'Purple Cast':'Green Cast';
 
 document.addEventListener('DOMContentLoaded', () =>
   BRM.initPrivatePage(async () => {
@@ -1171,7 +1172,7 @@ function openMeasurementModal(characterId,actorUserId='') {
   const character=CostumeState.data.characters.find(x=>String(x.CharacterID)===String(characterId));
   const assignments=costumeCastAssignments(character);
   if(!actorUserId&&assignments.length>1){
-    const chooser=BRM.openModal(`<span class="eyebrow">Double-cast measurements</span><h2>${BRM.escape(character?.CharacterName||'Choose performer')}</h2><p>Costume designs and pieces stay shared. Measurements and fittings remain private and separate for each performer.</p><div class="data-list">${assignments.map(a=>`<button class="data-card" data-measure-actor="${BRM.escape(a.UserID)}"><div class="data-card-main"><strong>${BRM.escape(a.PersonName||'Assigned performer')}</strong><p>Cast ${BRM.escape(a.CastGroup||'A')}</p></div></button>`).join('')}</div>`);
+    const chooser=BRM.openModal(`<span class="eyebrow">Double-cast measurements</span><h2>${BRM.escape(character?.CharacterName||'Choose performer')}</h2><p>Costume designs and pieces stay shared. Measurements and fittings remain private and separate for each performer.</p><div class="data-list">${assignments.map(a=>`<button class="data-card" data-measure-actor="${BRM.escape(a.UserID)}"><div class="data-card-main"><strong>${BRM.escape(a.PersonName||'Assigned performer')}</strong><p>${BRM.escape(costumeCastCompanyName(a.CastGroup))}</p></div></button>`).join('')}</div>`);
     chooser.querySelectorAll('[data-measure-actor]').forEach(button=>button.onclick=()=>{chooser.closeModal();openMeasurementModal(characterId,button.dataset.measureActor);});return;
   }
   const assignment=assignments.find(a=>String(a.UserID)===String(actorUserId))||assignments[0];
@@ -1208,7 +1209,7 @@ function openFittingModal(item=null,characterId='') {
     <span class="eyebrow">${item?'Edit fitting':'Schedule fitting'}</span><h2>${BRM.escape(item?.FittingType||'Costume fitting')}</h2>
     <form data-form><div class="form-grid">
       ${selectField('Character','characterId',selected,characterOptions(false))}
-      ${selectField('Actor / cast','actorUserId',item?.ActorUserID||fittingAssignment?.UserID||'',fittingAssignments.length?fittingAssignments.map(assignment=>({value:assignment.UserID,label:`${assignment.PersonName} · ${assignment.CastGroup==='Single'?'Single cast':`Cast ${assignment.CastGroup}`}`})):teamOptions())}
+      ${selectField('Actor / cast','actorUserId',item?.ActorUserID||fittingAssignment?.UserID||'',fittingAssignments.length?fittingAssignments.map(assignment=>({value:assignment.UserID,label:`${assignment.PersonName} · ${assignment.CastGroup==='Single'?'Single cast':costumeCastCompanyName(assignment.CastGroup)}`})):teamOptions())}
       <input type="hidden" name="castGroup" value="${BRM.escape(item?.CastGroup||fittingAssignment?.CastGroup||'Single')}">
       ${field('Date and time','scheduledAt',item?.ScheduledAt?String(item.ScheduledAt).slice(0,16):'',false,'datetime-local')}
       ${field('Location','location',item?.Location||'Costume Room')}

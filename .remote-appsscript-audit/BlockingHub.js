@@ -1342,7 +1342,8 @@ function saveBlockingCast_(context,payload) {
     if(!isDoubleCast)return true;
     return String(r.CastGroup||'A').toUpperCase()===castGroup;
   })[0];
-  assert_(!duplicate,isDoubleCast?(character.CharacterName+' already has a Cast '+castGroup+' performer.'):(character.CharacterName+' is single-cast and already has a performer.'),'CAST_SLOT_TAKEN');
+  var castGroupName=castGroup==='B'?'Purple Cast':'Green Cast';
+  assert_(!duplicate,isDoubleCast?(character.CharacterName+' already has a '+castGroupName+' performer.'):(character.CharacterName+' is single-cast and already has a performer.'),'CAST_SLOT_TAKEN');
   var values={
     ProductionID:productionId,UserID:payload.userId||'',CharacterID:payload.characterId,
     DisplayLabel:sanitizeText_(payload.displayLabel||'',120),RoleLabel:sanitizeText_(payload.roleLabel||'',120),CastGroup:castGroup,
