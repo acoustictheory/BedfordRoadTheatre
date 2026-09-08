@@ -196,6 +196,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   final audio = AudioPlayer();
   final companionAudio = AudioPlayer();
   StreamSubscription<Duration>? positionSubscription;
+  Timer? annotationSaveTimer;
+  List<ScoreInkMark>? pendingAnnotationSave;
   List<Map<String, dynamic>> audioTracks = [];
   String activeTrackId = '';
   Map<String, dynamic>? guideTrack, practiceTrack;
@@ -369,6 +371,9 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   @override
   void dispose() {
     positionSubscription?.cancel();
+    annotationSaveTimer?.cancel();
+    final pending = pendingAnnotationSave;
+    if (pending != null) unawaited(store.saveInk(pending));
     unawaited(audio.dispose());
     unawaited(companionAudio.dispose());
     super.dispose();
@@ -914,8 +919,15 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
   }
 
   void setMarks(List<ScoreInkMark> value) {
+    if (!mounted) return;
     setState(() => marks = value);
-    unawaited(store.saveInk(value));
+    pendingAnnotationSave = List<ScoreInkMark>.of(value);
+    annotationSaveTimer?.cancel();
+    annotationSaveTimer = Timer(const Duration(milliseconds: 450), () {
+      final pending = pendingAnnotationSave;
+      pendingAnnotationSave = null;
+      if (pending != null) unawaited(store.saveInk(pending));
+    });
   }
 
   void undoEdit() {
@@ -2246,10 +2258,12 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
                     textSelectionParams: PdfTextSelectionParams(
                       enabled: !annotate,
                     ),
-                    onViewerReady: (document, _) =>
-                        setState(() => pages = document.pages.length),
+                    onViewerReady: (document, _) {
+                      if (mounted)
+                        setState(() => pages = document.pages.length);
+                    },
                     onPageChanged: (value) {
-                      if (value != null) {
+                      if (mounted && value != null) {
                         setState(() => page = value);
                         unawaited(saveReadingState());
                       }
@@ -2275,10 +2289,13 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen> {
                               ? selected.first
                               : null,
                           selectedMarkIds: selected,
-                          onSelectionChanged: (id) =>
-                              setState(() => selected = id == null ? {} : {id}),
-                          onSelectionSetChanged: (ids) =>
-                              setState(() => selected = ids),
+                          onSelectionChanged: (id) {
+                            if (mounted)
+                              setState(() => selected = id == null ? {} : {id});
+                          },
+                          onSelectionSetChanged: (ids) {
+                            if (mounted) setState(() => selected = ids);
+                          },
                           onNavigateStart: beginAnnotationNavigation,
                           onNavigateUpdate: updateAnnotationNavigation,
                           onNavigateEnd: endAnnotationNavigation,

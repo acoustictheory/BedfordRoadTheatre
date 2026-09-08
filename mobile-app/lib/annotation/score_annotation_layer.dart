@@ -68,6 +68,9 @@ class ScoreAnnotationLayer extends StatefulWidget {
 }
 
 class _ScoreAnnotationLayerState extends State<ScoreAnnotationLayer> {
+  static const int _maximumStrokePoints = 1600;
+  static const int _maximumLassoPoints = 600;
+  static const double _minimumPointDistance = .00065;
   List<Offset> _draft = const [];
   String? _movingId;
   Set<String> _movingIds = <String>{};
@@ -92,6 +95,22 @@ class _ScoreAnnotationLayerState extends State<ScoreAnnotationLayer> {
       (widget.stylusOnly && !_hasStylusPointer);
 
   bool _singlePointerCanInk() => !widget.stylusOnly || _hasStylusPointer;
+
+  void _appendDraftPoint(Offset point, {required bool lasso}) {
+    final limit = lasso ? _maximumLassoPoints : _maximumStrokePoints;
+    if (_draft.isNotEmpty &&
+        (_draft.last - point).distance < _minimumPointDistance) {
+      return;
+    }
+    setState(() {
+      if (_draft.length >= limit) {
+        // Preserve the shape of exceptionally long gestures without allowing
+        // an unbounded point list to exhaust memory on older phones/tablets.
+        _draft = [for (var i = 0; i < _draft.length; i += 2) _draft[i]];
+      }
+      _draft.add(point);
+    });
+  }
 
   Offset _normalized(Offset point, Size size) => Offset(
     (point.dx / math.max(1, size.width)).clamp(0.0, 1.0).toDouble(),
@@ -418,7 +437,7 @@ class _ScoreAnnotationLayerState extends State<ScoreAnnotationLayer> {
   void _updateInkGesture(ScaleUpdateDetails details, Size size) {
     final point = _normalized(details.localFocalPoint, size);
     if (widget.tool == ScoreInkTool.lasso) {
-      setState(() => _draft = [..._draft, point]);
+      _appendDraftPoint(point, lasso: true);
       return;
     }
     if (!_inkGestureEditStarted) {
@@ -451,7 +470,7 @@ class _ScoreAnnotationLayerState extends State<ScoreAnnotationLayer> {
       widget.onMarksChanged(next);
     } else if (widget.tool != ScoreInkTool.stamp &&
         widget.tool != ScoreInkTool.text) {
-      setState(() => _draft = [..._draft, point]);
+      _appendDraftPoint(point, lasso: false);
     }
   }
 

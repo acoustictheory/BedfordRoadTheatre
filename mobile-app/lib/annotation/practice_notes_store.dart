@@ -150,11 +150,26 @@ class ScoreInkMark {
   };
 
   factory ScoreInkMark.fromJson(Map<String, dynamic> json) {
-    final parsedPoints = ((json['points'] as List?) ?? const [])
+    final rawPoints = ((json['points'] as List?) ?? const [])
         .whereType<List>()
         .where((p) => p.length >= 2)
         .map((p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()))
         .toList();
+    const maximumLoadedPoints = 1600;
+    final stride = rawPoints.length > maximumLoadedPoints
+        ? (rawPoints.length / maximumLoadedPoints).ceil()
+        : 1;
+    final parsedPoints = stride == 1
+        ? rawPoints
+        : <Offset>[
+            for (var index = 0; index < rawPoints.length; index += stride)
+              rawPoints[index],
+            if (rawPoints.isNotEmpty &&
+                rawPoints.length > 1 &&
+                rawPoints.last !=
+                    rawPoints[(rawPoints.length - 1) ~/ stride * stride])
+              rawPoints.last,
+          ];
 
     final legacyStampRaw = json['stamp'] as String?;
     final legacyStamp = legacyStampRaw == 'BREATH' ? ',' : legacyStampRaw;
@@ -302,7 +317,13 @@ class PracticeNotesStore {
 
   Future<void> saveInk(List<ScoreInkMark> marks) async {
     final encoded = marks.map((e) => e.toJson()).toList();
-    await _prefs.setString('$prefix.ink.v2', jsonEncode(encoded));
+    final json = jsonEncode(encoded);
+    try {
+      await _prefs.setString('$prefix.ink.v2', json);
+    } catch (_) {
+      // A very large legacy annotation set can exceed a platform preference
+      // transaction. Never allow an autosave failure to terminate ScoreFlow.
+    }
     try {
       await cloud?.set({
         'ownerUserId': owner,
@@ -345,7 +366,14 @@ class PracticeNotesStore {
         .where((layer) => !layer.builtIn)
         .map((layer) => layer.toJson())
         .toList();
-    await _prefs.setString('$prefix.annotationLayers.v1', jsonEncode(encoded));
+    try {
+      await _prefs.setString(
+        '$prefix.annotationLayers.v1',
+        jsonEncode(encoded),
+      );
+    } catch (_) {
+      // Keep the reader alive if a device storage write is temporarily unavailable.
+    }
     try {
       await cloud?.set({
         'ownerUserId': owner,
