@@ -164,7 +164,11 @@ class ScoreInkMark {
     return {
       'id': id,
       'page': page,
-      'points': savedPoints.map((point) => [point.dx, point.dy]).toList(),
+      // Firestore does not support an array directly inside another array.
+      // Coordinate maps keep the stroke payload valid while remaining compact.
+      'points': savedPoints
+          .map((point) => {'x': point.dx, 'y': point.dy})
+          .toList(),
       'color': colorValue,
       'widthFactor': widthFactor,
       'opacity': opacity,
@@ -179,9 +183,27 @@ class ScoreInkMark {
 
   factory ScoreInkMark.fromJson(Map<String, dynamic> json) {
     final rawPoints = ((json['points'] as List?) ?? const [])
-        .whereType<List>()
-        .where((p) => p.length >= 2)
-        .map((p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()))
+        .map<Offset?>((point) {
+          if (point is Map && point['x'] is num && point['y'] is num) {
+            return Offset(
+              (point['x'] as num).toDouble(),
+              (point['y'] as num).toDouble(),
+            );
+          }
+          // Continue reading device-local annotations written by releases
+          // that used [x, y] coordinate pairs before cloud sync was enabled.
+          if (point is List &&
+              point.length >= 2 &&
+              point[0] is num &&
+              point[1] is num) {
+            return Offset(
+              (point[0] as num).toDouble(),
+              (point[1] as num).toDouble(),
+            );
+          }
+          return null;
+        })
+        .whereType<Offset>()
         .toList();
     const maximumLoadedPoints = 1600;
     final stride = rawPoints.length > maximumLoadedPoints
