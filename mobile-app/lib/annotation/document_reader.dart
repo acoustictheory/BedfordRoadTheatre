@@ -750,6 +750,97 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
     RegExp(r'(\d+)$').firstMatch(widget.document.id)?.group(1) ?? '',
   );
 
+  bool get isLibretto => widget.document.id == 'descendants-libretto';
+
+  String pageLabel(int physicalPage) {
+    if (!isLibretto) return 'Page $physicalPage';
+    if (physicalPage == 1) return 'Cover';
+    if (physicalPage == 2) return 'Blank page';
+    const frontMatter = <int, String>{
+      3: 'iii',
+      4: 'iv',
+      5: 'v',
+      6: 'vi',
+      7: 'vii',
+      8: 'viii',
+      9: 'ix',
+      10: 'x',
+    };
+    return frontMatter[physicalPage] ?? 'Page ${physicalPage - 10}';
+  }
+
+  String pageDescription(int physicalPage) {
+    if (!isLibretto) return 'PDF page $physicalPage';
+    return physicalPage <= 10
+        ? 'Front matter · PDF page $physicalPage'
+        : 'Script · PDF page $physicalPage';
+  }
+
+  Future<void> choosePage() async {
+    if (pages < 1) return;
+    final target = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: .88,
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(
+                  isLibretto ? 'Go to libretto page' : 'Go to page',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                subtitle: Text(
+                  isLibretto
+                      ? 'The numbered script begins after the front matter.'
+                      : '${widget.document.title} · $pages pages',
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: pages,
+                  itemBuilder: (_, index) {
+                    final physicalPage = index + 1;
+                    return ListTile(
+                      selected: physicalPage == page,
+                      leading: CircleAvatar(
+                        child: Text(
+                          isLibretto && physicalPage > 10
+                              ? '${physicalPage - 10}'
+                              : physicalPage <= 10 && isLibretto
+                              ? '•'
+                              : '$physicalPage',
+                        ),
+                      ),
+                      title: Text(pageLabel(physicalPage)),
+                      subtitle: Text(pageDescription(physicalPage)),
+                      trailing: physicalPage == page
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => Navigator.pop(sheetContext, physicalPage),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (target != null) {
+      await controller.goToPage(
+        pageNumber: target,
+        duration: const Duration(milliseconds: 230),
+      );
+    }
+  }
+
   Future<void> moveSong(int delta) async {
     final number = songNumber;
     if (number == null) return;
@@ -1790,7 +1881,8 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
             ),
             ...annotated.map(
               (p) => ListTile(
-                title: Text('Page $p'),
+                title: Text(pageLabel(p)),
+                subtitle: Text(pageDescription(p)),
                 trailing: Text(
                   '${marks.where((m) => m.page == p).length} marks',
                 ),
@@ -2259,6 +2351,14 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
                 ? () => moveSong(1)
                 : null,
             icon: const Icon(Icons.skip_next_rounded),
+          ),
+        if (songNumber == null)
+          IconButton(
+            tooltip: pages > 0
+                ? 'Go to page · ${pageLabel(page)}'
+                : 'Go to page',
+            onPressed: pages > 0 ? choosePage : null,
+            icon: const Icon(Icons.find_in_page_outlined),
           ),
         if (readerMode == 'page')
           IconButton(
