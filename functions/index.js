@@ -128,15 +128,17 @@ async function firebasePortalContext(userId) {
   const productionId = productionDocument.id;
   const productionRef = productionDocument.ref;
 
-  const [membershipsByLower, membershipsByLegacy, groupsByLower, groupsByLegacy, departmentsSnapshot] = await Promise.all([
+  const [membershipsByLower, membershipsByLegacyField, membershipsByLegacyCollection, groupsByLower, groupsByLegacyField, groupsByLegacyCollection, departmentsSnapshot] = await Promise.all([
     productionRef.collection('userDepartments').where('userId', '==', userId).get(),
+    productionRef.collection('userDepartments').where('userID', '==', userId).get(),
     productionRef.collection('UserDepartments').where('UserID', '==', userId).get(),
     productionRef.collection('userPermissionGroups').where('userId', '==', userId).get(),
+    productionRef.collection('userPermissionGroups').where('userID', '==', userId).get(),
     productionRef.collection('UserPermissionGroups').where('UserID', '==', userId).get(),
     productionRef.collection('departments').get(),
   ]);
-  const memberships = new Map([...membershipsByLower.docs, ...membershipsByLegacy.docs].map(document => [document.id, document]));
-  const groupMemberships = new Map([...groupsByLower.docs, ...groupsByLegacy.docs].map(document => [document.id, document]));
+  const memberships = new Map([...membershipsByLower.docs, ...membershipsByLegacyField.docs, ...membershipsByLegacyCollection.docs].map(document => [document.id, document]));
+  const groupMemberships = new Map([...groupsByLower.docs, ...groupsByLegacyField.docs, ...groupsByLegacyCollection.docs].map(document => [document.id, document]));
   const activeMemberships = [...memberships.values()].filter(document => String(document.data().status || document.data().Status || 'Active').toLowerCase() === 'active');
   const groupIds = [...new Set([...groupMemberships.values()].filter(document => String(document.data().status || document.data().Status || 'Active').toLowerCase() === 'active').map(document => String(document.data().permissionGroupID || document.data().permissionGroupId || '')))].filter(Boolean);
 
