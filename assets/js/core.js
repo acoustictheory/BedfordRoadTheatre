@@ -158,6 +158,10 @@ window.BRM = window.BRM || {};
     await authModule.signOut(authModule.getAuth(app));
   };
   BRM.firebaseIdToken = async function (forceRefresh = false) {
+    const nativeToken = sessionStorage.getItem("brmFirebaseIdToken");
+    if (nativeToken && localStorage.getItem("brmAppInstall") === "flutter") {
+      return nativeToken;
+    }
     const firebaseConfig = window.BRM_CONFIG?.FIREBASE;
     if (!firebaseConfig || window.BRM_CONFIG?.FIREBASE_MODE === "off") throw new Error("Firebase is unavailable.");
     const [appModule, authModule] = await Promise.all([

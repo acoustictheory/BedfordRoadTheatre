@@ -49,6 +49,10 @@ window.BRM = window.BRM || {};
     }
   };
   BRM.firebaseIdToken = async function (forceRefresh = false) {
+    const nativeToken = sessionStorage.getItem('brmFirebaseIdToken');
+    if (nativeToken && localStorage.getItem('brmAppInstall') === 'flutter') {
+      return nativeToken;
+    }
     const loaded = await modules();
     if (!loaded) throw new Error('Firebase is unavailable.');
     await loaded.auth.authStateReady();
