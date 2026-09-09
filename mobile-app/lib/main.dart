@@ -309,6 +309,34 @@ class _LoginState extends State<LoginScreen> {
           );
         }
         portalContext = Map<String, dynamic>.from(session['context'] as Map);
+
+        // The web workspaces (including Music & Tracks) still use the
+        // production portal session for track metadata and audio requests.
+        // A Firebase-native sign-in must therefore refresh and retain that
+        // session too, otherwise opening a web workspace causes a permanent
+        // "Reconnect production tools" loop.
+        final bridgeResponse = await http
+            .post(
+              Uri.parse(appSignInEndpoint),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'username': v,
+                'password': password.text,
+                'trustedDevice': trustDevice,
+              }),
+            )
+            .timeout(const Duration(seconds: 35));
+        final bridge = jsonDecode(bridgeResponse.body) as Map<String, dynamic>;
+        legacyToken = '${bridge['portalToken'] ?? ''}';
+        if (bridgeResponse.statusCode >= 400 ||
+            bridge['success'] != true ||
+            legacyToken.isEmpty) {
+          throw FirebaseAuthException(
+            code: 'app-account-unavailable',
+            message:
+                '${bridge['error'] ?? 'Your production tools could not be connected.'}',
+          );
+        }
       } on FirebaseAuthException catch (firebaseError) {
         if (firebaseError.code != 'user-not-found' &&
             firebaseError.code != 'invalid-credential') {
