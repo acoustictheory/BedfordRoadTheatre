@@ -24,21 +24,34 @@ window.BRM = window.BRM || {};
     String(value || "")
       .replace(/[-_]/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
-  BRM.formatDate = (value) =>
-    value
+  const safeDate = (value) => {
+    if (!value) return null;
+    if (typeof value?.toDate === "function") return value.toDate();
+    const seconds = Number(value?.seconds ?? value?._seconds);
+    const parsed = Number.isFinite(seconds)
+      ? new Date(seconds * 1000)
+      : new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  };
+  BRM.formatDate = (value) => {
+    const parsed = safeDate(value);
+    return parsed
       ? new Intl.DateTimeFormat("en-CA", {
           dateStyle: "medium",
           timeZone: "America/Regina",
-        }).format(new Date(value))
+        }).format(parsed)
       : "—";
-  BRM.formatDateTime = (value) =>
-    value
+  };
+  BRM.formatDateTime = (value) => {
+    const parsed = safeDate(value);
+    return parsed
       ? new Intl.DateTimeFormat("en-CA", {
           dateStyle: "medium",
           timeStyle: "short",
           timeZone: "America/Regina",
-        }).format(new Date(value))
+        }).format(parsed)
       : "—";
+  };
   BRM.initials = (name) =>
     String(name || "?")
       .split(/\s+/)

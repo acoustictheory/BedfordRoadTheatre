@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', event => {
   }));
 });
 
-const BUILD_ID = 'bedford-frontend-20260909-mobile-2.16.1';
+const BUILD_ID = 'bedford-frontend-20260909-tasks-date1';
 const SHELL_CACHE = `bedford-shell-${BUILD_ID}`;
 const RUNTIME_CACHE = 'bedford-runtime-v1';
 
