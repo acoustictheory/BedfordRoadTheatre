@@ -1,4 +1,5 @@
 node_modules/
+backups/
 migration-exports/
 .neocities-api-key
 .firebase-sync-secret
@@ -7,12 +8,20 @@ functions/.env*
 firebase-service-account*.json
 *firebase-auth-import*.json
 .android-sdk/
+.remote-appsscript-audit/
+.clasp.json
+firestore-debug.log
+firebase-debug.log*
 mobile-app/android/.gradle/
+mobile-app/android/build/
 android-twa/.gradle/
 android-twa/build/
 android-twa/app/build/
 android-twa/*.jks
 android-twa/*.keystore
 android-twa/keystore.properties
+android-twa/local.properties
 *.apk
 *.aab
+*.idsig
+downloads/live-*-check.html

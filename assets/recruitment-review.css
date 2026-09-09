@@ -1,0 +1,5 @@
+.recruitment-submission-card{align-items:start;gap:18px}
+.recruitment-review-fields{display:grid;grid-template-columns:minmax(180px,.65fr) minmax(280px,1.35fr);gap:14px;margin-top:14px}
+.recruitment-review-fields textarea{min-height:64px}
+.recruitment-card-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:760px){.recruitment-submission-card{grid-template-columns:1fr}.recruitment-review-fields{grid-template-columns:1fr}.recruitment-card-actions{justify-content:flex-start}.recruitment-card-actions .button{flex:1 1 auto}}

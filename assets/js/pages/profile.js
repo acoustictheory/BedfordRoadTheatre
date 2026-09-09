@@ -245,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
                     </option>
                   `).join('')}
                 </select>
+                <button class="button button-secondary" type="button" data-profile-theme-studio>Open Theme Studio</button>
+                <span class="field-hint">Build a complete personal aesthetic or start with a simple coordinated color scheme.</span>
               </div>
             </div>
             <div class="form-actions">
@@ -298,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
             requestNote: formData.get('requestNote')
           });
 
-          departmentAccess = response.departmentAccess;
+          departmentAccess = response.departmentAccess || (await BRM.api('getProfile', {}, {noCache:true,forceNetwork:true})).departmentAccess;
           BRM.toast(
             departmentAccess.pendingCount
               ? 'Your production-area requests are awaiting administrator approval.'
@@ -329,6 +331,8 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
         }
       });
 
+      main.querySelector('[data-profile-theme-studio]')?.addEventListener('click', () => BRM.openThemeStudio());
+
       main.querySelector('[data-photo-input]').addEventListener('change', async event => {
         const file = event.target.files[0];
         if (!file) return;
@@ -354,6 +358,11 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
 
           profile.PhotoFileID = response.fileId;
           profile.PhotoURL = response.photoRef || response.url || `drivefile:${response.fileId}`;
+          await BRM.firebaseUpdateProfile?.({
+            photoFileId: response.fileId,
+            photoFileID: response.fileId,
+            photoURL: profile.PhotoURL
+          });
 
           await BRM.cacheProfilePhoto?.(
             response.fileId,
@@ -376,6 +385,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
           await BRM.api('removeProfilePhoto');
           profile.PhotoURL = '';
           profile.PhotoFileID = '';
+          await BRM.firebaseUpdateProfile?.({ photoFileId: '', photoFileID: '', photoURL: '' });
           BRM.context.profile = profile;
           localStorage.setItem('brmContext', JSON.stringify(BRM.context));
           BRM.toast('Profile picture removed.');

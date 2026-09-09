@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded',()=>BRM.initPrivatePage(async()=>{
       scheduleIdlePhotoHydration();
       return;
     }
-    BState.data=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true});
+    try{BState.data=await BRM.firebaseBlockingHub(false)}catch(firebaseError){console.warn('Firebase Blocking load failed; using legacy fallback.',firebaseError);BState.data=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true})}
     blockingCacheWrite('hub','active',{data:BState.data});
     const firstScene=BState.data.sections?.[0]; BState.scene=Number(firstScene?.SceneNumber||1);
     renderShell(); initStage(); bindGlobalKeys(); await chooseInitialSnapshot(false); await loadTimelineContext(false); startBlockingAutosaveMonitor();
@@ -148,7 +148,7 @@ function updateBlockingPerformanceStatus(state,text){
 async function refreshBlockingHubInBackground(){
   if(BState.cache.hubFreshening)return;BState.cache.hubFreshening=true;
   try{
-    const fresh=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true});
+    let fresh;try{fresh=await BRM.firebaseBlockingHub(false)}catch(firebaseError){console.warn('Firebase Blocking refresh failed; using legacy fallback.',firebaseError);fresh=await BRM.api('blockingHub',{}, {noCache:true,forceNetwork:true})}
     BState.data=fresh;blockingCacheWrite('hub','active',{data:fresh});
     updateBlockingPerformanceStatus('ready','Production synced');
     // Refresh lightweight chrome without reconstructing the stage currently being edited.

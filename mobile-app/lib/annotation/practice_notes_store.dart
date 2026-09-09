@@ -149,20 +149,33 @@ class ScoreInkMark {
     rotation: rotation ?? this.rotation,
   );
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'page': page,
-    'points': points.map((p) => [p.dx, p.dy]).toList(),
-    'color': colorValue,
-    'widthFactor': widthFactor,
-    'opacity': opacity,
-    'kind': kind.name,
-    'stamp': stamp,
-    'text': text,
-    'layerId': layerId,
-    'scale': scale,
-    'rotation': rotation,
-  };
+  Map<String, dynamic> toJson() {
+    const maximumSavedPoints = 1600;
+    final stride = points.length > maximumSavedPoints
+        ? (points.length / maximumSavedPoints).ceil()
+        : 1;
+    final savedPoints = <Offset>[
+      for (var index = 0; index < points.length; index += stride) points[index],
+      if (points.isNotEmpty &&
+          points.length > 1 &&
+          points.last != points[(points.length - 1) ~/ stride * stride])
+        points.last,
+    ];
+    return {
+      'id': id,
+      'page': page,
+      'points': savedPoints.map((point) => [point.dx, point.dy]).toList(),
+      'color': colorValue,
+      'widthFactor': widthFactor,
+      'opacity': opacity,
+      'kind': kind.name,
+      'stamp': stamp,
+      'text': text,
+      'layerId': layerId,
+      'scale': scale,
+      'rotation': rotation,
+    };
+  }
 
   factory ScoreInkMark.fromJson(Map<String, dynamic> json) {
     final rawPoints = ((json['points'] as List?) ?? const [])
@@ -295,6 +308,8 @@ class PracticeNotesStore {
   final String? ownerUserId;
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
   Future<String>? _resolvedOwner;
+  Future<void> _saveQueue = Future<void>.value();
+  Set<int> _knownCloudPages = <int>{};
 
   Future<String> resolveOwner() => _resolvedOwner ??= _resolveOwner();
 
@@ -324,6 +339,9 @@ class PracticeNotesStore {
         .doc('${owner}_$songId');
   }
 
+  CollectionReference<Map<String, dynamic>>? _cloudPages(String owner) =>
+      _cloud(owner)?.collection('pages');
+
   List<ScoreInkMark> decodeMarks(Object? value) {
     if (value is! List) return const [];
     return value
@@ -333,12 +351,27 @@ class PracticeNotesStore {
   }
 
   Stream<List<ScoreInkMark>> watchInk() async* {
-    final reference = _cloud(await resolveOwner());
-    if (reference == null) return;
-    yield* reference
-        .snapshots()
-        .where((snapshot) => snapshot.exists)
-        .map((snapshot) => decodeMarks(snapshot.data()?['marks']));
+    final owner = await resolveOwner();
+    final pages = _cloudPages(owner);
+    final reference = _cloud(owner);
+    if (pages == null || reference == null) return;
+    await for (final snapshot in pages.snapshots()) {
+      if (snapshot.docs.isNotEmpty) {
+        _knownCloudPages = snapshot.docs
+            .map((document) => int.tryParse(document.id))
+            .whereType<int>()
+            .toSet();
+        final marks =
+            snapshot.docs
+                .expand((document) => decodeMarks(document.data()['marks']))
+                .toList()
+              ..sort((a, b) => a.page.compareTo(b.page));
+        yield marks;
+      } else {
+        final legacy = await reference.get();
+        yield decodeMarks(legacy.data()?['marks']);
+      }
+    }
   }
 
   Future<List<ScoreInkMark>> loadInk() async {
@@ -347,7 +380,21 @@ class PracticeNotesStore {
     var text = await _prefs.getString('$prefix.ink.v2');
     try {
       var snapshot = await _cloud(owner)?.get();
-      var remote = snapshot?.data()?['marks'] as List?;
+      List? remote;
+      final pageSnapshot = await _cloudPages(owner)?.get();
+      if (pageSnapshot != null && pageSnapshot.docs.isNotEmpty) {
+        _knownCloudPages = pageSnapshot.docs
+            .map((document) => int.tryParse(document.id))
+            .whereType<int>()
+            .toSet();
+        remote = pageSnapshot.docs
+            .expand(
+              (document) => (document.data()['marks'] as List?) ?? const [],
+            )
+            .toList();
+      } else {
+        remote = snapshot?.data()?['marks'] as List?;
+      }
       final authUid = FirebaseAuth.instance.currentUser?.uid;
       if (remote == null &&
           ownerUserId == null &&
@@ -356,7 +403,15 @@ class PracticeNotesStore {
         // Recover annotations written by releases that incorrectly keyed the
         // document to Firebase uid instead of the portal account id.
         snapshot = await _cloud(authUid)?.get();
-        remote = snapshot?.data()?['marks'] as List?;
+        final legacyPages = await _cloudPages(authUid)?.get();
+        remote = legacyPages != null && legacyPages.docs.isNotEmpty
+            ? legacyPages.docs
+                  .expand(
+                    (document) =>
+                        (document.data()['marks'] as List?) ?? const [],
+                  )
+                  .toList()
+            : snapshot?.data()?['marks'] as List?;
         if (remote != null) {
           await _cloud(owner)?.set({
             ...?snapshot?.data(),
@@ -395,6 +450,24 @@ class PracticeNotesStore {
   Future<AnnotationSaveResult> saveInk(
     List<ScoreInkMark> marks, {
     bool waitForServer = false,
+  }) {
+    final completer = Completer<AnnotationSaveResult>();
+    final immutableMarks = List<ScoreInkMark>.of(marks);
+    _saveQueue = _saveQueue.then((_) async {
+      try {
+        completer.complete(
+          await _saveInkNow(immutableMarks, waitForServer: waitForServer),
+        );
+      } catch (error, stack) {
+        completer.completeError(error, stack);
+      }
+    });
+    return completer.future;
+  }
+
+  Future<AnnotationSaveResult> _saveInkNow(
+    List<ScoreInkMark> marks, {
+    required bool waitForServer,
   }) async {
     final owner = await resolveOwner();
     final prefix = _prefix(owner);
@@ -413,7 +486,8 @@ class PracticeNotesStore {
       );
     }
     final reference = _cloud(owner);
-    if (reference == null) {
+    final pages = _cloudPages(owner);
+    if (reference == null || pages == null) {
       return AnnotationSaveResult(
         localSaved: localSaved,
         cloudQueued: false,
@@ -422,17 +496,52 @@ class PracticeNotesStore {
       );
     }
     try {
-      await reference.set({
+      final byPage = <int, List<Map<String, dynamic>>>{};
+      for (final mark in marks) {
+        (byPage[mark.page] ??= <Map<String, dynamic>>[]).add(mark.toJson());
+      }
+      if (_knownCloudPages.isEmpty) {
+        try {
+          final existing = await pages.get(
+            const GetOptions(source: Source.server),
+          );
+          _knownCloudPages = existing.docs
+              .map((document) => int.tryParse(document.id))
+              .whereType<int>()
+              .toSet();
+        } catch (_) {
+          // Offline writes can still proceed; known pages from prior loads are
+          // enough to remove pages that were cleared during this session.
+        }
+      }
+      final batch = FirebaseFirestore.instance.batch();
+      for (final page in _knownCloudPages.difference(byPage.keys.toSet())) {
+        batch.delete(pages.doc('$page'));
+      }
+      for (final entry in byPage.entries) {
+        batch.set(pages.doc('${entry.key}'), {
+          'ownerUserId': owner,
+          'documentId': '$songId',
+          'page': entry.key,
+          'markCount': entry.value.length,
+          'marks': entry.value,
+          'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      batch.set(reference, {
         'ownerUserId': owner,
         'documentId': '$songId',
-        'schemaVersion': 3,
+        'schemaVersion': 4,
         'coordinateSpace': 'pdf-page-normalized-v1',
         'markCount': encoded.length,
         'pageNumbers': marks.map((mark) => mark.page).toSet().toList()..sort(),
-        'marks': encoded,
+        'marks': FieldValue.delete(),
         'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      await batch.commit();
+      _knownCloudPages = byPage.keys.toSet();
       if (waitForServer) {
         try {
           await FirebaseFirestore.instance.waitForPendingWrites().timeout(

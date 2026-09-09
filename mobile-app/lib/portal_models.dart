@@ -149,6 +149,9 @@ String profilePhotoReference(Map<String, dynamic> profile) =>
     ]);
 
 String conversationCategory(Map<String, dynamic> data) {
+  if (textField(data, const ['type', 'Type'], '').toLowerCase() == 'direct') {
+    return 'direct';
+  }
   final raw = textField(data, const [
     'category',
     'Category',
@@ -159,7 +162,8 @@ String conversationCategory(Map<String, dynamic> data) {
       raw.contains('cast') ||
       raw.contains('orchestra') ||
       raw.contains('dance') ||
-      raw.contains('choreo'))
+      raw.contains('choreo')) {
     return 'ensemble';
+  }
   return 'production';
 }

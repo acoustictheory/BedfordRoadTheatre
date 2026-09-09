@@ -32,6 +32,8 @@ const deviceEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/registerCommunicationDevice';
 const appSignInEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/legacyAppSignIn';
+const portalSessionEndpoint =
+    'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/firebasePortalSession';
 const directMessageEndpoint =
     'https://northamerica-northeast2-brpa-digital-hub-dev.cloudfunctions.net/openCommunicationDirect';
 const communityAccessEndpoint =
@@ -278,45 +280,76 @@ class _LoginState extends State<LoginScreen> {
           message: 'Enter your username.',
         );
       }
-      final bridgeResponse = await http
-          .post(
-            Uri.parse(appSignInEndpoint),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'username': v,
-              'password': password.text,
-              'trustedDevice': trustDevice,
-            }),
-          )
-          .timeout(const Duration(seconds: 35));
-      Map<String, dynamic> bridge;
+      UserCredential credential;
+      Map<String, dynamic> portalContext = const {};
+      String legacyToken = '';
       try {
-        bridge = jsonDecode(bridgeResponse.body) as Map<String, dynamic>;
-      } on FormatException {
-        throw FirebaseAuthException(
-          code: 'service-response',
-          message:
-              'The sign-in service returned an unreadable response (${bridgeResponse.statusCode}).',
+        credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: '$v$syntheticSuffix',
+          password: password.text,
         );
-      }
-      if (bridge['success'] != true ||
-          '${bridge['customToken'] ?? ''}'.isEmpty) {
-        throw FirebaseAuthException(
-          code: 'app-account-unavailable',
-          message:
-              '${bridge['error'] ?? 'Your app account could not be connected.'}',
+        final idToken = await credential.user?.getIdToken();
+        final sessionResponse = await http
+            .post(
+              Uri.parse(portalSessionEndpoint),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $idToken',
+              },
+              body: '{}',
+            )
+            .timeout(const Duration(seconds: 15));
+        final session =
+            jsonDecode(sessionResponse.body) as Map<String, dynamic>;
+        if (sessionResponse.statusCode >= 400 || session['context'] is! Map) {
+          throw FirebaseAuthException(
+            code: 'app-account-unavailable',
+            message:
+                '${session['error'] ?? 'Your production access could not be loaded.'}',
+          );
+        }
+        portalContext = Map<String, dynamic>.from(session['context'] as Map);
+      } on FirebaseAuthException catch (firebaseError) {
+        if (firebaseError.code != 'user-not-found' &&
+            firebaseError.code != 'invalid-credential') {
+          rethrow;
+        }
+        final bridgeResponse = await http
+            .post(
+              Uri.parse(appSignInEndpoint),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'username': v,
+                'password': password.text,
+                'trustedDevice': trustDevice,
+              }),
+            )
+            .timeout(const Duration(seconds: 35));
+        final bridge = jsonDecode(bridgeResponse.body) as Map<String, dynamic>;
+        if (bridge['success'] != true ||
+            '${bridge['customToken'] ?? ''}'.isEmpty) {
+          throw FirebaseAuthException(
+            code: 'invalid-credential',
+            message:
+                '${bridge['error'] ?? 'That username or password is not correct.'}',
+          );
+        }
+        credential = await FirebaseAuth.instance.signInWithCustomToken(
+          '${bridge['customToken']}',
+        );
+        legacyToken = '${bridge['portalToken'] ?? ''}';
+        portalContext = Map<String, dynamic>.from(
+          bridge['portalContext'] as Map? ?? const {},
         );
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('brmTrustDevice', trustDevice);
-      await prefs.setString('brmLegacyToken', '${bridge['portalToken']}');
-      await prefs.setString(
-        'brmLegacyContext',
-        jsonEncode(bridge['portalContext'] ?? const {}),
-      );
-      await FirebaseAuth.instance.signInWithCustomToken(
-        '${bridge['customToken']}',
-      );
+      if (legacyToken.isEmpty) {
+        await prefs.remove('brmLegacyToken');
+      } else {
+        await prefs.setString('brmLegacyToken', legacyToken);
+      }
+      await prefs.setString('brmLegacyContext', jsonEncode(portalContext));
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(
@@ -734,9 +767,11 @@ class ProfileAvatar extends StatelessWidget {
     required this.fileId,
     required this.url,
     this.radius = 24,
+    this.logoFallback = false,
   });
   final String name, fileId, url;
   final double radius;
+  final bool logoFallback;
   @override
   Widget build(BuildContext context) => FutureBuilder<String>(
     future: profilePhotoUrl(fileId, url),
@@ -750,13 +785,22 @@ class ProfileAvatar extends StatelessWidget {
             ? CachedNetworkImageProvider(resolved)
             : null,
         child: resolved.isEmpty
-            ? Text(
-                initials(name),
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: radius * .65,
-                ),
-              )
+            ? logoFallback
+                  ? ClipOval(
+                      child: Image.asset(
+                        'assets/images/bedford-road-theatre-logo-192.png',
+                        width: radius * 2,
+                        height: radius * 2,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Text(
+                      initials(name),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: radius * .65,
+                      ),
+                    )
             : null,
       );
     },
@@ -803,9 +847,11 @@ class UserProfileAvatar extends StatelessWidget {
     required this.userId,
     required this.name,
     this.radius = 18,
+    this.logoFallback = false,
   });
   final String userId, name;
   final double radius;
+  final bool logoFallback;
   @override
   Widget build(BuildContext context) =>
       StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -821,6 +867,7 @@ class UserProfileAvatar extends StatelessWidget {
               fileId: profilePhotoReference(member),
               url: '${member['photoURL'] ?? ''}',
               radius: radius,
+              logoFallback: logoFallback,
             );
           }
           return FutureBuilder<Map<String, dynamic>>(
@@ -832,6 +879,7 @@ class UserProfileAvatar extends StatelessWidget {
                 fileId: profilePhotoReference(profile),
                 url: '${profile['photoURL'] ?? profile['PhotoURL'] ?? ''}',
                 radius: radius,
+                logoFallback: logoFallback,
               );
             },
           );
@@ -2610,11 +2658,11 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
   late final TabController tabs;
   String search = '';
   bool unreadOnly = false;
-  static const categories = ['class', 'ensemble', 'production'];
+  static const categories = ['class', 'ensemble', 'production', 'direct'];
   @override
   void initState() {
     super.initState();
-    tabs = TabController(length: 3, vsync: this)
+    tabs = TabController(length: categories.length, vsync: this)
       ..addListener(() {
         if (mounted) setState(() {});
       });
@@ -3238,10 +3286,13 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                 ),
               TabBar(
                 controller: tabs,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 tabs: const [
                   Tab(text: 'Classes'),
                   Tab(text: 'Ensembles'),
                   Tab(text: 'Production Team'),
+                  Tab(text: 'Direct Messages'),
                 ],
               ),
               Expanded(
@@ -3322,11 +3373,24 @@ class _EnhancedCommunityState extends State<EnhancedCommunityScreen>
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(14),
-                              leading: CircleAvatar(
-                                radius: 26,
-                                backgroundColor: Colors.black26,
-                                backgroundImage: communityRoomAvatar(room),
-                              ),
+                              leading: conversationCategory(room) == 'direct'
+                                  ? UserProfileAvatar(
+                                      userId: directMessagePeerId(
+                                        room,
+                                        widget.portal.userId,
+                                      ),
+                                      name:
+                                          '${room['title'] ?? 'Direct message'}',
+                                      radius: 26,
+                                      logoFallback: true,
+                                    )
+                                  : CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor: Colors.black26,
+                                      backgroundImage: communityRoomAvatar(
+                                        room,
+                                      ),
+                                    ),
                               title: Row(
                                 children: [
                                   Expanded(
@@ -3651,6 +3715,19 @@ ImageProvider<Object> communityRoomAvatar(Map<String, dynamic> room) {
   }
   return AssetImage(
     'assets/images/chat-avatars/${communityRoomAvatarKey(room)}.jpg',
+  );
+}
+
+String directMessagePeerId(Map<String, dynamic> room, String currentUserId) {
+  final members =
+      (room['memberIds'] as List?)
+          ?.map((value) => '$value')
+          .where((id) => id.isNotEmpty)
+          .toList() ??
+      const <String>[];
+  return members.firstWhere(
+    (id) => id != currentUserId,
+    orElse: () => members.isNotEmpty ? members.first : currentUserId,
   );
 }
 

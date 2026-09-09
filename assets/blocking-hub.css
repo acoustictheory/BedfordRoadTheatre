@@ -436,7 +436,7 @@ html body[data-page=blocking] .blocking-workspace:fullscreen .blocking-split-vie
 .blocking-rail-return:hover{background:var(--brand-soft);border-color:var(--brand);}
 .blocking-command-rehearsal .button-primary{box-shadow:0 0 0 1px color-mix(in srgb,var(--brand) 24%,transparent);}
 
-/* Native fullscreen only renders descendants of the fullscreen element.
+/* Device fullscreen only renders descendants of the fullscreen element.
    All Blocking modals are now mounted inside the workspace while fullscreen. */
 .blocking-workspace:fullscreen .blocking-modal-backdrop,
 .blocking-workspace.blocking-faux-fullscreen .blocking-modal-backdrop{

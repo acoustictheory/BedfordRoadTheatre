@@ -44,21 +44,19 @@ async function loadCostumeHub() {
     CostumeState.data = cached;
     window.setTimeout(async () => {
       try {
-        const fresh = await BRM.firebaseWorkspaceOverlay(CostumeState.data, firebaseMap, false);
+        const fresh = await BRM.firebaseCostumeHub(false);
         CostumeState.data = fresh;
         BRM.writeFastCache?.(cacheKey, fresh);
         renderCostumeHub();
       } catch (error) { console.warn('Costume refresh failed; cached workspace retained.', error); }
     }, 50);
   } else {
-  const baseRequest = BRM.api(
-    'costumeHub',
-    { includeArchived: CostumeState.includeArchived },
-    { noCache: true, forceNetwork: true }
-  );
-    const firebaseRequest = BRM.firebaseWorkspaceOverlay({}, firebaseMap, CostumeState.includeArchived);
-    const base = await baseRequest;
-    CostumeState.data = await firebaseRequest.then(fresh => ({ ...base, ...fresh })).catch(() => base);
+    try {
+      CostumeState.data = await BRM.firebaseCostumeHub(CostumeState.includeArchived);
+    } catch (firebaseError) {
+      console.warn('Firebase Costume load failed; using legacy fallback.', firebaseError);
+      CostumeState.data = await BRM.api('costumeHub', { includeArchived:CostumeState.includeArchived }, { noCache:true, forceNetwork:true });
+    }
     if (!CostumeState.includeArchived) BRM.writeFastCache?.(cacheKey, CostumeState.data);
   }
 

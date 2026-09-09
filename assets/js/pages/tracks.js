@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
   }
 
   async function fetchFirebaseTrackBlob(track, onProgress) {
-    const token = sessionStorage.getItem('brmFirebaseIdToken');
+    const token = await BRM.firebaseIdToken();
     const driveFileId = String(track?.DriveFileID || '').trim();
     const firebase = window.BRM_CONFIG?.FIREBASE;
     const productionId = BRM.context?.production?.ProductionID;
@@ -1175,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
       refs.scoreTitle.textContent = `${number} · ${song.title}`;
       const nativeApp = Boolean(localStorage.getItem('brmAppInstall'));
       refs.scoreCopy.textContent = nativeApp ? 'Open the score with its integrated player and Annotation Studio.' : 'Continue this score in ScoreFlow.';
-      refs.scoreOpen.href = nativeApp ? scoreUrl : 'downloads/BedfordRoadMusical-2.15.6.apk';
+      refs.scoreOpen.href = nativeApp ? scoreUrl : 'downloads/BedfordRoadMusical-2.15.7.apk';
       refs.scoreOpen.target = '_self';
     } else {
     }

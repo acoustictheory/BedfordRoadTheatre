@@ -1,86 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async () => {
-  const main = document.querySelector('#app-main');
-  const isAdmin = BRM.isAdmin();
-  let tasks = [];
-
-  main.innerHTML = `
-    <div class="page-head">
-      <div>
-        <span class="eyebrow">${isAdmin ? 'Production oversight' : 'Your assignments'}</span>
-        <h1>${isAdmin ? 'All tasks' : 'My tasks'}</h1>
-        <p>${isAdmin ? 'Review current production assignments and update their progress.' : 'Keep track of the production work assigned to you and your departments.'}</p>
-      </div>
-    </div>
-    <section class="panel">
-      <div class="toolbar">
-        <div class="search-wrap"><input class="search-input" data-task-search placeholder="Search tasks"></div>
-        <div class="toolbar-group">
-          <select class="search-input" data-task-status>
-            <option value="">All statuses</option><option>Open</option><option>In Progress</option><option>Blocked</option><option>Completed</option>
-          </select>
-          <select class="search-input" data-task-priority>
-            <option value="">All priorities</option><option>Urgent</option><option>Important</option><option>Normal</option>
-          </select>
-        </div>
-      </div>
-      <div data-task-list></div>
-    </section>
-    <div data-notes-panel></div>`;
-
-  const list = main.querySelector('[data-task-list]');
-  const search = main.querySelector('[data-task-search]');
-  const status = main.querySelector('[data-task-status]');
-  const priority = main.querySelector('[data-task-priority]');
-
-  function render() {
-    const query = search.value.trim().toLowerCase();
-    const visible = tasks.filter(task => {
-      const haystack = `${task.Title || ''} ${task.Description || ''} ${task.DepartmentName || ''}`.toLowerCase();
-      return (!query || haystack.includes(query))
-        && (!status.value || String(task.Status) === status.value)
-        && (!priority.value || String(task.Priority) === priority.value);
-    });
-
-    list.innerHTML = visible.length ? `<div class="data-list">${visible.map(task => `
-      <article class="data-card">
-        <div class="data-card-main">
-          <div class="item-meta"><span class="badge ${task.Priority === 'Urgent' ? 'badge-urgent' : task.Priority === 'Important' ? 'badge-important' : ''}">${BRM.escape(task.Priority || 'Normal')}</span><span class="badge">${BRM.escape(task.Status || 'Open')}</span></div>
-          <h3>${BRM.escape(task.Title || 'Untitled task')}</h3>
-          <p>${BRM.escape(task.Description || '')}</p>
-          <small class="field-hint">${BRM.escape(task.DepartmentName || task.Department || '')}${task.DueDate ? ` · Due ${BRM.formatDate(task.DueDate)}` : ''}</small>
-        </div>
-        <div class="card-actions">
-          <select class="search-input" data-task-update="${BRM.escape(task.TaskID)}" aria-label="Update ${BRM.escape(task.Title || 'task')} status">
-            ${['Open', 'In Progress', 'Blocked', 'Completed'].map(value => `<option ${String(task.Status) === value ? 'selected' : ''}>${value}</option>`).join('')}
-          </select>
-        </div>
-      </article>`).join('')}</div>` : BRM.empty('No tasks found', 'No assignments match the current filters.', '✓');
-
-    list.querySelectorAll('[data-task-update]').forEach(select => select.addEventListener('change', async event => {
-      const previous = tasks.find(task => String(task.TaskID) === event.currentTarget.dataset.taskUpdate)?.Status || 'Open';
-      event.currentTarget.disabled = true;
-      try {
-        await BRM.api('updateTaskStatus', { taskId: event.currentTarget.dataset.taskUpdate, status: event.currentTarget.value }, { noCache: true });
-        const task = tasks.find(item => String(item.TaskID) === event.currentTarget.dataset.taskUpdate);
-        if (task) task.Status = event.currentTarget.value;
-        BRM.toast('Task status updated.');
-        render();
-      } catch (error) {
-        event.currentTarget.value = previous;
-        event.currentTarget.disabled = false;
-        BRM.toast(error.message || 'The task could not be updated.', 'error');
-      }
-    }));
-  }
-
-  [search, status, priority].forEach(control => control.addEventListener(control === search ? 'input' : 'change', render));
-  BRM.loading(list, 'Loading tasks…');
-  try {
-    const result = await BRM.api('myTasks', { includeCompleted: true });
-    tasks = result.data || [];
-    render();
-    await BRM.renderNotesPanel?.({ pageKey: 'tasks', title: isAdmin ? 'Production Task Notes' : 'Task Notes' });
-  } catch (error) {
-    list.innerHTML = `<div class="alert alert-error"><strong>Tasks could not be loaded.</strong><br>${BRM.escape(error.message || 'Unknown portal error')}</div>`;
-  }
+document.addEventListener('DOMContentLoaded',()=>BRM.initPrivatePage(async()=>{
+  const main=document.querySelector('#app-main'),isAdmin=BRM.isAdmin();let tasks=[],view=localStorage.getItem('brmTaskView')||'board';
+  main.innerHTML=`<div class="page-head"><div><span class="eyebrow">${isAdmin?'Production oversight':'Your action centre'}</span><h1>${isAdmin?'All tasks':'My tasks'}</h1><p>See what needs attention now, what is blocked, and what has been completed.</p></div></div><div data-summary></div><section class="panel"><div class="toolbar"><div class="search-wrap"><input class="search-input" data-search placeholder="Search tasks"></div><div class="toolbar-group"><select class="search-input" data-priority><option value="">All priorities</option><option>Urgent</option><option>Important</option><option>Normal</option></select><div class="schedule-view-switch"><button class="button button-quiet button-small" data-view="board">Board</button><button class="button button-quiet button-small" data-view="list">List</button></div></div></div><div data-list></div></section><div data-notes-panel></div>`;
+  const host=main.querySelector('[data-list]'),statuses=['Open','In Progress','Blocked','Completed'],dayKey=value=>String(value||'').slice(0,10),today=dayKey(new Date().toISOString()),soon=new Date(Date.now()+3*86400000).toISOString().slice(0,10);
+  function dueClass(task){if(!task.DueDate||task.Status==='Completed')return'';if(dayKey(task.DueDate)<today)return'task-overdue';if(dayKey(task.DueDate)<=soon)return'task-due-soon';return''}
+  function visibleTasks(){const q=main.querySelector('[data-search]').value.trim().toLowerCase(),priority=main.querySelector('[data-priority]').value;return tasks.filter(t=>(!q||`${t.Title} ${t.Description} ${t.DepartmentName||t.Department||''}`.toLowerCase().includes(q))&&(!priority||t.Priority===priority))}
+  function renderSummary(){const open=tasks.filter(t=>t.Status!=='Completed'),overdue=open.filter(t=>t.DueDate&&dayKey(t.DueDate)<today),dueSoon=open.filter(t=>t.DueDate&&dayKey(t.DueDate)>=today&&dayKey(t.DueDate)<=soon),blocked=open.filter(t=>t.Status==='Blocked');main.querySelector('[data-summary]').innerHTML=`<section class="command-summary"><div class="command-stat"><strong>${open.length}</strong><span>Still open</span></div><div class="command-stat ${overdue.length?'attention':''}"><strong>${overdue.length}</strong><span>Overdue</span></div><div class="command-stat ${dueSoon.length?'attention':''}"><strong>${dueSoon.length}</strong><span>Due within three days</span></div><div class="command-stat ${blocked.length?'attention':''}"><strong>${blocked.length}</strong><span>Blocked</span></div></section>`}
+  function card(t){return `<article class="data-card ${dueClass(t)}"><div class="data-card-main"><div class="item-meta"><span class="badge ${t.Priority==='Urgent'?'badge-urgent':t.Priority==='Important'?'badge-important':''}">${BRM.escape(t.Priority||'Normal')}</span>${t.DueDate?`<span>${dayKey(t.DueDate)<today&&t.Status!=='Completed'?'Overdue':'Due'} ${BRM.formatDate(t.DueDate+'T12:00:00')}</span>`:''}</div><h3>${BRM.escape(t.Title||'Untitled task')}</h3><p>${BRM.escape(t.Description||'')}</p><small class="field-hint">${BRM.escape(t.DepartmentName||t.Department||'Full production')}</small></div><div class="card-actions"><label class="field-hint" for="task-${BRM.escape(t.TaskID)}">Progress</label><select id="task-${BRM.escape(t.TaskID)}" class="search-input" data-update="${BRM.escape(t.TaskID)}">${statuses.map(s=>`<option ${t.Status===s?'selected':''}>${s}</option>`).join('')}</select></div></article>`}
+  function bindUpdates(){host.querySelectorAll('[data-update]').forEach(select=>select.addEventListener('change',async event=>{const task=tasks.find(t=>String(t.TaskID)===event.currentTarget.dataset.update),previous=task?.Status||'Open';event.currentTarget.disabled=true;try{await BRM.api('updateTaskStatus',{taskId:event.currentTarget.dataset.update,status:event.currentTarget.value},{noCache:true});if(task)task.Status=event.currentTarget.value;BRM.toast(event.currentTarget.value==='Completed'?'Task completed. Nice work.':'Task progress updated.');renderSummary();render()}catch(error){event.currentTarget.value=previous;event.currentTarget.disabled=false;BRM.toast(error.message||'Task could not be updated.','error')}}))}
+  function render(){const visible=visibleTasks();main.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(!visible.length){host.innerHTML=BRM.empty('No tasks found','No assignments match the current filters.','✓');return}host.innerHTML=`<div class="task-board ${view==='list'?'task-list-view':''}">${statuses.map(status=>{const group=visible.filter(t=>(t.Status||'Open')===status);return `<section class="task-column"><div class="task-column-head"><h2>${status}</h2><span class="task-column-count">${group.length}</span></div>${group.map(card).join('')||'<p class="field-hint">Nothing here.</p>'}</section>`}).join('')}</div>`;bindUpdates()}
+  main.querySelector('[data-search]').addEventListener('input',render);main.querySelector('[data-priority]').addEventListener('change',render);main.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view;localStorage.setItem('brmTaskView',view);render()}));BRM.loading(host,'Loading tasks…');
+  try{tasks=(await BRM.api('myTasks',{includeCompleted:true})).data||[];renderSummary();render();await BRM.renderNotesPanel?.({pageKey:'tasks',title:isAdmin?'Production Task Notes':'Task Notes'})}catch(error){host.innerHTML=`<div class="alert alert-error"><strong>Tasks could not be loaded.</strong><br>${BRM.escape(error.message||'Unknown portal error')}</div>`}
 }));

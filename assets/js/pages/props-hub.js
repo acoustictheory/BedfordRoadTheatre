@@ -47,11 +47,28 @@ async function initPropsHub() {
 }
 
 async function loadPropsHub() {
-  PropsState.data = await BRM.api(
-    'propsHub',
-    { includeArchived: PropsState.includeArchived },
-    { noCache: true, forceNetwork: true }
-  );
+  const firebaseMap = { inventory:'propsInventory', presets:'propsPresets', deadlines:'propsDeadlines', images:'propsImages' };
+  const cacheKey = `propsHub:${PropsState.includeArchived}`;
+  const cached = !PropsState.includeArchived && BRM.readFastCache?.(cacheKey);
+  if (cached) {
+    PropsState.data = cached;
+    window.setTimeout(async () => {
+      try {
+        const fresh = await BRM.firebasePropsHub(false);
+        PropsState.data = fresh;
+        BRM.writeFastCache?.(cacheKey, fresh);
+        renderPropsHub();
+      } catch (error) { console.warn('Props refresh failed; cached workspace retained.', error); }
+    }, 50);
+  } else {
+    try {
+      PropsState.data = await BRM.firebasePropsHub(PropsState.includeArchived);
+    } catch (firebaseError) {
+      console.warn('Firebase Props load failed; using legacy fallback.', firebaseError);
+      PropsState.data = await BRM.api('propsHub', { includeArchived: PropsState.includeArchived }, { noCache:true, forceNetwork:true });
+    }
+    if (!PropsState.includeArchived) BRM.writeFastCache?.(cacheKey, PropsState.data);
+  }
 
   if (
     PropsState.selectedPropId
@@ -130,8 +147,6 @@ function renderPropsHero(data) {
           ${propsKpi(stats.needed, 'Still needed')}
           ${propsKpi(stats.criticalOpen, 'Critical open')}
           ${propsKpi(stats.ready, 'Ready / complete')}
-          ${propsKpi(stats.openTasks, 'Open tasks')}
-          ${propsKpi(stats.presetNotChecked, 'Presets unchecked')}
         </div>
       </div>
     </section>
@@ -165,10 +180,9 @@ function renderPropsAnnouncements(items) {
 function renderPropsTabs() {
   const tabs = [
     ['inventory', 'Inventory'],
-    ['presets', 'Preset Run'],
-    ['deadlines', 'Deadlines'],
-    ['suggestions', `Suggestions${pendingSuggestionCount() ? ` (${pendingSuggestionCount()})` : ''}`],
-    ['activity', 'Activity']
+    ['rehearsal', 'Rehearsal'],
+    ['presets', 'Show Run'],
+    ['activity', 'Reference']
   ];
 
   return `
@@ -189,6 +203,8 @@ function pendingSuggestionCount() {
 
 function renderActivePropsView() {
   switch (PropsState.view) {
+    case 'rehearsal':
+      return renderPropsRehearsal();
     case 'presets':
       return renderPresetRun();
     case 'deadlines':
@@ -200,6 +216,15 @@ function renderActivePropsView() {
     default:
       return renderInventory();
   }
+}
+
+function renderPropsRehearsal() {
+  const exceptions = (PropsState.data.inventory || []).filter(item =>
+    ['Missing', 'Damaged'].includes(String(item.Status)) ||
+    Boolean(item.SafetyNotes) ||
+    Boolean(item.RehearsalSubstitute)
+  );
+  return `<section class="panel"><div class="section-heading"><div><span class="eyebrow">Exceptions only</span><h2>Rehearsal needs</h2><p>Only missing, damaged, substitute, and safety-sensitive props appear here.</p></div></div><div class="data-list">${exceptions.length ? exceptions.map(item => `<article class="data-card"><span class="rating-pill">${['Missing','Damaged'].includes(String(item.Status)) ? '!' : '•'}</span><div class="data-card-main"><h3>${BRM.escape(item.PropName || item.Name || 'Prop')}</h3><p>${BRM.escape(item.SafetyNotes || item.RehearsalSubstitute || item.Status || '')}</p><div class="item-meta"><span>${BRM.escape(item.Scene || 'Scene not set')}</span><span>${BRM.escape(item.UsedBy || 'Performer not set')}</span></div></div></article>`).join('') : BRM.empty('No rehearsal exceptions','The props list is calm and ready for rehearsal.','✓')}</div></section>`;
 }
 
 function renderInventory() {
@@ -367,7 +392,7 @@ function renderSelectedProp() {
     `;
   }
 
-  const taskCount = relatedTasks(item.PropID).length;
+  const taskCount = relatedTasks(item.PropID).filter(task => task.Status !== 'Completed').length;
   const presetCount = relatedPresets(item.PropID).length;
   const imageCount = relatedImages(item.PropID).length;
 
@@ -404,7 +429,6 @@ function renderSelectedProp() {
 
       <nav class="props-detail-tabs">
         ${detailTabButton('overview', 'Overview')}
-        ${detailTabButton('tasks', `Tasks (${taskCount})`)}
         ${detailTabButton('presets', `Presets (${presetCount})`)}
         ${detailTabButton('images', `Images (${imageCount})`)}
         ${detailTabButton('discussion', 'Discussion')}
@@ -428,8 +452,6 @@ function detailTabButton(id, label) {
 
 function renderSelectedPropTab(item) {
   switch (PropsState.detailTab) {
-    case 'tasks':
-      return renderPropTasks(item);
     case 'presets':
       return renderPropPresets(item);
     case 'images':
@@ -495,6 +517,32 @@ function relatedTasks(propId) {
   );
 }
 
+function propsNextStep(item) {
+  const status = String(item.Status || 'Needed');
+  const assigned = Array.isArray(item.AssignedUserIDs) && item.AssignedUserIDs.length > 0;
+  const presets = relatedPresets(item.PropID);
+
+  if (['Missing', 'Damaged'].includes(status)) {
+    return { kind: 'urgent', title: `${status}: resolve before the next run`, detail: item.SafetyNotes || 'Confirm whether this prop should be repaired, replaced, or removed from the preset.' };
+  }
+  if (status === 'Needed') {
+    return { kind: item.Priority === 'Critical' ? 'urgent' : 'action', title: 'Source or build this prop', detail: item.Source ? `Planned source: ${item.Source}. Update its status when work begins.` : 'Choose whether to pull, purchase, borrow, or build it, then update the inventory status.' };
+  }
+  if (status === 'In Progress') {
+    return { kind: 'action', title: 'Finish and mark it ready', detail: item.Notes || 'Complete the current work, test it, and update the inventory status when it is rehearsal-ready.' };
+  }
+  if (!assigned) {
+    return { kind: 'action', title: 'Assign one owner', detail: 'Choose the person responsible for carrying this prop through rehearsal and performance.' };
+  }
+  if (!item.PresetLocation || !presets.length) {
+    return { kind: 'action', title: 'Add its preset plan', detail: 'Record where it starts, who picks it up, and where it returns after use.' };
+  }
+  if (!item.ResetNotes && !item.ExitLocation) {
+    return { kind: 'action', title: 'Confirm its reset', detail: 'Add a return location or a short reset note so backstage crew can restore it consistently.' };
+  }
+  return { kind: 'ready', title: 'No action needed', detail: 'This prop is ready, assigned, and connected to a preset plan.' };
+}
+
 function relatedPresets(propId) {
   return PropsState.data.presets.filter(
     preset => String(preset.PropID) === String(propId)
@@ -509,21 +557,29 @@ function relatedImages(propId) {
 
 function renderPropTasks(item) {
   const tasks = relatedTasks(item.PropID);
+  const openTasks = tasks.filter(task => task.Status !== 'Completed');
+  const completedTasks = tasks.filter(task => task.Status === 'Completed');
+  const nextStep = propsNextStep(item);
 
   return `
     <div class="section-heading">
       <div>
-        <span class="eyebrow">Connected assignments</span>
-        <h3>Prop tasks</h3>
+        <span class="eyebrow">Automatically derived from the inventory</span>
+        <h3>What happens next</h3>
       </div>
       ${propsPermission('canManage')
-        ? `<button class="button button-primary button-small" data-add-task="${BRM.escape(item.PropID)}">+ Add task</button>`
+        ? `<button class="button button-ghost button-small" data-add-task="${BRM.escape(item.PropID)}">Add a special assignment</button>`
         : ''}
     </div>
 
-    <div>
-      ${tasks.length
-        ? tasks.map(task => `
+    <article class="props-next-step ${nextStep.kind}">
+      <span class="rating-pill">${nextStep.kind === 'ready' ? '✓' : nextStep.kind === 'urgent' ? '!' : '→'}</span>
+      <div><h3>${BRM.escape(nextStep.title)}</h3><p>${BRM.escape(nextStep.detail)}</p></div>
+    </article>
+
+    <div class="props-manual-tasks">
+      ${openTasks.length
+        ? `<span class="eyebrow">Special assignments</span>${openTasks.map(task => `
           <article class="props-task-row">
             <span class="rating-pill">${task.Status === 'Completed' ? '✓' : task.Status === 'In Progress' ? '→' : '○'}</span>
             <div>
@@ -542,9 +598,10 @@ function renderPropTasks(item) {
               `).join('')}
             </select>
           </article>
-        `).join('')
-        : BRM.empty('No tasks for this prop', 'Managers can create assignments connected directly to this item.', '✓')}
+        `).join('')}`
+        : ''}
     </div>
+    ${completedTasks.length ? `<details class="props-completed-tasks"><summary>${completedTasks.length} completed assignment${completedTasks.length === 1 ? '' : 's'}</summary><div>${completedTasks.map(task => `<p><strong>✓ ${BRM.escape(task.Title)}</strong></p>`).join('')}</div></details>` : ''}
   `;
 }
 
@@ -1601,7 +1658,7 @@ async function getPropsImageUrl(fileId) {
 }
 
 function hydratePropsImages(root = document) {
-  root.querySelectorAll?.('[data-props-image]').forEach(async image => {
+  const load = async image => {
     if (image.dataset.loading === 'true') return;
     image.dataset.loading = 'true';
 
@@ -1612,7 +1669,18 @@ function hydratePropsImages(root = document) {
     } catch (error) {
       console.warn('Props image failed to load:', error);
     }
-  });
+  };
+
+  const images = [...(root.querySelectorAll?.('[data-props-image]') || [])];
+  if (!('IntersectionObserver' in window)) images.forEach(load);
+  else {
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      load(entry.target);
+    }), { rootMargin: '180px 0px' });
+    images.forEach(image => observer.observe(image));
+  }
 
   BRM.hydrateProfilePhotos?.(root);
 }

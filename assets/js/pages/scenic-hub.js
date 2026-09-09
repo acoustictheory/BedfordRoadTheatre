@@ -43,12 +43,45 @@ async function initScenicHub() {
 }
 
 async function loadScenicHub() {
-  ScenicState.data = await BRM.api('scenicHub', {
-    includeArchived: ScenicState.includeArchived
-  }, {
-    noCache: true,
-    forceNetwork: true
+  const firebaseMap = { sets:'scenicSets', elements:'scenicElements', transitions:'scenicTransitions', deadlines:'scenicDeadlines', images:'scenicImages' };
+  const cacheKey = `scenicHub:${ScenicState.includeArchived}`;
+  const cached = !ScenicState.includeArchived && BRM.readFastCache?.(cacheKey);
+  let response = cached;
+  if (!response) {
+    try { response = await BRM.firebaseScenicHub(ScenicState.includeArchived); }
+    catch (firebaseError) {
+      console.warn('Firebase Scenic load failed; using legacy fallback.', firebaseError);
+      response = await BRM.api('scenicHub', { includeArchived:ScenicState.includeArchived }, { noCache:true, forceNetwork:true });
+    }
+  }
+  if (!cached && !ScenicState.includeArchived) BRM.writeFastCache?.(cacheKey, response);
+
+  const collectionNames = [
+    'sets', 'elements', 'transitions', 'deadlines', 'tasks', 'images',
+    'suggestions', 'announcements', 'team', 'activity'
+  ];
+
+  ScenicState.data = { ...response };
+  collectionNames.forEach(name => {
+    ScenicState.data[name] = Array.isArray(response?.[name])
+      ? response[name]
+      : [];
   });
+
+  ScenicState.data.permissions = response?.permissions || {};
+  ScenicState.data.stats = response?.stats || {};
+
+  if (cached) window.setTimeout(async () => {
+    try {
+      const fresh = await BRM.firebaseScenicHub(false);
+      BRM.writeFastCache?.(cacheKey, fresh);
+      ScenicState.data = { ...fresh };
+      collectionNames.forEach(name => { ScenicState.data[name] = Array.isArray(fresh?.[name]) ? fresh[name] : []; });
+      ScenicState.data.permissions = fresh?.permissions || {};
+      ScenicState.data.stats = fresh?.stats || {};
+      renderScenicHub();
+    } catch (error) { console.warn('Scenic refresh failed; cached workspace retained.', error); }
+  }, 50);
 
   if (
     !ScenicState.selectedSetId
@@ -2070,7 +2103,7 @@ async function getScenicImageUrl(fileId) {
 }
 
 function hydrateScenicImages(root = document) {
-  root.querySelectorAll?.('[data-scenic-image]').forEach(async image => {
+  const load = async image => {
     if (image.dataset.loaded === 'true') return;
 
     const fileId = image.dataset.scenicFileId;
@@ -2091,7 +2124,18 @@ function hydrateScenicImages(root = document) {
       }
       console.warn('Scenic image could not load:', error);
     }
-  });
+  };
+
+  const images = [...(root.querySelectorAll?.('[data-scenic-image]') || [])];
+  if (!('IntersectionObserver' in window)) images.forEach(load);
+  else {
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      load(entry.target);
+    }), { rootMargin: '180px 0px' });
+    images.forEach(image => observer.observe(image));
+  }
 
   BRM.hydrateProfilePhotos?.(root);
 }

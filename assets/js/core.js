@@ -157,6 +157,20 @@ window.BRM = window.BRM || {};
       : appModule.initializeApp(firebaseConfig);
     await authModule.signOut(authModule.getAuth(app));
   };
+  BRM.firebaseIdToken = async function (forceRefresh = false) {
+    const firebaseConfig = window.BRM_CONFIG?.FIREBASE;
+    if (!firebaseConfig || window.BRM_CONFIG?.FIREBASE_MODE === "off") throw new Error("Firebase is unavailable.");
+    const [appModule, authModule] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js"),
+    ]);
+    const app = appModule.getApps().length ? appModule.getApp() : appModule.initializeApp(firebaseConfig);
+    const auth = authModule.getAuth(app); await auth.authStateReady();
+    if (!auth.currentUser) throw new Error("Please sign in.");
+    const token = await auth.currentUser.getIdToken(forceRefresh);
+    sessionStorage.setItem("brmFirebaseIdToken", token);
+    return token;
+  };
   BRM.storeSessionContext = function (context) {
     const target = sessionStorage.getItem("brmToken") ? sessionStorage : localStorage;
     target.setItem("brmContext", JSON.stringify(context));
@@ -1039,20 +1053,23 @@ window.BRM = window.BRM || {};
     });
   };
 
-  BRM.avatar = function (name, photoUrl, size = "") {
+  BRM.avatar = function (name, photoUrl, size = "", fallbackImage = "") {
     const cls = `avatar ${size ? `avatar-${size}` : ""}`;
     const initials = BRM.escape(BRM.initials(name));
     const value = String(photoUrl || "").trim();
+    const fallback = fallbackImage
+      ? `<img src="${BRM.escape(fallbackImage)}" alt="" style="width:100%;height:100%;object-fit:cover">`
+      : initials;
 
     if (!value) {
-      return `<span class="${cls}">${initials}</span>`;
+      return `<span class="${cls}">${fallback}</span>`;
     }
 
     const fileId = BRM.extractProfilePhotoFileId(value);
 
     return `
       <span class="${cls}" data-brm-avatar>
-        <span data-brm-photo-fallback style="grid-area:1/1">${initials}</span>
+        <span data-brm-photo-fallback style="grid-area:1/1">${fallback}</span>
         <img
           hidden
           data-brm-profile-photo

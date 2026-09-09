@@ -17,9 +17,10 @@ window.BRM = window.BRM || {};
             ${BRM.isAdmin() ? `<button class="icon-button danger" data-delete-note="${note.NoteID}" title="Delete note">×</button>` : ''}
           </article>`).join('')}</div>` : BRM.empty('No notes yet', 'Start the discussion with a useful production update.', '✎');
         list.querySelectorAll('[data-delete-note]').forEach(btn => btn.addEventListener('click', async () => {
-          const reason = prompt('Reason for deleting this post:');
+          if (!confirm('Permanently delete this communication note? This cannot be undone.')) return;
+          const reason = prompt('Reason for permanently deleting this post:');
           if (reason === null) return;
-          try { await BRM.api('deletePageNote', { noteId: btn.dataset.deleteNote, reason }); BRM.toast('Post removed and retained in the audit history.'); load(); }
+          try { await BRM.api('deletePageNote', { noteId: btn.dataset.deleteNote, reason }); BRM.toast('Communication note permanently deleted.'); load(); }
           catch (error) { BRM.toast(error.message, 'error'); }
         }));
       } catch (error) { list.innerHTML = `<div class="alert alert-error">${BRM.escape(error.message)}</div>`; }

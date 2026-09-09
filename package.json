@@ -1,0 +1,23 @@
+{
+  "name": "bedford-road-musical",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "assets:android": "node scripts/generate-android-assets.mjs",
+    "android:doctor": "node scripts/android-doctor.mjs",
+    "firebase:promote": "node scripts/promote-firestore-production.mjs",
+    "firebase:validate": "node scripts/validate-migration-integrity.mjs",
+    "test:firebase-rules": "firebase emulators:exec --project brpa-digital-hub-dev --only firestore,storage \"node scripts/test-firebase-rules.mjs\"",
+    "test:cutover-readiness": "node scripts/test-cutover-readiness.mjs",
+    "test:registration-concurrency": "node scripts/test-registration-concurrency.mjs",
+    "deploy:neocities": "node scripts/deploy-neocities.mjs",
+    "check": "node --check service-worker.js && node scripts/check-frontend.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "fflate": "^0.8.3",
+    "firebase": "^12.18.0",
+    "sharp": "^0.35.4"
+  }
+}

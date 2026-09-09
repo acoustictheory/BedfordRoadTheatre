@@ -288,7 +288,6 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   Future<void> chooseAnnotationOwner() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('communityMembers')
-        .where('status', isEqualTo: 'Active')
         .get();
     if (!mounted) return;
     final chosen = await showModalBottomSheet<Map<String, String>>(
@@ -304,26 +303,45 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
                 'Choose whose private working copy to open. Administrator edits are recorded.',
               ),
             ),
-            ...snapshot.docs.map((document) {
-              final data = document.data(),
-                  name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'
-                      .trim();
-              return ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                title: Text(
-                  name.isEmpty
-                      ? '${data['displayName'] ?? data['username'] ?? document.id}'
-                      : name,
-                ),
-                subtitle: Text('@${data['username'] ?? document.id}'),
-                onTap: () => Navigator.pop(sheetContext, {
-                  'id': document.id,
-                  'name': name.isEmpty
-                      ? '${data['displayName'] ?? document.id}'
-                      : name,
+            ...snapshot.docs
+                .where((document) {
+                  final data = document.data();
+                  return '${data['status'] ?? data['Status'] ?? 'Active'}'
+                          .toLowerCase() ==
+                      'active';
+                })
+                .map((document) {
+                  final data = document.data(),
+                      name =
+                          '${data['firstName'] ?? data['FirstName'] ?? ''} ${data['lastName'] ?? data['LastName'] ?? ''}'
+                              .trim(),
+                      photo = '${data['photoURL'] ?? data['PhotoURL'] ?? ''}'
+                          .trim();
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: photo.isEmpty
+                          ? null
+                          : NetworkImage(photo),
+                      child: photo.isEmpty
+                          ? const Icon(Icons.person_outline)
+                          : null,
+                    ),
+                    title: Text(
+                      name.isEmpty
+                          ? '${data['displayName'] ?? data['DisplayName'] ?? data['username'] ?? data['Username'] ?? document.id}'
+                          : name,
+                    ),
+                    subtitle: Text(
+                      '@${data['username'] ?? data['Username'] ?? document.id}',
+                    ),
+                    onTap: () => Navigator.pop(sheetContext, {
+                      'id': document.id,
+                      'name': name.isEmpty
+                          ? '${data['displayName'] ?? document.id}'
+                          : name,
+                    }),
+                  );
                 }),
-              );
-            }),
           ],
         ),
       ),
@@ -545,14 +563,16 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
       activeTrackId = '${preferred?['_id'] ?? primary['_id']}';
     });
     try {
-      final primaryFile = await validatedTrackFile(primary);
-      await audio.setFilePath(primaryFile.path);
+      final companion = guideTrack != null && practiceTrack != null
+          ? (identical(primary, guideTrack) ? practiceTrack! : guideTrack!)
+          : null;
+      final prepared = await Future.wait([
+        validatedTrackFile(primary),
+        if (companion != null) validatedTrackFile(companion),
+      ]);
+      await audio.setFilePath(prepared.first.path);
       if (guideTrack != null && practiceTrack != null) {
-        final companion = identical(primary, guideTrack)
-            ? practiceTrack!
-            : guideTrack!;
-        final companionFile = await validatedTrackFile(companion);
-        await companionAudio.setFilePath(companionFile.path);
+        await companionAudio.setFilePath(prepared[1].path);
       } else {
         await companionAudio.stop();
       }

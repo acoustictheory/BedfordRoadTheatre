@@ -152,11 +152,16 @@ const esc = (v) => BRM.escape(String(v ?? "")),
   },
   person = (id) =>
     people.get(String(id)) || { displayName: "Unknown person", photoURL: "" },
-  personAvatar = (id, size = "small") => {
+  personAvatar = (id, size = "small", logoFallback = false) => {
     const profile = person(id);
-    return BRM.avatar(profile.displayName, profile.photoURL || (profile.photoFileID ? `drivefile:${profile.photoFileID}` : ""), size);
+    return BRM.avatar(profile.displayName, profile.photoURL || (profile.photoFileID ? `drivefile:${profile.photoFileID}` : ""), size, logoFallback ? "assets/images/bedford-road-theatre-logo-192.png" : "");
   },
   roomAvatar = (room, className = "conversation-dot") => {
+    if (room?.type === "direct") {
+      const currentUserId = String(BRM.context?.userId || auth?.currentUser?.uid || "");
+      const peerId = (room.memberIds || []).map(String).find(id => id !== currentUserId) || (room.memberIds || [])[0] || "";
+      return `<span class="${className} direct-person-dot">${personAvatar(peerId, "small", true)}</span>`;
+    }
     const color = roomColor(room),
       image = String(room?.groupImage || "");
     const generated = `assets/images/chat-avatars/${roomAvatarKey(room)}.jpg`;
@@ -243,7 +248,8 @@ function renderRooms() {
     production = visible.filter(
       (r) => r.type === "space" && r.category === "production",
     ),
-    chats = visible.filter((r) => r.type !== "space"),
+    directs = visible.filter((r) => r.type === "direct"),
+    chats = visible.filter((r) => r.type !== "space" && r.type !== "direct"),
     unread = rooms.reduce((n, r) => n + (r.unreadCount || 0), 0),
     section = (icon, title, subtitle, list) =>
       list.length
@@ -253,7 +259,7 @@ function renderRooms() {
     ? `${unread} unread message${unread === 1 ? "" : "s"}`
     : "Inbox is caught up";
   host.innerHTML = visible.length
-    ? `${section("◆", "Classes", "Musical Theatre and Theatre Arts", classes)}${section("♪", "Ensembles", "Cast, orchestra, choreography and featured dancers", ensembles)}${section("◇", "Production Team", "Stage management, design and technical crews", production)}${section("●", "Conversations", "Administrator-created chats", chats)}`
+    ? `${section("◆", "Classes", "Musical Theatre and Theatre Arts", classes)}${section("♪", "Ensembles", "Cast, orchestra, choreography and featured dancers", ensembles)}${section("◇", "Production Team", "Stage management, design and technical crews", production)}${section("●", "Direct Messages", "Private one-to-one conversations", directs)}${section("●", "Group Conversations", "Administrator-created chats", chats)}`
     : '<div class="empty-chat">No matching conversations.</div>';
   host
     .querySelectorAll("[data-room]")

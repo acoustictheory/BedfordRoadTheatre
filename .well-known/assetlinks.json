@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ca.sk.bedfordroad.musical",
+      "sha256_cert_fingerprints": ["0B:3F:FE:47:4B:C2:C4:1C:E9:21:13:A5:59:09:ED:F5:87:87:EB:A9:F4:84:84:3D:C9:E8:39:A8:C4:01:1C:28"]
+    }
+  }
+]

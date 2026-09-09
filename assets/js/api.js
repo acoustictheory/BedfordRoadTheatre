@@ -6,7 +6,7 @@ window.BRM = window.BRM || {};
 
   const SITE_CACHE_DB = 'bedford-musical-site-cache-v1';
   const SITE_CACHE_STORE = 'snapshots';
-  const SITE_CACHE_KEY = 'active-user-snapshot';
+  const SITE_CACHE_KEY = `active-user-snapshot-${config.BUILD_ID || 'default'}`;
   const SNAPSHOT_FRESH_MS = 2 * 60 * 1000;
   const SNAPSHOT_MAX_MS = 24 * 60 * 60 * 1000;
 
@@ -36,6 +36,8 @@ window.BRM = window.BRM || {};
     'submitMusicalInterest',
     'reviewRecruitmentSubmission',
     'deleteRecruitmentSubmission',
+    'saveAuditionSlot',
+    'deleteAuditionSlot',
     'changePassword',
     'updateProfile',
     'uploadProfilePhoto',
@@ -44,12 +46,15 @@ window.BRM = window.BRM || {};
     'archiveAnnouncement',
     'deleteAnnouncement',
     'acknowledgeAnnouncement',
+    'markAnnouncementRead',
     'createPageNote',
     'editPageNote',
     'deletePageNote',
     'saveJournalEntry',
     'saveJournalFeedback', 'deleteJournalEntry',
     'saveEvent',
+    'deleteEvent',
+    'importCalendarEvents',
     'saveDepartmentItem',
     'saveTask',
     'updateTaskStatus',
@@ -257,7 +262,7 @@ window.BRM = window.BRM || {};
 
   async function writeSnapshotRecord(snapshot) {
     const database = await openSnapshotDatabase();
-    const owner = localStorage.getItem('brmToken') || '';
+    const owner = BRM.getSessionValue?.('brmToken') || localStorage.getItem('brmToken') || '';
 
     return new Promise((resolve, reject) => {
       const transaction = database.transaction(SITE_CACHE_STORE, 'readwrite');
@@ -305,12 +310,70 @@ window.BRM = window.BRM || {};
   async function rawApi(action, payload = {}, options = {}) {
     if (BRM.isDemo()) return BRM.demoApi(action, payload);
 
+    const firebaseRecruitmentActions=['publicRecruitmentConfig','submitAuditionBooking','submitMusicalInterest','recruitmentAdminData','reviewRecruitmentSubmission','deleteRecruitmentSubmission','saveAuditionSlot','deleteAuditionSlot'];
+    if (config.FIREBASE_RECRUITMENT_URL && firebaseRecruitmentActions.includes(action)) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs || 20000);
+      try {
+        const headers={'Content-Type':'application/json'};
+        if(!options.public) headers.Authorization=`Bearer ${await BRM.firebaseIdToken()}`;
+        const response = await fetch(config.FIREBASE_RECRUITMENT_URL, {
+          method:'POST', headers,
+          body:JSON.stringify({...payload,action}), signal:controller.signal
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          const error = new Error(result.error || 'Request failed.');
+          error.code = result.code;
+          throw error;
+        }
+        return result;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    const firebasePortalActions=['validateSession','getProfile','updateProfile','uploadProfilePhoto','removeProfilePhoto','saveMyDepartmentRequests','directory','schedule','saveEvent','deleteEvent','importCalendarEvents','myTasks','saveTask','updateTaskStatus','resources','saveResource','tracks','trackAudioInfo','trackAudioChunk'];
+    if (!options.public && config.FIREBASE_PORTAL_DATA_URL && firebasePortalActions.includes(action)) {
+      const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),options.timeoutMs||20000);
+      try {
+        const response=await fetch(config.FIREBASE_PORTAL_DATA_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${await BRM.firebaseIdToken()}`},body:JSON.stringify({...payload,action}),signal:controller.signal});
+        const result=await response.json();if(!response.ok||!result.success){const error=new Error(result.error||'Request failed.');error.code=result.code;throw error;}return result;
+      } finally { window.clearTimeout(timeout); }
+    }
+
+    const firebaseCollaborationActions=['announcements','saveAnnouncement','archiveAnnouncement','deleteAnnouncement','acknowledgeAnnouncement','markAnnouncementRead','pageNotes','createPageNote','editPageNote','deletePageNote','myJournal','saveJournalEntry','journalReview','saveJournalFeedback','deleteJournalEntry'];
+    if (!options.public && config.FIREBASE_COLLABORATION_DATA_URL && firebaseCollaborationActions.includes(action)) {
+      const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),options.timeoutMs||20000);
+      try {
+        const response=await fetch(config.FIREBASE_COLLABORATION_DATA_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${await BRM.firebaseIdToken()}`},body:JSON.stringify({...payload,action}),signal:controller.signal});
+        const result=await response.json();if(!response.ok||!result.success){const error=new Error(result.error||'Request failed.');error.code=result.code;throw error;}return result;
+      } finally { window.clearTimeout(timeout); }
+    }
+
+    const firebasePeopleActions=['adminData','saveUserAccess','createManagedUser','saveManagedUser','deleteManagedUser','uploadManagedProfilePhoto','removeManagedProfilePhoto','reviewDepartmentRequest','createRegistrationCode','saveBlockingCast','deleteBlockingCast'];
+    if (!options.public && config.FIREBASE_PEOPLE_ACCESS_URL && firebasePeopleActions.includes(action)) {
+      const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),options.timeoutMs||30000);
+      try {
+        const response=await fetch(config.FIREBASE_PEOPLE_ACCESS_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${await BRM.firebaseIdToken()}`},body:JSON.stringify({...payload,action}),signal:controller.signal});
+        const result=await response.json();if(!response.ok||!result.success){const error=new Error(result.error||'Request failed.');error.code=result.code;throw error;}return result;
+      } finally { window.clearTimeout(timeout); }
+    }
+
+    const firebaseWorkspaceActions=new Set(['savePropsItem','savePropsTask','savePropsPreset','savePropsDeadline','savePropsSuggestion','reviewPropsSuggestion','archivePropsItem','restorePropsItem','deletePropsItemPermanently','uploadPropsImage','deletePropsImage','propsImageData','updatePropsPresetRunStatus','resetPropsPresetRun','saveScenicSet','saveScenicElement','saveScenicTask','saveScenicTransition','saveScenicDeadline','saveScenicSuggestion','reviewScenicSuggestion','archiveScenicSet','restoreScenicSet','deleteScenicSetPermanently','archiveScenicElement','restoreScenicElement','deleteScenicElementPermanently','uploadScenicImage','deleteScenicImage','scenicImageData','updateScenicTransitionRunStatus','resetScenicTransitionRun','saveCostumeCharacter','saveCostumeChange','saveCostumePiece','saveCostumeMeasurement','saveCostumeFitting','saveCostumeTask','saveCostumeDeadline','saveCostumeSuggestion','reviewCostumeSuggestion','archiveCostumeCharacter','restoreCostumeCharacter','deleteCostumeCharacterPermanently','archiveCostumePiece','restoreCostumePiece','deleteCostumePiecePermanently','uploadCostumeImage','deleteCostumeImage','costumeImageData','updateCostumeChangeRunStatus','resetCostumeChangeRun','blockingSnapshot','saveBlockingSnapshot','duplicateBlockingSnapshot','setBlockingSnapshotStatus','deleteBlockingSnapshotPermanently','blockingSnapshotVersions','restoreBlockingSnapshotVersion','saveBlockingAnchor','saveBlockingEnsembleRoster','uploadBlockingBackground','blockingBackgroundData','blockingTimeline','blockingTimelineMediaIndex','saveBlockingTimeline','blockingSceneRecordings','saveBlockingSceneRecording','useBlockingSceneRecording','blockingSceneAudioInfo','blockingSceneAudioChunk']);
+    if (!options.public && config.FIREBASE_WORKSPACE_DATA_URL && firebaseWorkspaceActions.has(action)) {
+      const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),options.timeoutMs||30000);
+      try {const response=await fetch(config.FIREBASE_WORKSPACE_DATA_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${await BRM.firebaseIdToken()}`},body:JSON.stringify({...payload,action}),signal:controller.signal});const result=await response.json();if(!response.ok||!result.success){const error=new Error(result.error||'Request failed.');error.code=result.code;throw error;}return result;}finally{window.clearTimeout(timeout);}
+    }
+
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:[?#].*)?$/.test(String(config.API_URL || ''))) {
       throw new Error('The musical portal server is not configured with a valid Apps Script Web App URL.');
     }
 
-    const token = options.public ? '' : localStorage.getItem('brmToken') || '';
+    const token = options.public ? '' : (BRM.getSessionValue?.('brmToken') || localStorage.getItem('brmToken') || '');
     let response;
+    const controller = new AbortController();
+    const timeout = options.timeoutMs ? window.setTimeout(() => controller.abort(), options.timeoutMs) : 0;
 
     try {
       response = await fetch(config.API_URL, {
@@ -319,10 +382,18 @@ window.BRM = window.BRM || {};
         headers: {
           'Content-Type': 'text/plain;charset=utf-8'
         },
-        body: JSON.stringify({ ...payload, action, token })
+        body: JSON.stringify({ ...payload, action, token }),
+        signal: controller.signal
       });
     } catch (error) {
+      if (error.name === 'AbortError') {
+        const timeoutError = new Error('The server is still finishing this request.');
+        timeoutError.code = 'REQUEST_TIMEOUT';
+        throw timeoutError;
+      }
       throw new Error('Could not reach the musical portal server. Check your internet connection and Apps Script deployment.');
+    } finally {
+      if (timeout) window.clearTimeout(timeout);
     }
 
     let result;
@@ -352,7 +423,7 @@ window.BRM = window.BRM || {};
     let currentContext = null;
 
     try {
-      currentContext = JSON.parse(localStorage.getItem('brmContext') || 'null');
+      currentContext = JSON.parse(BRM.getSessionValue?.('brmContext') || localStorage.getItem('brmContext') || 'null');
     } catch {}
 
     snapshot.context = mergePortalContexts(snapshot.context, currentContext);
@@ -505,7 +576,7 @@ window.BRM = window.BRM || {};
 
     await BRM.clearSiteCache();
 
-    localStorage.setItem('brmContext', JSON.stringify(live.context));
+    BRM.storeSessionContext?.(live.context);
     BRM.context = live.context;
     sessionStorage.removeItem('brmSnapshotDisabledUntil');
 
@@ -542,7 +613,7 @@ window.BRM = window.BRM || {};
       let storedContext = null;
 
       try {
-        storedContext = JSON.parse(localStorage.getItem('brmContext') || 'null');
+        storedContext = JSON.parse(BRM.getSessionValue?.('brmContext') || localStorage.getItem('brmContext') || 'null');
       } catch {}
 
       snapshot.context = mergePortalContexts(snapshot.context, storedContext);
@@ -555,7 +626,7 @@ window.BRM = window.BRM || {};
       }
 
       seedSnapshot(snapshot);
-      localStorage.setItem('brmContext', JSON.stringify(snapshot.context));
+      BRM.storeSessionContext?.(snapshot.context);
 
       try {
         await writeSnapshotRecord(snapshot);
@@ -587,7 +658,7 @@ window.BRM = window.BRM || {};
     if (snapshotLoadPromise) return snapshotLoadPromise;
 
     snapshotLoadPromise = (async () => {
-      const token = localStorage.getItem('brmToken') || '';
+      const token = BRM.getSessionValue?.('brmToken') || localStorage.getItem('brmToken') || '';
       let record = null;
 
       try {
@@ -602,7 +673,7 @@ window.BRM = window.BRM || {};
       let currentContext = null;
 
       try {
-        currentContext = JSON.parse(localStorage.getItem('brmContext') || 'null');
+        currentContext = JSON.parse(BRM.getSessionValue?.('brmContext') || localStorage.getItem('brmContext') || 'null');
       } catch {}
 
       const wouldDowngrade = Boolean(
@@ -675,6 +746,24 @@ window.BRM = window.BRM || {};
 
     const publicAction = options.public || ['login', 'register', 'registrationOptions', 'publicRecruitmentConfig', 'submitAuditionBooking', 'submitMusicalInterest'].includes(action);
     const neverCache = options.noCache || ['bootstrap', 'trackAudioInfo', 'trackAudioChunk', 'logout'].includes(action);
+    const fastCacheKey = `api:${requestKey(action, payload)}`;
+
+    if (!publicAction && CACHEABLE_ACTIONS.has(action) && action !== 'validateSession' && !options.skipFastCache) {
+      const fast = BRM.readFastCache?.(fastCacheKey, 5 * 60 * 1000);
+      if (fast) {
+        window.setTimeout(async () => {
+          try {
+            const fresh = await rawApi(action, payload, { public: false });
+            setCachedResponse(action, payload, fresh);
+            BRM.writeFastCache?.(fastCacheKey, fresh);
+            window.dispatchEvent(new CustomEvent('brm:data-refreshed', { detail: { action, payload, result: clone(fresh) } }));
+          } catch (error) {
+            console.warn(`${action} background refresh failed; fast cache retained.`, error);
+          }
+        }, 25);
+        return clone(fast);
+      }
+    }
 
     if (!publicAction && !neverCache && CACHEABLE_ACTIONS.has(action) && !options.forceNetwork) {
       const cached = getCachedResponse(action, payload);
@@ -686,11 +775,15 @@ window.BRM = window.BRM || {};
     if (!publicAction && CACHEABLE_ACTIONS.has(action) && !neverCache) {
       setCachedResponse(action, payload, result);
     }
+    if (!publicAction && CACHEABLE_ACTIONS.has(action) && action !== 'validateSession') {
+      BRM.writeFastCache?.(fastCacheKey, result);
+    }
 
     if (MUTATING_ACTIONS.has(action)) {
       await BRM.invalidateSiteCache();
+      BRM.clearFastCaches?.();
 
-      if (!['changePassword', 'startNewProduction', 'approveProductionDeletion'].includes(action)) {
+      if (config.SITE_SNAPSHOT_MODE !== 'page-first' && !['changePassword', 'startNewProduction', 'approveProductionDeletion'].includes(action)) {
         window.setTimeout(() => {
           BRM.refreshSiteSnapshot({ force: true }).catch(error => {
             console.warn('Portal refresh after update failed:', error);
@@ -790,6 +883,8 @@ window.BRM = window.BRM || {};
       case 'acknowledgeAnnouncement': return { success: true };
       case 'schedule': return { success: true, data: demoEvents };
       case 'saveEvent': return { success: true };
+      case 'deleteEvent': return { success: true };
+      case 'importCalendarEvents': return { success: true, created: (payload.events || []).length };
       case 'departments': return { success: true, data: demoContext.departments };
       case 'departmentWorkspace': {
         const slug = payload.slug || 'ensemble';
