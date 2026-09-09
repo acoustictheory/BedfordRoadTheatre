@@ -1,4 +1,4 @@
-window.BRM_TRACK_PLAYER_BUILD = 'score-workspace-v16';
+window.BRM_TRACK_PLAYER_BUILD = 'score-workspace-v17';
 
 document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async () => {
   const main = document.querySelector('#app-main');
@@ -965,15 +965,12 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
       const cachedCount = await refreshCachePanel();
 
       if (cachedCount < tracks.length) {
-        runFullLibraryDownload().catch(error => {
-          state.libraryDownloadRunning = false;
-          updateCachePanel({
-            title: 'Automatic download paused',
-            detail: error.message || 'The browser could not finish storing the track library.',
-            completed: state.cachedTrackIds.size,
-            total: tracks.length,
-            running: false
-          });
+        updateCachePanel({
+          title: 'Offline track library',
+          detail: `${cachedCount} of ${tracks.length} tracks stored. Downloading the full library is optional.`,
+          completed: cachedCount,
+          total: tracks.length,
+          running: false
         });
       }
     } catch (error) {
@@ -1518,17 +1515,17 @@ document.addEventListener('DOMContentLoaded', () => BRM.initPrivatePage(async ()
 
   renderLibrarySummary();
   renderPlaylist();
-
-  if (state.songs.length) {
-    await loadSong(0, false);
-  }
-
+  refs.play.disabled = true;
   initializeFullLibraryCache();
 
-  await BRM.renderNotesPanel({
-    pageKey: 'tracks',
-    title: 'Music Notes'
-  });
+  try {
+    await BRM.renderNotesPanel?.({
+      pageKey: 'tracks',
+      title: 'Music Notes'
+    });
+  } catch (error) {
+    console.warn('Music Notes could not initialize:', error);
+  }
 }));
 
 function pairTrackLibrary(tracks) {
