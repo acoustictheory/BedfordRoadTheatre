@@ -332,6 +332,7 @@ class PracticeNotesStore {
   Future<String>? _resolvedOwner;
   Future<void> _saveQueue = Future<void>.value();
   Set<int> _knownCloudPages = <int>{};
+  Set<String> _knownCloudMarkIds = <String>{};
 
   Future<String> resolveOwner() => _resolvedOwner ??= _resolveOwner();
 
@@ -364,6 +365,9 @@ class PracticeNotesStore {
   CollectionReference<Map<String, dynamic>>? _cloudPages(String owner) =>
       _cloud(owner)?.collection('pages');
 
+  CollectionReference<Map<String, dynamic>>? _cloudMarks(String owner) =>
+      _cloud(owner)?.collection('marks');
+
   List<ScoreInkMark> decodeMarks(Object? value) {
     if (value is! List) return const [];
     return value
@@ -372,26 +376,43 @@ class PracticeNotesStore {
         .toList();
   }
 
+  List<ScoreInkMark> decodeMarkDocuments(
+    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) =>
+      documents
+          .map(
+            (document) =>
+                ScoreInkMark.fromJson({...document.data(), 'id': document.id}),
+          )
+          .toList()
+        ..sort((a, b) {
+          final pageOrder = a.page.compareTo(b.page);
+          return pageOrder != 0 ? pageOrder : a.id.compareTo(b.id);
+        });
+
   Stream<List<ScoreInkMark>> watchInk() async* {
     final owner = await resolveOwner();
+    final marks = _cloudMarks(owner);
     final pages = _cloudPages(owner);
     final reference = _cloud(owner);
-    if (pages == null || reference == null) return;
-    await for (final snapshot in pages.snapshots()) {
+    if (marks == null || pages == null || reference == null) return;
+    await for (final snapshot in marks.snapshots()) {
       if (snapshot.docs.isNotEmpty) {
-        _knownCloudPages = snapshot.docs
-            .map((document) => int.tryParse(document.id))
-            .whereType<int>()
+        _knownCloudMarkIds = snapshot.docs
+            .map((document) => document.id)
             .toSet();
-        final marks =
-            snapshot.docs
-                .expand((document) => decodeMarks(document.data()['marks']))
-                .toList()
-              ..sort((a, b) => a.page.compareTo(b.page));
-        yield marks;
+        yield decodeMarkDocuments(snapshot.docs);
       } else {
-        final legacy = await reference.get();
-        yield decodeMarks(legacy.data()?['marks']);
+        final legacyPages = await pages.get();
+        if (legacyPages.docs.isNotEmpty) {
+          yield legacyPages.docs
+              .expand((document) => decodeMarks(document.data()['marks']))
+              .toList()
+            ..sort((a, b) => a.page.compareTo(b.page));
+        } else {
+          final legacy = await reference.get();
+          yield decodeMarks(legacy.data()?['marks']);
+        }
       }
     }
   }
@@ -403,8 +424,16 @@ class PracticeNotesStore {
     try {
       var snapshot = await _cloud(owner)?.get();
       List? remote;
+      final markSnapshot = await _cloudMarks(owner)?.get();
       final pageSnapshot = await _cloudPages(owner)?.get();
-      if (pageSnapshot != null && pageSnapshot.docs.isNotEmpty) {
+      if (markSnapshot != null && markSnapshot.docs.isNotEmpty) {
+        _knownCloudMarkIds = markSnapshot.docs
+            .map((document) => document.id)
+            .toSet();
+        remote = decodeMarkDocuments(markSnapshot.docs)
+            .map((mark) => mark.toJson())
+            .toList();
+      } else if (pageSnapshot != null && pageSnapshot.docs.isNotEmpty) {
         _knownCloudPages = pageSnapshot.docs
             .map((document) => int.tryParse(document.id))
             .whereType<int>()
@@ -425,8 +454,13 @@ class PracticeNotesStore {
         // Recover annotations written by releases that incorrectly keyed the
         // document to Firebase uid instead of the portal account id.
         snapshot = await _cloud(authUid)?.get();
+        final legacyMarks = await _cloudMarks(authUid)?.get();
         final legacyPages = await _cloudPages(authUid)?.get();
-        remote = legacyPages != null && legacyPages.docs.isNotEmpty
+        remote = legacyMarks != null && legacyMarks.docs.isNotEmpty
+            ? decodeMarkDocuments(legacyMarks.docs)
+                  .map((mark) => mark.toJson())
+                  .toList()
+            : legacyPages != null && legacyPages.docs.isNotEmpty
             ? legacyPages.docs
                   .expand(
                     (document) =>
@@ -495,6 +529,15 @@ class PracticeNotesStore {
     final prefix = _prefix(owner);
     final encoded = marks.map((e) => e.toJson()).toList();
     final json = jsonEncode(encoded);
+    final priorLocal = await _prefs.getString('$prefix.ink.v2');
+    final priorLocalIds = <String>{};
+    if (priorLocal != null && priorLocal.isNotEmpty) {
+      try {
+        priorLocalIds.addAll(
+          decodeMarks(jsonDecode(priorLocal)).map((mark) => mark.id),
+        );
+      } catch (_) {}
+    }
     var localSaved = false;
     try {
       await _prefs.setString('$prefix.ink.v2', json);
@@ -509,7 +552,8 @@ class PracticeNotesStore {
     }
     final reference = _cloud(owner);
     final pages = _cloudPages(owner);
-    if (reference == null || pages == null) {
+    final cloudMarks = _cloudMarks(owner);
+    if (reference == null || pages == null || cloudMarks == null) {
       return AnnotationSaveResult(
         localSaved: localSaved,
         cloudQueued: false,
@@ -518,52 +562,60 @@ class PracticeNotesStore {
       );
     }
     try {
-      final byPage = <int, List<Map<String, dynamic>>>{};
-      for (final mark in marks) {
-        (byPage[mark.page] ??= <Map<String, dynamic>>[]).add(mark.toJson());
-      }
-      if (_knownCloudPages.isEmpty) {
+      if (_knownCloudMarkIds.isEmpty) {
         try {
-          final existing = await pages.get(
+          final existing = await cloudMarks.get(
             const GetOptions(source: Source.server),
           );
-          _knownCloudPages = existing.docs
-              .map((document) => int.tryParse(document.id))
-              .whereType<int>()
+          _knownCloudMarkIds = existing.docs
+              .map((document) => document.id)
               .toSet();
         } catch (_) {
-          // Offline writes can still proceed; known pages from prior loads are
-          // enough to remove pages that were cleared during this session.
+          // The prior device copy still lets offline erases queue correctly.
         }
       }
-      final batch = FirebaseFirestore.instance.batch();
-      for (final page in _knownCloudPages.difference(byPage.keys.toSet())) {
-        batch.delete(pages.doc('$page'));
-      }
-      for (final entry in byPage.entries) {
-        batch.set(pages.doc('${entry.key}'), {
+      final currentIds = marks.map((mark) => mark.id).toSet();
+      final removedIds = <String>{
+        ..._knownCloudMarkIds,
+        ...priorLocalIds,
+      }.difference(currentIds);
+      final operations = <void Function(WriteBatch)>[
+        (batch) => batch.set(reference, {
           'ownerUserId': owner,
           'documentId': '$songId',
-          'page': entry.key,
-          'markCount': entry.value.length,
-          'marks': entry.value,
+          'schemaVersion': 5,
+          'coordinateSpace': 'pdf-page-normalized-v1',
+          'markCount': encoded.length,
+          'pageNumbers': marks.map((mark) => mark.page).toSet().toList()
+            ..sort(),
+          'marks': FieldValue.delete(),
           'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true)),
+        for (final mark in marks)
+          (batch) => batch.set(cloudMarks.doc(mark.id), {
+            ...mark.toJson(),
+            'ownerUserId': owner,
+            'documentId': '$songId',
+            'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }),
+        for (final markId in removedIds)
+          (batch) => batch.delete(cloudMarks.doc(markId)),
+        for (final page in _knownCloudPages)
+          (batch) => batch.delete(pages.doc('$page')),
+      ];
+      // Keep well below Firestore's per-batch write ceiling. The parent write
+      // is first so rules can validate the owner before accepting mark docs.
+      for (var offset = 0; offset < operations.length; offset += 400) {
+        final batch = FirebaseFirestore.instance.batch();
+        for (final operation in operations.skip(offset).take(400)) {
+          operation(batch);
+        }
+        await batch.commit();
       }
-      batch.set(reference, {
-        'ownerUserId': owner,
-        'documentId': '$songId',
-        'schemaVersion': 4,
-        'coordinateSpace': 'pdf-page-normalized-v1',
-        'markCount': encoded.length,
-        'pageNumbers': marks.map((mark) => mark.page).toSet().toList()..sort(),
-        'marks': FieldValue.delete(),
-        'lastEditedBy': FirebaseAuth.instance.currentUser?.uid,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      await batch.commit();
-      _knownCloudPages = byPage.keys.toSet();
+      _knownCloudMarkIds = currentIds;
+      _knownCloudPages = <int>{};
       if (waitForServer) {
         try {
           await FirebaseFirestore.instance.waitForPendingWrites().timeout(

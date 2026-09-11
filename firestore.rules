@@ -41,7 +41,7 @@ service cloud.firestore {
       allow write: if admin();
 
       match /scoreAnnotations/{annotationId} {
-        allow read: if activeMember() && (resource.data.ownerUserId == principalId() || resource.data.ownerUserId == request.auth.uid || admin());
+        allow read: if activeMember();
         allow create: if activeMember() && (request.resource.data.ownerUserId == principalId() || request.resource.data.ownerUserId == request.auth.uid || admin());
         allow update: if activeMember()
           && request.resource.data.ownerUserId == resource.data.ownerUserId
@@ -55,7 +55,24 @@ service cloud.firestore {
             return annotation().data.ownerUserId == principalId()
               || annotation().data.ownerUserId == request.auth.uid;
           }
-          allow read: if activeMember() && (ownsAnnotation() || admin());
+          allow read: if activeMember();
+          allow create, update: if activeMember()
+            && (request.resource.data.ownerUserId == principalId()
+              || request.resource.data.ownerUserId == request.auth.uid
+              || admin())
+            && request.resource.data.ownerUserId == annotationAfter().data.ownerUserId
+            && request.resource.data.documentId == annotationAfter().data.documentId;
+          allow delete: if activeMember() && (ownsAnnotation() || admin());
+        }
+
+        match /marks/{markId} {
+          function annotation() { return get(/databases/$(database)/documents/productions/$(productionId)/scoreAnnotations/$(annotationId)); }
+          function annotationAfter() { return getAfter(/databases/$(database)/documents/productions/$(productionId)/scoreAnnotations/$(annotationId)); }
+          function ownsAnnotation() {
+            return annotation().data.ownerUserId == principalId()
+              || annotation().data.ownerUserId == request.auth.uid;
+          }
+          allow read: if activeMember();
           allow create, update: if activeMember()
             && (request.resource.data.ownerUserId == principalId()
               || request.resource.data.ownerUserId == request.auth.uid

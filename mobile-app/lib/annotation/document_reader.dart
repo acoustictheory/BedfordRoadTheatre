@@ -242,6 +242,12 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   Color scoreFlowSurface = const Color(0xff12101f);
   String scoreFlowPreset = 'Descendants Neon';
   bool administrator = false;
+  String signedInOwner = '';
+
+  bool get canEditAnnotations =>
+      widget.ownerUserId == null ||
+      widget.ownerUserId == signedInOwner ||
+      administrator;
 
   @override
   void initState() {
@@ -270,19 +276,26 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   }
 
   Future<void> loadAdministratorState() async {
-    final uid = await store.resolveOwner();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    var uid = user.uid;
+    try {
+      final token = await user.getIdTokenResult();
+      uid = '${token.claims?['legacyUserId'] ?? user.uid}'.trim();
+    } catch (_) {}
     if (uid == 'local') return;
     final data =
         (await FirebaseFirestore.instance.collection('users').doc(uid).get())
             .data() ??
         {};
     if (mounted)
-      setState(
-        () => administrator =
+      setState(() {
+        signedInOwner = uid;
+        administrator =
             data['isFullAdmin'] == true ||
             data['IsFullAdmin'] == true ||
-            '${data['IsFullAdmin']}'.toUpperCase() == 'TRUE',
-      );
+            '${data['IsFullAdmin']}'.toUpperCase() == 'TRUE';
+      });
   }
 
   Future<void> chooseAnnotationOwner() async {
@@ -300,7 +313,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
             const ListTile(
               title: Text('Review singer annotations'),
               subtitle: Text(
-                'Choose whose private working copy to open. Administrator edits are recorded.',
+                'Choose a singer to view their working copy. You can edit only your own unless you are an administrator.',
               ),
             ),
             ...snapshot.docs
@@ -2336,14 +2349,13 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
                 : Icons.cloud_sync_outlined,
           ),
         ),
-        if (administrator)
-          IconButton(
-            tooltip: widget.ownerName == null
-                ? 'Review singer annotations'
-                : 'Reviewing ${widget.ownerName}',
-            onPressed: chooseAnnotationOwner,
-            icon: const Icon(Icons.supervisor_account_outlined),
-          ),
+        IconButton(
+          tooltip: widget.ownerName == null
+              ? 'Review singer annotations'
+              : 'Reviewing ${widget.ownerName}',
+          onPressed: chooseAnnotationOwner,
+          icon: const Icon(Icons.supervisor_account_outlined),
+        ),
         if (songNumber != null)
           IconButton(
             tooltip: 'Next song',
@@ -2588,22 +2600,26 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
     floatingActionButton: file == null
         ? null
         : FloatingActionButton.small(
-            onPressed: () async {
-              if (annotate) {
-                final result = await flushAnnotationSave();
-                if (mounted && !result.serverConfirmed) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result.message ?? 'Saved on this device. Cloud sync is still pending.',
-                      ),
-                    ),
-                  );
-                }
-              }
-              if (mounted) setState(() => annotate = !annotate);
-            },
-            tooltip: annotate ? 'Finish annotating' : 'Annotate score',
+            onPressed: canEditAnnotations
+                ? () async {
+                    if (annotate) {
+                      final result = await flushAnnotationSave();
+                      if (mounted && !result.serverConfirmed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              result.message ?? 'Saved on this device. Cloud sync is still pending.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                    if (mounted) setState(() => annotate = !annotate);
+                  }
+                : null,
+            tooltip: canEditAnnotations
+                ? (annotate ? 'Finish annotating' : 'Annotate score')
+                : 'Viewing another singer’s annotations',
             child: Icon(
               annotate ? Icons.visibility_rounded : Icons.edit_rounded,
             ),

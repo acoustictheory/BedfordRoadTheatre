@@ -31,6 +31,7 @@ for (const action of routedActions) {
 requireCondition(rulesSource.includes('match /scoreAnnotations/{annotationId}'), 'Annotation parent rules are missing.');
 requireCondition(rulesSource.includes('match /pages/{pageId}'), 'Page-sharded annotation rules are missing.');
 requireCondition(annotationStore.includes("collection('pages')"), 'Mobile annotations are not page-sharded.');
+requireCondition(annotationStore.includes("collection('marks')"), 'Mobile annotations are not stored as Firestore-safe mark documents.');
 requireCondition(annotationStore.includes('_saveQueue'), 'Mobile annotation writes are not serialized.');
 requireCondition(storageRules.includes('match /legacy-drive/{driveFileId}/{fileName}'), 'Track Storage read rule is missing.');
 

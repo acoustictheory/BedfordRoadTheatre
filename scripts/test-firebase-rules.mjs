@@ -88,6 +88,7 @@ try {
     `${ownerId}_92002`,
   );
   const page = doc(annotation, 'pages', '1');
+  const mark = doc(annotation, 'marks', 'mark-1');
   const batch = writeBatch(ownerDatabase);
   batch.set(annotation, {
     ownerUserId: ownerId,
@@ -100,13 +101,21 @@ try {
     page: 1,
     marks: [],
   });
+  batch.set(mark, {
+    id: 'mark-1',
+    ownerUserId: ownerId,
+    documentId: '92002',
+    page: 1,
+    points: [{ x: 0.1, y: 0.2 }, { x: 0.3, y: 0.4 }],
+  });
   await assertSucceeds(batch.commit());
   await assertSucceeds(getDoc(annotation));
   await assertSucceeds(getDoc(page));
+  await assertSucceeds(getDoc(mark));
 
   const otherDatabase = otherContext.firestore();
   const adminDatabase = adminContext.firestore();
-  await assertFails(
+  await assertSucceeds(
     getDoc(
       doc(
         otherDatabase,
@@ -115,6 +124,33 @@ try {
         'scoreAnnotations',
         `${ownerId}_92002`,
       ),
+    ),
+  );
+  await assertSucceeds(
+    getDoc(
+      doc(
+        otherDatabase,
+        'productions',
+        productionId,
+        'scoreAnnotations',
+        `${ownerId}_92002`,
+        'marks',
+        'mark-1',
+      ),
+    ),
+  );
+  await assertFails(
+    setDoc(
+      doc(
+        otherDatabase,
+        'productions',
+        productionId,
+        'scoreAnnotations',
+        `${ownerId}_92002`,
+        'marks',
+        'mark-1',
+      ),
+      {ownerUserId:ownerId,documentId:'92002',page:1,points:[]},
     ),
   );
 
