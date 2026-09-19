@@ -27,6 +27,7 @@ import 'portal_models.dart';
 import 'production_time.dart';
 import 'profile_api.dart';
 import 'profile_screen.dart';
+import 'music_tracks_screen.dart';
 
 const site = 'https://bedfordroadtheatre.ca';
 const appsScriptUrl =
@@ -637,6 +638,28 @@ class PortalContext {
   final String photoFileId, photoUrl, themeId;
   final Map<String, dynamic> themePreferences;
   final bool admin;
+  Map<String, dynamic> toJson() => {
+    'userId': userId,
+    'productionId': productionId,
+    'title': title,
+    'name': name,
+    'admin': admin,
+    'photoFileId': photoFileId,
+    'photoUrl': photoUrl,
+    'themeId': themeId,
+    'themePreferences': themePreferences,
+  };
+  factory PortalContext.fromJson(Map<String, dynamic> row) => PortalContext(
+    row['userId'] as String,
+    row['productionId'] as String,
+    row['title'] as String,
+    row['name'] as String,
+    row['admin'] == true,
+    row['photoFileId'] as String,
+    row['photoUrl'] as String,
+    row['themeId'] as String,
+    Map<String, dynamic>.from(row['themePreferences'] as Map),
+  );
 }
 
 class AppPalette {
@@ -954,11 +977,66 @@ String initials(String name) => name
 class PortalLoader extends StatelessWidget {
   const PortalLoader({super.key});
   Future<PortalContext> load() async {
+    final user = FirebaseAuth.instance.currentUser!;
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'brmNativePortal.${user.uid}';
+    PortalContext? cached;
+    try {
+      final raw = prefs.getString(key);
+      if (raw != null)
+        cached = PortalContext.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
+    } catch (_) {
+      /* An invalid cache requires a fresh sign-in connection. */
+    }
+    final connectivity = await Connectivity().checkConnectivity();
+    if (cached != null && connectivity.contains(ConnectivityResult.none))
+      return cached;
+    try {
+      final portal = await loadOnline().timeout(const Duration(seconds: 12));
+      await prefs.setString(key, jsonEncode(portal.toJson()));
+      await prefs.setString('brmPrincipal.${user.uid}', portal.userId);
+      return portal;
+    } on TimeoutException {
+      if (cached != null) return cached;
+      rethrow;
+    } on FirebaseException catch (error) {
+      if ([
+        'user-disabled',
+        'user-not-found',
+        'permission-denied',
+        'invalid-user-token',
+        'user-token-expired',
+      ].contains(error.code)) {
+        await prefs.remove(key);
+      }
+      if (cached != null &&
+          [
+            'unavailable',
+            'network-request-failed',
+            'deadline-exceeded',
+          ].contains(error.code))
+        return cached;
+      rethrow;
+    }
+  }
+
+  Future<PortalContext> loadOnline() async {
     final a = FirebaseAuth.instance.currentUser!;
     final token = await a.getIdTokenResult();
     final userId = '${token.claims?['legacyUserId'] ?? a.uid}';
     final db = FirebaseFirestore.instance;
     final u = (await db.collection('users').doc(userId).get()).data() ?? {};
+    if (u.isEmpty ||
+        '${u['status'] ?? u['Status'] ?? 'Active'}'.toLowerCase() != 'active') {
+      throw FirebaseAuthException(
+        code: 'user-disabled',
+        message:
+            'This account is not active. Contact a production administrator.',
+      );
+    }
+
     DocumentSnapshot<Map<String, dynamic>>? production;
     final preferredProductionId =
         '${u['activeProductionId'] ?? u['ActiveProductionID'] ?? ''}'.trim();
@@ -6169,6 +6247,8 @@ class AccountScreen extends StatelessWidget {
               await prefs.remove('brmLegacyToken');
               await prefs.remove('brmLegacyContext');
               await prefs.remove('brmTrustDevice');
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid != null) await prefs.remove('brmNativePortal.$uid');
               await FirebaseAuth.instance.signOut();
             },
           ),
@@ -6273,7 +6353,13 @@ class _MoreScreenState extends State<MoreScreen> {
     if (context.mounted)
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => WebWorkspace(name, path)),
+        MaterialPageRoute(
+          builder: (_) => path == 'tracks.html'
+              ? const MusicTracksScreen()
+              : path == 'scoreflow'
+              ? const DocumentLibraryScreen()
+              : WebWorkspace(name, path),
+        ),
       );
   }
 
@@ -6321,6 +6407,12 @@ class _MoreScreenState extends State<MoreScreen> {
             name: 'Tasks',
             path: 'tasks.html',
             icon: Icons.task_alt,
+          ),
+          (
+            category: 'Production',
+            name: 'ScoreFlow',
+            path: 'scoreflow',
+            icon: Icons.menu_book,
           ),
           (
             category: 'Production',
@@ -6530,7 +6622,7 @@ class _MoreScreenState extends State<MoreScreen> {
             child: ListTile(
               leading: const Icon(Icons.library_books),
               title: const Text(
-                'Script & Sheet Music',
+                'ScoreFlow ? Script & Sheet Music',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               subtitle: const Text('Offline reader · Annotation Studio'),
@@ -6642,6 +6734,16 @@ class _WebState extends State<WebWorkspace> {
           },
           onNavigationRequest: (request) {
             final uri = Uri.tryParse(request.url);
+            if (uri != null &&
+                uri.host == Uri.parse(site).host &&
+                uri.path == '/tracks.html') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MusicTracksScreen()),
+              );
+              return NavigationDecision.prevent;
+            }
+
             if (uri != null &&
                 uri.path.startsWith('/song-pdfs/') &&
                 uri.path.toLowerCase().endsWith('.pdf')) {

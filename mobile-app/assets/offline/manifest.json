@@ -1,0 +1,2905 @@
+{
+  "schemaVersion": 1,
+  "productionId": "PROD-b0d6edc6-c518-404c-a0a8-29b8a7369ba1",
+  "exportedAt": "2026-09-19T14:58:39.767Z",
+  "tracks": [
+    {
+      "id": "TRK-107ff217-a6fb-475f-8db8-f5adfba1b46f",
+      "title": "Overture",
+      "type": "Guide Vocal",
+      "order": 1,
+      "scoreDocumentId": "descendants-song-01",
+      "driveFileId": "1FHjurlI7Ubib0r63vUuskWrk82D44qTi",
+      "notes": "",
+      "assetKey": "TRK-107ff217-a6fb-475f-8db8-f5adfba1b46f"
+    },
+    {
+      "id": "TRK-0044b175-fbbd-47d9-ba48-90d59ee603e5",
+      "title": "Overture",
+      "type": "Practice",
+      "order": 1,
+      "scoreDocumentId": "descendants-song-01",
+      "driveFileId": "10-yxIdJT0mEihyDR_lAhxi260yJZyxc4",
+      "notes": "",
+      "assetKey": "TRK-0044b175-fbbd-47d9-ba48-90d59ee603e5"
+    },
+    {
+      "id": "TRK-f6ab4169-e804-4ef8-9b86-51d60326dc65",
+      "title": "Better Together (Prelude 1)",
+      "type": "Guide Vocal",
+      "order": 2,
+      "scoreDocumentId": "descendants-song-02",
+      "driveFileId": "1a7-YlLJkGflQq8OTFhiLVL_N_E2O7F-4",
+      "notes": "",
+      "assetKey": "TRK-f6ab4169-e804-4ef8-9b86-51d60326dc65"
+    },
+    {
+      "id": "TRK-3790bbb6-5376-4b24-a261-1252a0309671",
+      "title": "Better Together (Prelude 1)",
+      "type": "Practice",
+      "order": 2,
+      "scoreDocumentId": "descendants-song-02",
+      "driveFileId": "1r--ogLp-42AvxDzFYlGgj1zqAbF3Gh1M",
+      "notes": "",
+      "assetKey": "TRK-3790bbb6-5376-4b24-a261-1252a0309671"
+    },
+    {
+      "id": "TRK-4299e194-8fbe-4f3e-b714-d4b75a81fd43",
+      "title": "Rotten To The Core (Part 1)",
+      "type": "Guide Vocal",
+      "order": 3,
+      "scoreDocumentId": "descendants-song-03",
+      "driveFileId": "1--wh9ZGSPVcMJSY8V7ArJjN3HuFWWpZC",
+      "notes": "",
+      "assetKey": "TRK-4299e194-8fbe-4f3e-b714-d4b75a81fd43"
+    },
+    {
+      "id": "TRK-1a7f3392-dd1e-49a7-9f6f-8e536b69204a",
+      "title": "Rotten to the Core (Part 1)",
+      "type": "Practice",
+      "order": 3,
+      "scoreDocumentId": "descendants-song-03",
+      "driveFileId": "1P7vyvuEB0AruK56GKia-0HZ8KxKkDXkF",
+      "notes": "",
+      "assetKey": "TRK-1a7f3392-dd1e-49a7-9f6f-8e536b69204a"
+    },
+    {
+      "id": "TRK-00cdf4cd-0d73-476e-bc00-d8f979ae8d0c",
+      "title": "Rotten To The Core (Part 2)",
+      "type": "Guide Vocal",
+      "order": 4,
+      "scoreDocumentId": "descendants-song-04",
+      "driveFileId": "1ug-DAebVB3mOUiY-sls2vC-wHsFcRts0",
+      "notes": "",
+      "assetKey": "TRK-00cdf4cd-0d73-476e-bc00-d8f979ae8d0c"
+    },
+    {
+      "id": "TRK-3a2683b1-3ae3-4485-8d73-da5d84bd1349",
+      "title": "Rotten to the Core (Part 2)",
+      "type": "Practice",
+      "order": 4,
+      "scoreDocumentId": "descendants-song-04",
+      "driveFileId": "19qhqw92r_YNahwq9-m4u6_LzottKQ9-0",
+      "notes": "",
+      "assetKey": "TRK-3a2683b1-3ae3-4485-8d73-da5d84bd1349"
+    },
+    {
+      "id": "TRK-0394a78e-653c-409a-b49a-57c8544ecac7",
+      "title": "Maleficent's Entrance 1",
+      "type": "Guide Vocal",
+      "order": 5,
+      "scoreDocumentId": "descendants-song-05",
+      "driveFileId": "1mV2gAC2ZDDIOKB3MCzdE-fvx_uGDyMKa",
+      "notes": "",
+      "assetKey": "TRK-0394a78e-653c-409a-b49a-57c8544ecac7"
+    },
+    {
+      "id": "TRK-6873b310-52f0-45ab-a97e-aa9b4eea62cf",
+      "title": "Maleficent's Entrance 1",
+      "type": "Practice",
+      "order": 5,
+      "scoreDocumentId": "descendants-song-05",
+      "driveFileId": "1s_l_wHT6xleR-v0QWTTw7TYMps3mWQzk",
+      "notes": "",
+      "assetKey": "TRK-6873b310-52f0-45ab-a97e-aa9b4eea62cf"
+    },
+    {
+      "id": "TRK-379770b7-32a6-4a7c-afab-0fecb16a3230",
+      "title": "Evil Like Me",
+      "type": "Guide Vocal",
+      "order": 6,
+      "scoreDocumentId": "descendants-song-06",
+      "driveFileId": "1iDZG0jKsV_GvPI5LWjLJJ9rNtOduHfhP",
+      "notes": "",
+      "assetKey": "TRK-379770b7-32a6-4a7c-afab-0fecb16a3230"
+    },
+    {
+      "id": "TRK-00bfc454-6b28-406e-b99b-9c033fd1ac3b",
+      "title": "Evil Like Me",
+      "type": "Practice",
+      "order": 6,
+      "scoreDocumentId": "descendants-song-06",
+      "driveFileId": "16OJ_gi_I45wbHkUhdpmrbH0LgOlpYGIg",
+      "notes": "",
+      "assetKey": "TRK-00bfc454-6b28-406e-b99b-9c033fd1ac3b"
+    },
+    {
+      "id": "TRK-f681ba3c-38bd-4df2-89e6-5cd0741d4a03",
+      "title": "Be Our Guest (Part 1)",
+      "type": "Guide Vocal",
+      "order": 7,
+      "scoreDocumentId": "descendants-song-07",
+      "driveFileId": "1noF_9e9RrAIjcgRtLmP_srvl5Qmkd4VO",
+      "notes": "",
+      "assetKey": "TRK-f681ba3c-38bd-4df2-89e6-5cd0741d4a03"
+    },
+    {
+      "id": "TRK-f37664ce-31ef-43de-95e5-fd473efa25ab",
+      "title": "Be Our Guest (Part 1)",
+      "type": "Practice",
+      "order": 7,
+      "scoreDocumentId": "descendants-song-07",
+      "driveFileId": "1gacYrT6anBLMEJTWAmBmp1zQ1jvFWgeO",
+      "notes": "",
+      "assetKey": "TRK-f37664ce-31ef-43de-95e5-fd473efa25ab"
+    },
+    {
+      "id": "TRK-c588eef4-ee34-49a1-9dbb-7010f76553fa",
+      "title": "Be Our Guest (Part 2)",
+      "type": "Guide Vocal",
+      "order": 8,
+      "scoreDocumentId": "descendants-song-08",
+      "driveFileId": "1cqMfyG6Vj0nrx18-TS-r2JCHNd9k9NkD",
+      "notes": "",
+      "assetKey": "TRK-c588eef4-ee34-49a1-9dbb-7010f76553fa"
+    },
+    {
+      "id": "TRK-77c6fb02-1d2a-4c9e-9947-ab3db60f0371",
+      "title": "Be Our Guest (Part 2)",
+      "type": "Practice",
+      "order": 8,
+      "scoreDocumentId": "descendants-song-08",
+      "driveFileId": "1F1MepX6pLFOifV5h__eXp-TdTpiw9xxO",
+      "notes": "",
+      "assetKey": "TRK-77c6fb02-1d2a-4c9e-9947-ab3db60f0371"
+    },
+    {
+      "id": "TRK-303a514c-a008-4585-af22-3dec93030006",
+      "title": "Good is the New Bad (Preprise)",
+      "type": "Guide Vocal",
+      "order": 9,
+      "scoreDocumentId": "descendants-song-09",
+      "driveFileId": "1_QDjoqEo5lj4HTuB7_u0Py6hZdJ640fa",
+      "notes": "",
+      "assetKey": "TRK-303a514c-a008-4585-af22-3dec93030006"
+    },
+    {
+      "id": "TRK-df621a93-bc4f-414d-8a58-c6fdd6a085d4",
+      "title": "Good is the New Bad (Preprise)",
+      "type": "Practice",
+      "order": 9,
+      "scoreDocumentId": "descendants-song-09",
+      "driveFileId": "1dkTxWPD6P9jd2Smyuywk0xo_HHPbHb9v",
+      "notes": "",
+      "assetKey": "TRK-df621a93-bc4f-414d-8a58-c6fdd6a085d4"
+    },
+    {
+      "id": "TRK-955fe08e-7524-45e2-af44-6cfc91514831",
+      "title": "Good is the New Bad (Part 1)",
+      "type": "Guide Vocal",
+      "order": 10,
+      "scoreDocumentId": "descendants-song-10",
+      "driveFileId": "169UX_qzzkBMPwO_bCYR2o7bgXddc133V",
+      "notes": "",
+      "assetKey": "TRK-955fe08e-7524-45e2-af44-6cfc91514831"
+    },
+    {
+      "id": "TRK-35571ae1-2163-473b-84d2-1cdd2764e3d8",
+      "title": "Good is the New Bad (Part 1)",
+      "type": "Practice",
+      "order": 10,
+      "scoreDocumentId": "descendants-song-10",
+      "driveFileId": "1IWeeG2BKMS966FMiCoinG1Mnb9kglUUl",
+      "notes": "",
+      "assetKey": "TRK-35571ae1-2163-473b-84d2-1cdd2764e3d8"
+    },
+    {
+      "id": "TRK-900f373c-7040-4511-a7f2-10c509d0103e",
+      "title": "Good is the New Bad (Part 2)",
+      "type": "Guide Vocal",
+      "order": 11,
+      "scoreDocumentId": "descendants-song-11",
+      "driveFileId": "1v8WDntkcEIUgnq8DDI7QThsDM--JItc5",
+      "notes": "",
+      "assetKey": "TRK-900f373c-7040-4511-a7f2-10c509d0103e"
+    },
+    {
+      "id": "TRK-cb4634cb-2144-42d8-865b-b3876bef5acc",
+      "title": "Good is the New Bad (Part 2)",
+      "type": "Practice",
+      "order": 11,
+      "scoreDocumentId": "descendants-song-11",
+      "driveFileId": "1a1j2hi3TR0jHUi5_BVELpzNGPKSCmPVL",
+      "notes": "",
+      "assetKey": "TRK-cb4634cb-2144-42d8-865b-b3876bef5acc"
+    },
+    {
+      "id": "TRK-ce4f9a25-cab5-4713-a85c-cc048f04cfb2",
+      "title": "Good is the New Bad (Playoff)",
+      "type": "Guide Vocal",
+      "order": 12,
+      "scoreDocumentId": "descendants-song-12",
+      "driveFileId": "1Bo4DWW9m3D0pIukASIBeQf323Mumu3eZ",
+      "notes": "",
+      "assetKey": "TRK-ce4f9a25-cab5-4713-a85c-cc048f04cfb2"
+    },
+    {
+      "id": "TRK-b8c70b86-83fc-4315-b51d-59aa893d6141",
+      "title": "Good is the New Bad (Playoff)",
+      "type": "Practice",
+      "order": 12,
+      "scoreDocumentId": "descendants-song-12",
+      "driveFileId": "1PGa6h2Lroyr1RAWzY52kyY1UEOmAMrSl",
+      "notes": "",
+      "assetKey": "TRK-b8c70b86-83fc-4315-b51d-59aa893d6141"
+    },
+    {
+      "id": "TRK-e013afcb-a682-4ebe-a276-28bd0c814d2a",
+      "title": "Truancy",
+      "type": "Guide Vocal",
+      "order": 13,
+      "scoreDocumentId": "descendants-song-13",
+      "driveFileId": "1_iOFjiXdzpU6baJ7zsFDJiZqdqFJzDKc",
+      "notes": "",
+      "assetKey": "TRK-e013afcb-a682-4ebe-a276-28bd0c814d2a"
+    },
+    {
+      "id": "TRK-f9031907-bde7-49f4-ba6a-f67647936d2d",
+      "title": "Truancy",
+      "type": "Practice",
+      "order": 13,
+      "scoreDocumentId": "descendants-song-13",
+      "driveFileId": "1XtWQQKfr5fFe9pwWr4Xt_0FcQKG1w4as",
+      "notes": "",
+      "assetKey": "TRK-f9031907-bde7-49f4-ba6a-f67647936d2d"
+    },
+    {
+      "id": "TRK-c916a193-7974-4cad-948e-2734f07e58bd",
+      "title": "Museum Spells",
+      "type": "Guide Vocal",
+      "order": 14,
+      "scoreDocumentId": "descendants-song-14",
+      "driveFileId": "1hkH_RDUEvGx6t6qRHOtFdPrEk55A0W4a",
+      "notes": "",
+      "assetKey": "TRK-c916a193-7974-4cad-948e-2734f07e58bd"
+    },
+    {
+      "id": "TRK-d91cb689-c42f-45fe-8ee7-b3edda9a12bc",
+      "title": "Museum Spells",
+      "type": "Practice",
+      "order": 14,
+      "scoreDocumentId": "descendants-song-14",
+      "driveFileId": "1j85WVQssM93rqvRKXnisIylzFv3rnU_5",
+      "notes": "",
+      "assetKey": "TRK-d91cb689-c42f-45fe-8ee7-b3edda9a12bc"
+    },
+    {
+      "id": "TRK-367547ab-fbce-462a-b301-130106ab4a32",
+      "title": "Evil Like Me (Reprise 1)",
+      "type": "Guide Vocal",
+      "order": 15,
+      "scoreDocumentId": "descendants-song-15",
+      "driveFileId": "1bAMPMdpYGRDHSpGyUUCu99aSZqCtcdP7",
+      "notes": "",
+      "assetKey": "TRK-367547ab-fbce-462a-b301-130106ab4a32"
+    },
+    {
+      "id": "TRK-131b0ca8-dd35-4334-8f35-1df5fe62ef50",
+      "title": "Evil Like Me (Reprise 1)",
+      "type": "Practice",
+      "order": 15,
+      "scoreDocumentId": "descendants-song-15",
+      "driveFileId": "1GWcnXPQbsVi2DFGIr1u-NHE02FITuQ_N",
+      "notes": "",
+      "assetKey": "TRK-131b0ca8-dd35-4334-8f35-1df5fe62ef50"
+    },
+    {
+      "id": "TRK-d0b6b74c-ebac-4329-a40c-36a0f762885e",
+      "title": "Remedial Goodness",
+      "type": "Guide Vocal",
+      "order": 16,
+      "scoreDocumentId": "descendants-song-16",
+      "driveFileId": "152sjfPuH-E-Hbu73-RumLvAS9Ght9eHj",
+      "notes": "",
+      "assetKey": "TRK-d0b6b74c-ebac-4329-a40c-36a0f762885e"
+    },
+    {
+      "id": "TRK-290108b7-079c-4e33-8259-ac4fe8f92abb",
+      "title": "Remedial Goodness",
+      "type": "Practice",
+      "order": 16,
+      "scoreDocumentId": "descendants-song-16",
+      "driveFileId": "15mSsLp1DFeW8MarL2y_aFRfce9hpq1j0",
+      "notes": "",
+      "assetKey": "TRK-290108b7-079c-4e33-8259-ac4fe8f92abb"
+    },
+    {
+      "id": "TRK-faa157a2-5d14-4bce-8028-015973af8f67",
+      "title": "Rotten To The Core (Parents' Revenge)",
+      "type": "Guide Vocal",
+      "order": 17,
+      "scoreDocumentId": "descendants-song-17",
+      "driveFileId": "1aUOiSDn4lyCmkTaMpXlddLuucIpIYzDt",
+      "notes": "",
+      "assetKey": "TRK-faa157a2-5d14-4bce-8028-015973af8f67"
+    },
+    {
+      "id": "TRK-5131e75b-03fb-4c20-b711-0136b33e9b86",
+      "title": "Rotten to the Core (Parents' Revenge)",
+      "type": "Practice",
+      "order": 17,
+      "scoreDocumentId": "descendants-song-17",
+      "driveFileId": "17prw2iQeEcKAgYv5ZGwp6PZnw1D0GBTy",
+      "notes": "",
+      "assetKey": "TRK-5131e75b-03fb-4c20-b711-0136b33e9b86"
+    },
+    {
+      "id": "TRK-eb4bd560-2df5-4e5d-bd89-08cb9184cc41",
+      "title": "Tourney Field",
+      "type": "Guide Vocal",
+      "order": 18,
+      "scoreDocumentId": "descendants-song-18",
+      "driveFileId": "1nTCrTGCeVDVjZx1kt2Iz-qUcz6wi6VWr",
+      "notes": "",
+      "assetKey": "TRK-eb4bd560-2df5-4e5d-bd89-08cb9184cc41"
+    },
+    {
+      "id": "TRK-037c0fd9-ba3d-42f4-935c-17edbcf13147",
+      "title": "Tourney Field",
+      "type": "Practice",
+      "order": 18,
+      "scoreDocumentId": "descendants-song-18",
+      "driveFileId": "1XXmHh28cSmMOnB8Ig0CK2zQB9cbnFxL2",
+      "notes": "",
+      "assetKey": "TRK-037c0fd9-ba3d-42f4-935c-17edbcf13147"
+    },
+    {
+      "id": "TRK-48e1cd14-e235-4852-9d95-96bfa6395417",
+      "title": "Goal",
+      "type": "Guide Vocal",
+      "order": 19,
+      "scoreDocumentId": "descendants-song-19",
+      "driveFileId": "19WtmkOAdGpn3g_fs_fxae9Palaz8J1_x",
+      "notes": "",
+      "assetKey": "TRK-48e1cd14-e235-4852-9d95-96bfa6395417"
+    },
+    {
+      "id": "TRK-43119bca-4b50-4aaa-9f63-254466cd8b9e",
+      "title": "Goal",
+      "type": "Practice",
+      "order": 19,
+      "scoreDocumentId": "descendants-song-19",
+      "driveFileId": "1oktlxhySkKTwTyyJco_-u5UxaZ04SW6E",
+      "notes": "",
+      "assetKey": "TRK-43119bca-4b50-4aaa-9f63-254466cd8b9e"
+    },
+    {
+      "id": "TRK-1b1960fd-3dbd-4469-8b4d-5cbe1fa78ba8",
+      "title": "Good is the New Bad (Reprise 1)",
+      "type": "Guide Vocal",
+      "order": 20,
+      "scoreDocumentId": "descendants-song-20",
+      "driveFileId": "19D4YoF0s0GS3-GzVm4fjBoXjTMPffSO5",
+      "notes": "",
+      "assetKey": "TRK-1b1960fd-3dbd-4469-8b4d-5cbe1fa78ba8"
+    },
+    {
+      "id": "TRK-f9ed5efb-fa08-4cea-ae61-34ff82437b86",
+      "title": "Good is the New Bad (Reprise 1)",
+      "type": "Practice",
+      "order": 20,
+      "scoreDocumentId": "descendants-song-20",
+      "driveFileId": "1LvkAYlkk2OnmKEHfSnowsmQikCzudvO5",
+      "notes": "",
+      "assetKey": "TRK-f9ed5efb-fa08-4cea-ae61-34ff82437b86"
+    },
+    {
+      "id": "TRK-e887dcca-6f8f-4d90-ba8f-4dd6f2280eac",
+      "title": "Ways to Be Wicked (Preprise)",
+      "type": "Guide Vocal",
+      "order": 21,
+      "scoreDocumentId": "descendants-song-21",
+      "driveFileId": "1AohNq055EFt-l-5Nxf65WYukixUMkRWa",
+      "notes": "",
+      "assetKey": "TRK-e887dcca-6f8f-4d90-ba8f-4dd6f2280eac"
+    },
+    {
+      "id": "TRK-b37d5c3e-6825-4906-9ca0-08c9f8707307",
+      "title": "Ways to Be Wicked (Preprise)",
+      "type": "Practice",
+      "order": 21,
+      "scoreDocumentId": "descendants-song-21",
+      "driveFileId": "1xi3eTNwHzPXZASRtlOdLcoMXk-6v6V3o",
+      "notes": "",
+      "assetKey": "TRK-b37d5c3e-6825-4906-9ca0-08c9f8707307"
+    },
+    {
+      "id": "TRK-65071eba-6b0b-483f-999c-9c91badcadd2",
+      "title": "A Dream Is A Wish",
+      "type": "Guide Vocal",
+      "order": 22,
+      "scoreDocumentId": "descendants-song-22",
+      "driveFileId": "1u3GrdXs6Aw7Uhtz5tSCw7FOD6jFvogM6",
+      "notes": "",
+      "assetKey": "TRK-65071eba-6b0b-483f-999c-9c91badcadd2"
+    },
+    {
+      "id": "TRK-ab162a91-b783-4734-97b9-98eb9319525a",
+      "title": "A Dream Is A Wish",
+      "type": "Practice",
+      "order": 22,
+      "scoreDocumentId": "descendants-song-22",
+      "driveFileId": "1BL8zBPRN-FsoEhnzcn7jlcbMz_b-MYkx",
+      "notes": "",
+      "assetKey": "TRK-ab162a91-b783-4734-97b9-98eb9319525a"
+    },
+    {
+      "id": "TRK-f5a1c414-bdb5-409e-a3b2-73b85314e119",
+      "title": "Potioned Cookies",
+      "type": "Guide Vocal",
+      "order": 23,
+      "scoreDocumentId": "descendants-song-23",
+      "driveFileId": "13c0y0evhDs6MriOCCIEcIng7kkNv57Fd",
+      "notes": "",
+      "assetKey": "TRK-f5a1c414-bdb5-409e-a3b2-73b85314e119"
+    },
+    {
+      "id": "TRK-c53c45a5-d71e-4457-bb6f-adb4185032c0",
+      "title": "Potioned Cookies",
+      "type": "Practice",
+      "order": 23,
+      "scoreDocumentId": "descendants-song-23",
+      "driveFileId": "161A5vL1JWGvbVut18oz7JMW0Tma_2iz8",
+      "notes": "",
+      "assetKey": "TRK-c53c45a5-d71e-4457-bb6f-adb4185032c0"
+    },
+    {
+      "id": "TRK-4f0a2e31-df71-42bd-8aec-2eff8e34b730",
+      "title": "Did I Mention (Prelude)",
+      "type": "Guide Vocal",
+      "order": 24,
+      "scoreDocumentId": "descendants-song-24",
+      "driveFileId": "1nqUBL5BhZ4Qh89GmoH4-TAi3MtkW0Pen",
+      "notes": "",
+      "assetKey": "TRK-4f0a2e31-df71-42bd-8aec-2eff8e34b730"
+    },
+    {
+      "id": "TRK-206867c4-a83f-4dcd-936b-cc3ec70445c7",
+      "title": "Did I Mention (Prelude)",
+      "type": "Practice",
+      "order": 24,
+      "scoreDocumentId": "descendants-song-24",
+      "driveFileId": "1HgTaKyH-cN-Tr5atogQe42MqEmBmvVFy",
+      "notes": "",
+      "assetKey": "TRK-206867c4-a83f-4dcd-936b-cc3ec70445c7"
+    },
+    {
+      "id": "TRK-1518c7f9-34a6-4a02-93b9-7d2f05b5e688",
+      "title": "Did I Mention",
+      "type": "Guide Vocal",
+      "order": 25,
+      "scoreDocumentId": "descendants-song-25",
+      "driveFileId": "1dtUVJCYgRT16Kse9yz6qeI4oKWEVdV9M",
+      "notes": "",
+      "assetKey": "TRK-1518c7f9-34a6-4a02-93b9-7d2f05b5e688"
+    },
+    {
+      "id": "TRK-e57cf8ec-94c1-4a31-baaf-5683acce07a9",
+      "title": "Did I Mention",
+      "type": "Practice",
+      "order": 25,
+      "scoreDocumentId": "descendants-song-25",
+      "driveFileId": "1kAW1Edsjpu5jlMijUwWSfyv5HPP2qGKn",
+      "notes": "",
+      "assetKey": "TRK-e57cf8ec-94c1-4a31-baaf-5683acce07a9"
+    },
+    {
+      "id": "TRK-8eb0c1cd-5938-49af-980e-c79d96830688",
+      "title": "Did I Mention (Playoff)",
+      "type": "Guide Vocal",
+      "order": 26,
+      "scoreDocumentId": "descendants-song-26",
+      "driveFileId": "17U1D5RkSbGrz2PfbLmYCQJq5EVdKRSq5",
+      "notes": "",
+      "assetKey": "TRK-8eb0c1cd-5938-49af-980e-c79d96830688"
+    },
+    {
+      "id": "TRK-b08d99bb-22bf-4f95-9e2a-c8f4d5b990cf",
+      "title": "Did I Mention (Playoff)",
+      "type": "Practice",
+      "order": 26,
+      "scoreDocumentId": "descendants-song-26",
+      "driveFileId": "1XgsaUEPK2fJL50INzXdd_ELdPn77-9nz",
+      "notes": "",
+      "assetKey": "TRK-b08d99bb-22bf-4f95-9e2a-c8f4d5b990cf"
+    },
+    {
+      "id": "TRK-7daeba47-0f60-45c4-8c16-8c5b3e183f4b",
+      "title": "Better Together (Prelude 2)",
+      "type": "Guide Vocal",
+      "order": 27,
+      "scoreDocumentId": "descendants-song-27",
+      "driveFileId": "121uWeMHLWlOnzbfk0g7iy1ITXXEuBbrk",
+      "notes": "",
+      "assetKey": "TRK-7daeba47-0f60-45c4-8c16-8c5b3e183f4b"
+    },
+    {
+      "id": "TRK-0c51dd72-478b-4dc8-9eb6-3078868389ab",
+      "title": "Better Together (Prelude 2)",
+      "type": "Practice",
+      "order": 27,
+      "scoreDocumentId": "descendants-song-27",
+      "driveFileId": "16fYtVe3FYn6YYqI_VkehoHdHAVlv--zj",
+      "notes": "",
+      "assetKey": "TRK-0c51dd72-478b-4dc8-9eb6-3078868389ab"
+    },
+    {
+      "id": "TRK-eb02060a-2532-42bb-a125-402fd58e67a3",
+      "title": "The Fight",
+      "type": "Guide Vocal",
+      "order": 28,
+      "scoreDocumentId": "descendants-song-28",
+      "driveFileId": "1oaL-3IZqUNzzpVYVO2qfuOU2FBphl2Z7",
+      "notes": "",
+      "assetKey": "TRK-eb02060a-2532-42bb-a125-402fd58e67a3"
+    },
+    {
+      "id": "TRK-9c92bc5a-0723-4bfd-8c22-168979d63af5",
+      "title": "The Fight",
+      "type": "Practice",
+      "order": 28,
+      "scoreDocumentId": "descendants-song-28",
+      "driveFileId": "1eicSmpogiNS-Rk3XnbJxbRwih-OCk2ex",
+      "notes": "",
+      "assetKey": "TRK-9c92bc5a-0723-4bfd-8c22-168979d63af5"
+    },
+    {
+      "id": "TRK-c298b71e-924d-4d1e-870f-5b1715ce8e80",
+      "title": "Space Between",
+      "type": "Guide Vocal",
+      "order": 29,
+      "scoreDocumentId": "descendants-song-29",
+      "driveFileId": "1yC1OUZ6oZKokSPQ9bxLGKKskV8N2Kb7h",
+      "notes": "",
+      "assetKey": "TRK-c298b71e-924d-4d1e-870f-5b1715ce8e80"
+    },
+    {
+      "id": "TRK-eaa9a3d8-4182-4e3b-9f8b-000ed9ebe496",
+      "title": "Space Between",
+      "type": "Practice",
+      "order": 29,
+      "scoreDocumentId": "descendants-song-29",
+      "driveFileId": "1sWPUKbm7S8zGAyg2PKJU-OEEMfif2-6I",
+      "notes": "",
+      "assetKey": "TRK-eaa9a3d8-4182-4e3b-9f8b-000ed9ebe496"
+    },
+    {
+      "id": "TRK-8fba99f2-0864-4406-baeb-9d4ca68959bb",
+      "title": "Chillin' Like a Villain (Part 1)",
+      "type": "Guide Vocal",
+      "order": 30,
+      "scoreDocumentId": "descendants-song-30",
+      "driveFileId": "152mvWbc2cZ4lZRJauA9FV1fyMuN8vLhx",
+      "notes": "",
+      "assetKey": "TRK-8fba99f2-0864-4406-baeb-9d4ca68959bb"
+    },
+    {
+      "id": "TRK-30e20ee3-ebb4-4e38-9607-e5c0a5392016",
+      "title": "Chillin' Like a Villain (Part 1)",
+      "type": "Practice",
+      "order": 30,
+      "scoreDocumentId": "descendants-song-30",
+      "driveFileId": "1fBm_6rKKNKYOKE3Y5gJXQhUFuh3qYvtU",
+      "notes": "",
+      "assetKey": "TRK-30e20ee3-ebb4-4e38-9607-e5c0a5392016"
+    },
+    {
+      "id": "TRK-70ad8df0-6f5d-4514-8017-30f4f467742c",
+      "title": "Chillin' Like a Villain (Part 2)",
+      "type": "Guide Vocal",
+      "order": 31,
+      "scoreDocumentId": "descendants-song-31",
+      "driveFileId": "1qlX7w9LdryqPCHzao4YnTcDay6JfqOPu",
+      "notes": "",
+      "assetKey": "TRK-70ad8df0-6f5d-4514-8017-30f4f467742c"
+    },
+    {
+      "id": "TRK-9e2e0ede-b4fb-4c84-b457-5874bb4016cc",
+      "title": "Chillin' Like a Villain (Part 2)",
+      "type": "Practice",
+      "order": 31,
+      "scoreDocumentId": "descendants-song-31",
+      "driveFileId": "1s4aTBOF3UTNaHgxbBS6vPQm58W3rlFHQ",
+      "notes": "",
+      "assetKey": "TRK-9e2e0ede-b4fb-4c84-b457-5874bb4016cc"
+    },
+    {
+      "id": "TRK-e03d7a39-6980-4523-ba0b-ac6f8216102b",
+      "title": "Good is the New Bad (Reprise 2)",
+      "type": "Guide Vocal",
+      "order": 32,
+      "scoreDocumentId": "descendants-song-32",
+      "driveFileId": "1JNT_zWsy2H8DPNPM45wwFESx1pMsD-mT",
+      "notes": "",
+      "assetKey": "TRK-e03d7a39-6980-4523-ba0b-ac6f8216102b"
+    },
+    {
+      "id": "TRK-67977a38-744f-4d6f-88f3-8a80143a01bc",
+      "title": "Good is the New Bad (Reprise 2)",
+      "type": "Practice",
+      "order": 32,
+      "scoreDocumentId": "descendants-song-32",
+      "driveFileId": "1hTp84EwG97pLt1n5ZkKkJg1ci_jaYn8J",
+      "notes": "",
+      "assetKey": "TRK-67977a38-744f-4d6f-88f3-8a80143a01bc"
+    },
+    {
+      "id": "TRK-5fa5e500-9d40-4eeb-9b97-e14d98dacae4",
+      "title": "Sad Graffiti",
+      "type": "Guide Vocal",
+      "order": 33,
+      "scoreDocumentId": "descendants-song-33",
+      "driveFileId": "12nJLQxzM-dpGUB5FQyNbBM_8qGXDtbq5",
+      "notes": "",
+      "assetKey": "TRK-5fa5e500-9d40-4eeb-9b97-e14d98dacae4"
+    },
+    {
+      "id": "TRK-40fa7624-032b-428d-8c7b-182e71957962",
+      "title": "Sad Graffiti",
+      "type": "Practice",
+      "order": 33,
+      "scoreDocumentId": "descendants-song-33",
+      "driveFileId": "162cdGeUC5mb7VFw_VXkB4p8DAS0dzYWr",
+      "notes": "",
+      "assetKey": "TRK-40fa7624-032b-428d-8c7b-182e71957962"
+    },
+    {
+      "id": "TRK-fd65810b-4f25-46c6-a158-2cd7478f724c",
+      "title": "Maleficent's Entrance 2",
+      "type": "Guide Vocal",
+      "order": 34,
+      "scoreDocumentId": "descendants-song-34",
+      "driveFileId": "1N5jZULPZSiSLr6QtykRGySQbw55eEdiJ",
+      "notes": "",
+      "assetKey": "TRK-fd65810b-4f25-46c6-a158-2cd7478f724c"
+    },
+    {
+      "id": "TRK-62bdec96-2184-4ef1-af3f-03f0e219592d",
+      "title": "Maleficent's Entrance 2",
+      "type": "Practice",
+      "order": 34,
+      "scoreDocumentId": "descendants-song-34",
+      "driveFileId": "1UNdC32J41WZWoYMFAytTNWEXKX9WNiLc",
+      "notes": "",
+      "assetKey": "TRK-62bdec96-2184-4ef1-af3f-03f0e219592d"
+    },
+    {
+      "id": "TRK-98addc3c-93fc-4aa4-be39-48ca1586c7ad",
+      "title": "If Only",
+      "type": "Guide Vocal",
+      "order": 35,
+      "scoreDocumentId": "descendants-song-35",
+      "driveFileId": "1zdcC_l5NZ2EjvvbeyFA72rDJFfFh1UUN",
+      "notes": "",
+      "assetKey": "TRK-98addc3c-93fc-4aa4-be39-48ca1586c7ad"
+    },
+    {
+      "id": "TRK-80011982-3555-4e27-87d4-97e0a4e1f01a",
+      "title": "If Only",
+      "type": "Practice",
+      "order": 35,
+      "scoreDocumentId": "descendants-song-35",
+      "driveFileId": "1xtHPYoZ9LkUeKdkdfEMTcB-yJP--anyJ",
+      "notes": "",
+      "assetKey": "TRK-80011982-3555-4e27-87d4-97e0a4e1f01a"
+    },
+    {
+      "id": "TRK-6ea2a78b-8928-421f-a366-c90b767cecee",
+      "title": "Ways to Be Wicked",
+      "type": "Guide Vocal",
+      "order": 36,
+      "scoreDocumentId": "descendants-song-36",
+      "driveFileId": "1X49gdYe4FHPgl8RONx9gYXcsNNgWY990",
+      "notes": "",
+      "assetKey": "TRK-6ea2a78b-8928-421f-a366-c90b767cecee"
+    },
+    {
+      "id": "TRK-97c20b9b-bcc0-4242-8342-ccec675d2990",
+      "title": "Ways to Be Wicked",
+      "type": "Practice",
+      "order": 36,
+      "scoreDocumentId": "descendants-song-36",
+      "driveFileId": "1yCCHeYfnWxmXn0mSgqTGfZhtD3D8hqMM",
+      "notes": "",
+      "assetKey": "TRK-97c20b9b-bcc0-4242-8342-ccec675d2990"
+    },
+    {
+      "id": "TRK-c23978d9-e800-476f-bb53-d424bba977d1",
+      "title": "Coronation Day",
+      "type": "Guide Vocal",
+      "order": 37,
+      "scoreDocumentId": "descendants-song-37",
+      "driveFileId": "1eRngBe1s52fuSm_vAKn3CS64mMzeV9_Z",
+      "notes": "",
+      "assetKey": "TRK-c23978d9-e800-476f-bb53-d424bba977d1"
+    },
+    {
+      "id": "TRK-e0e6e67d-94ba-454e-bbb5-b8f3abc936a6",
+      "title": "Coronation Day",
+      "type": "Practice",
+      "order": 37,
+      "scoreDocumentId": "descendants-song-37",
+      "driveFileId": "12589WcNR2mk2_3pTTgPEfStj2mlNGF1F",
+      "notes": "",
+      "assetKey": "TRK-e0e6e67d-94ba-454e-bbb5-b8f3abc936a6"
+    },
+    {
+      "id": "TRK-039e186a-e600-4417-8c0f-b64c04b151ae",
+      "title": "Go The Distance (Chorale)",
+      "type": "Guide Vocal",
+      "order": 38,
+      "scoreDocumentId": "descendants-song-38",
+      "driveFileId": "1Y8f-SfLQk90MDR1tu4k_LwB0NtKZJgmq",
+      "notes": "",
+      "assetKey": "TRK-039e186a-e600-4417-8c0f-b64c04b151ae"
+    },
+    {
+      "id": "TRK-8ab44841-c76d-4224-9cf1-a1ccf5b7a713",
+      "title": "Go The Distance (Chorale)",
+      "type": "Practice",
+      "order": 38,
+      "scoreDocumentId": "descendants-song-38",
+      "driveFileId": "1F0yUgnSEVhO2IAyyAUwo_NKn9u9r3vSz",
+      "notes": "",
+      "assetKey": "TRK-8ab44841-c76d-4224-9cf1-a1ccf5b7a713"
+    },
+    {
+      "id": "TRK-6b378de2-ff8b-4030-a56c-c5ed47357669",
+      "title": "Maleficent's Entrance 3",
+      "type": "Guide Vocal",
+      "order": 39,
+      "scoreDocumentId": "descendants-song-39",
+      "driveFileId": "1ao6QLU6U8McoZ_c75DPanBfLu2eXJr_G",
+      "notes": "",
+      "assetKey": "TRK-6b378de2-ff8b-4030-a56c-c5ed47357669"
+    },
+    {
+      "id": "TRK-e2e9dc66-ecca-445d-b39c-8ea76964c373",
+      "title": "Maleficent's Entrance 3",
+      "type": "Practice",
+      "order": 39,
+      "scoreDocumentId": "descendants-song-39",
+      "driveFileId": "1Isi9IXwBJXHlen9oL-1lEmSBtmMSXD5n",
+      "notes": "",
+      "assetKey": "TRK-e2e9dc66-ecca-445d-b39c-8ea76964c373"
+    },
+    {
+      "id": "TRK-68ffb6a7-554c-414f-9d30-7cf5dceee95d",
+      "title": "Evil Like Me (Reprise 2)",
+      "type": "Guide Vocal",
+      "order": 40,
+      "scoreDocumentId": "descendants-song-40",
+      "driveFileId": "1ybkzC-_nzBmGzKFmcsspu0p60tco_Zje",
+      "notes": "",
+      "assetKey": "TRK-68ffb6a7-554c-414f-9d30-7cf5dceee95d"
+    },
+    {
+      "id": "TRK-be95f439-d53a-4405-89b1-01bccb90d165",
+      "title": "Evil Like Me (Reprise 2)",
+      "type": "Practice",
+      "order": 40,
+      "scoreDocumentId": "descendants-song-40",
+      "driveFileId": "18roH-D5WcGCUDTm9nEsAt--vQM80niUF",
+      "notes": "",
+      "assetKey": "TRK-be95f439-d53a-4405-89b1-01bccb90d165"
+    },
+    {
+      "id": "TRK-6ad528cf-00df-4c2f-8497-df7b7f6b8c1a",
+      "title": "Get The Wand!",
+      "type": "Guide Vocal",
+      "order": 41,
+      "scoreDocumentId": "descendants-song-41",
+      "driveFileId": "14HvE84VpBNSQ5K2ZuL7IJxMNMBJROL8F",
+      "notes": "",
+      "assetKey": "TRK-6ad528cf-00df-4c2f-8497-df7b7f6b8c1a"
+    },
+    {
+      "id": "TRK-efdf5691-6f5f-4c0e-a434-c49b4d9879bf",
+      "title": "Get The Wand!",
+      "type": "Practice",
+      "order": 41,
+      "scoreDocumentId": "descendants-song-41",
+      "driveFileId": "1NGRkwv5PjZHPYepAtH4AfJmFUF2SS8p6",
+      "notes": "",
+      "assetKey": "TRK-efdf5691-6f5f-4c0e-a434-c49b4d9879bf"
+    },
+    {
+      "id": "TRK-20d4ef5d-a9ec-4d6a-a849-55383d9aae6d",
+      "title": "Better Together",
+      "type": "Guide Vocal",
+      "order": 42,
+      "scoreDocumentId": "descendants-song-42",
+      "driveFileId": "1LKR70L2qfv1p9pWQltmVpA67PLrjCHM9",
+      "notes": "",
+      "assetKey": "TRK-20d4ef5d-a9ec-4d6a-a849-55383d9aae6d"
+    },
+    {
+      "id": "TRK-9b03f315-00db-439e-a094-55c5f619c664",
+      "title": "Better Together",
+      "type": "Practice",
+      "order": 42,
+      "scoreDocumentId": "descendants-song-42",
+      "driveFileId": "1ya8fytB8Jp2CTktZVfvJxywM8ckXcC5Q",
+      "notes": "",
+      "assetKey": "TRK-9b03f315-00db-439e-a094-55c5f619c664"
+    },
+    {
+      "id": "TRK-d1c81ae5-b775-47da-9b10-17564bae4766",
+      "title": "Break This Down",
+      "type": "Guide Vocal",
+      "order": 43,
+      "scoreDocumentId": "descendants-song-43",
+      "driveFileId": "1rfzDgONslxOOH8maH1J5KARJKUoF0miM",
+      "notes": "",
+      "assetKey": "TRK-d1c81ae5-b775-47da-9b10-17564bae4766"
+    },
+    {
+      "id": "TRK-1d675c47-d5a3-4369-92d9-5a621db2edb4",
+      "title": "Break This Down",
+      "type": "Practice",
+      "order": 43,
+      "scoreDocumentId": "descendants-song-43",
+      "driveFileId": "1Jwi29cNkBBlgL_X-CrYJwH0asspBKXko",
+      "notes": "",
+      "assetKey": "TRK-1d675c47-d5a3-4369-92d9-5a621db2edb4"
+    },
+    {
+      "id": "TRK-cff9d9d5-cdfc-4f73-a0b4-a10764705783",
+      "title": "Exit Music",
+      "type": "Guide Vocal",
+      "order": 44,
+      "scoreDocumentId": "descendants-song-44",
+      "driveFileId": "1ynwrFc5hk_yzfTa-4nOKRpw5BH50WmS1",
+      "notes": "",
+      "assetKey": "TRK-cff9d9d5-cdfc-4f73-a0b4-a10764705783"
+    },
+    {
+      "id": "TRK-8fe89fa5-ec67-4437-a8c3-04ae359e15f8",
+      "title": "Exit Music",
+      "type": "Practice",
+      "order": 44,
+      "scoreDocumentId": "descendants-song-44",
+      "driveFileId": "13O8rKE5wogjht76IKzG8kR8eiqsc8lgp",
+      "notes": "",
+      "assetKey": "TRK-8fe89fa5-ec67-4437-a8c3-04ae359e15f8"
+    },
+    {
+      "id": "TRK-1bd8f2b9-e210-4a35-bda5-ab17f27c9e81",
+      "title": "Entr'acte",
+      "type": "Guide Vocal",
+      "order": 45,
+      "scoreDocumentId": "descendants-song-45",
+      "driveFileId": "1gYHTLAvly2EGGzETnWZOeJxV8sVprGbU",
+      "notes": "",
+      "assetKey": "TRK-1bd8f2b9-e210-4a35-bda5-ab17f27c9e81"
+    },
+    {
+      "id": "TRK-af0f8678-acac-4573-bc91-cc932bc2ca9a",
+      "title": "Entr'acte",
+      "type": "Practice",
+      "order": 45,
+      "scoreDocumentId": "descendants-song-45",
+      "driveFileId": "1Zhb786ZGYZj5RzQV0XjI6C8Rz8cTPEJz",
+      "notes": "",
+      "assetKey": "TRK-af0f8678-acac-4573-bc91-cc932bc2ca9a"
+    },
+    {
+      "id": "TRK-a259c60c-540e-489e-b47b-450c63b4346b",
+      "title": "Go The Distance (2-Part Chorale)",
+      "type": "Guide Vocal",
+      "order": 46,
+      "scoreDocumentId": "descendants-song-46",
+      "driveFileId": "153xoVr7pV6rEeqdajdICTUCEPenJ0oeY",
+      "notes": "",
+      "assetKey": "TRK-a259c60c-540e-489e-b47b-450c63b4346b"
+    },
+    {
+      "id": "TRK-7e8807d9-987d-43c2-8a04-a049da1aa082",
+      "title": "Go The Distance (2-Part Chorale)",
+      "type": "Practice",
+      "order": 46,
+      "scoreDocumentId": "descendants-song-46",
+      "driveFileId": "1rVVsm6b5rBa0WlCzh-8viF10iIJnql7v",
+      "notes": "",
+      "assetKey": "TRK-7e8807d9-987d-43c2-8a04-a049da1aa082"
+    }
+  ],
+  "documents": [
+    {
+      "id": "descendants-libretto",
+      "assetKey": "descendants-libretto"
+    },
+    {
+      "id": "descendants-music",
+      "assetKey": "descendants-music"
+    },
+    {
+      "id": "descendants-script",
+      "assetKey": "descendants-script"
+    },
+    {
+      "id": "descendants-song-01",
+      "assetKey": "descendants-song-01"
+    },
+    {
+      "id": "descendants-song-02",
+      "assetKey": "descendants-song-02"
+    },
+    {
+      "id": "descendants-song-03",
+      "assetKey": "descendants-song-03"
+    },
+    {
+      "id": "descendants-song-04",
+      "assetKey": "descendants-song-04"
+    },
+    {
+      "id": "descendants-song-05",
+      "assetKey": "descendants-song-05"
+    },
+    {
+      "id": "descendants-song-06",
+      "assetKey": "descendants-song-06"
+    },
+    {
+      "id": "descendants-song-07",
+      "assetKey": "descendants-song-07"
+    },
+    {
+      "id": "descendants-song-08",
+      "assetKey": "descendants-song-08"
+    },
+    {
+      "id": "descendants-song-09",
+      "assetKey": "descendants-song-09"
+    },
+    {
+      "id": "descendants-song-10",
+      "assetKey": "descendants-song-10"
+    },
+    {
+      "id": "descendants-song-11",
+      "assetKey": "descendants-song-11"
+    },
+    {
+      "id": "descendants-song-12",
+      "assetKey": "descendants-song-12"
+    },
+    {
+      "id": "descendants-song-13",
+      "assetKey": "descendants-song-13"
+    },
+    {
+      "id": "descendants-song-14",
+      "assetKey": "descendants-song-14"
+    },
+    {
+      "id": "descendants-song-15",
+      "assetKey": "descendants-song-15"
+    },
+    {
+      "id": "descendants-song-16",
+      "assetKey": "descendants-song-16"
+    },
+    {
+      "id": "descendants-song-17",
+      "assetKey": "descendants-song-17"
+    },
+    {
+      "id": "descendants-song-18",
+      "assetKey": "descendants-song-18"
+    },
+    {
+      "id": "descendants-song-19",
+      "assetKey": "descendants-song-19"
+    },
+    {
+      "id": "descendants-song-20",
+      "assetKey": "descendants-song-20"
+    },
+    {
+      "id": "descendants-song-21",
+      "assetKey": "descendants-song-21"
+    },
+    {
+      "id": "descendants-song-22",
+      "assetKey": "descendants-song-22"
+    },
+    {
+      "id": "descendants-song-23",
+      "assetKey": "descendants-song-23"
+    },
+    {
+      "id": "descendants-song-24",
+      "assetKey": "descendants-song-24"
+    },
+    {
+      "id": "descendants-song-25",
+      "assetKey": "descendants-song-25"
+    },
+    {
+      "id": "descendants-song-26",
+      "assetKey": "descendants-song-26"
+    },
+    {
+      "id": "descendants-song-27",
+      "assetKey": "descendants-song-27"
+    },
+    {
+      "id": "descendants-song-28",
+      "assetKey": "descendants-song-28"
+    },
+    {
+      "id": "descendants-song-29",
+      "assetKey": "descendants-song-29"
+    },
+    {
+      "id": "descendants-song-30",
+      "assetKey": "descendants-song-30"
+    },
+    {
+      "id": "descendants-song-31",
+      "assetKey": "descendants-song-31"
+    },
+    {
+      "id": "descendants-song-32",
+      "assetKey": "descendants-song-32"
+    },
+    {
+      "id": "descendants-song-33",
+      "assetKey": "descendants-song-33"
+    },
+    {
+      "id": "descendants-song-34",
+      "assetKey": "descendants-song-34"
+    },
+    {
+      "id": "descendants-song-35",
+      "assetKey": "descendants-song-35"
+    },
+    {
+      "id": "descendants-song-36",
+      "assetKey": "descendants-song-36"
+    },
+    {
+      "id": "descendants-song-37",
+      "assetKey": "descendants-song-37"
+    },
+    {
+      "id": "descendants-song-38",
+      "assetKey": "descendants-song-38"
+    },
+    {
+      "id": "descendants-song-39",
+      "assetKey": "descendants-song-39"
+    },
+    {
+      "id": "descendants-song-40",
+      "assetKey": "descendants-song-40"
+    },
+    {
+      "id": "descendants-song-41",
+      "assetKey": "descendants-song-41"
+    },
+    {
+      "id": "descendants-song-42",
+      "assetKey": "descendants-song-42"
+    },
+    {
+      "id": "descendants-song-43",
+      "assetKey": "descendants-song-43"
+    },
+    {
+      "id": "descendants-song-44",
+      "assetKey": "descendants-song-44"
+    },
+    {
+      "id": "descendants-song-45",
+      "assetKey": "descendants-song-45"
+    },
+    {
+      "id": "descendants-song-46",
+      "assetKey": "descendants-song-46"
+    }
+  ],
+  "sync": {},
+  "assets": {
+    "descendants-libretto": {
+      "bytes": 7777394,
+      "sha256": "c24233ffb06d744247afabcd6367e43f735d6a9c42dff5d4e4af07ccf9239b09",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-libretto.0.bin",
+          "bytes": 7777394,
+          "sha256": "c24233ffb06d744247afabcd6367e43f735d6a9c42dff5d4e4af07ccf9239b09"
+        }
+      ]
+    },
+    "descendants-music": {
+      "bytes": 176732951,
+      "sha256": "9fdb0e86cc392c34e6f92069a7277661c4fb1d8f74dbdd4c35f1970ddbf038cc",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-music.0.bin",
+          "bytes": 16777216,
+          "sha256": "8f17a285be24e49a828f08a42d5649f2f8e86796d1b5d9741cca1edfe47afc5d"
+        },
+        {
+          "path": "assets/offline/descendants-music.1.bin",
+          "bytes": 16777216,
+          "sha256": "36a75d7c85b92b328124d8af7864a4d9db9da1de27734c662012da1f37805b84"
+        },
+        {
+          "path": "assets/offline/descendants-music.2.bin",
+          "bytes": 16777216,
+          "sha256": "d9212b51949745bd5b63bb9a8c1cda23e74b811a5cefb2348d633abdd5d01f07"
+        },
+        {
+          "path": "assets/offline/descendants-music.3.bin",
+          "bytes": 16777216,
+          "sha256": "32510bb445f473c315a834fd40b9e5f967e5e76374078999c83906ef91cea4e6"
+        },
+        {
+          "path": "assets/offline/descendants-music.4.bin",
+          "bytes": 16777216,
+          "sha256": "61a2e3b6dd0cb1d90645234caf6b03f583701f189dcf849369a4c405b9f5f95f"
+        },
+        {
+          "path": "assets/offline/descendants-music.5.bin",
+          "bytes": 16777216,
+          "sha256": "a29b0dec7e4f7f4b905efa2facd186455790069a1cb4b1fbc879838be836c6c5"
+        },
+        {
+          "path": "assets/offline/descendants-music.6.bin",
+          "bytes": 16777216,
+          "sha256": "390dfb06164f8cc6ed15ee2cf2d4dde51d8f201c050d5539b27dad0a0844142b"
+        },
+        {
+          "path": "assets/offline/descendants-music.7.bin",
+          "bytes": 16777216,
+          "sha256": "e49f27002d97929be70a363885001ec88d692b16d703a5a3091db29a21832feb"
+        },
+        {
+          "path": "assets/offline/descendants-music.8.bin",
+          "bytes": 16777216,
+          "sha256": "393c580f091f7b7b4928d38c58a8d5065736ce28e42f243ddb3d1e75ab61a89e"
+        },
+        {
+          "path": "assets/offline/descendants-music.9.bin",
+          "bytes": 16777216,
+          "sha256": "505d6b17beb4bd848a3a724381f38c18ce68e11169564d866deadef40d342a85"
+        },
+        {
+          "path": "assets/offline/descendants-music.10.bin",
+          "bytes": 8960791,
+          "sha256": "da7679ce9f6c2d9a4a069f3c89ac48b21e0f890039e4a8c2c105a9280f88e486"
+        }
+      ]
+    },
+    "descendants-script": {
+      "bytes": 132941843,
+      "sha256": "a24ff3086b81a25e752a283cf0b0b95febe4ec41e31696fa96277ee5e529f455",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-script.0.bin",
+          "bytes": 16777216,
+          "sha256": "fe7c87058383e42376659f23f327d636e941ca18786f48a01e1637a8da234ebc"
+        },
+        {
+          "path": "assets/offline/descendants-script.1.bin",
+          "bytes": 16777216,
+          "sha256": "5ffee438d583f64d662b16bb43e9ef9f4be598026c122df62c500d1985bca708"
+        },
+        {
+          "path": "assets/offline/descendants-script.2.bin",
+          "bytes": 16777216,
+          "sha256": "f396677468c145f665b6e0945b92d4578ec0a655f05fb837573560674e4b73d2"
+        },
+        {
+          "path": "assets/offline/descendants-script.3.bin",
+          "bytes": 16777216,
+          "sha256": "2b325d5ace9b85281959e7b06cf7d7cf45170f5d5a51e6bfa9b07149a0326bb7"
+        },
+        {
+          "path": "assets/offline/descendants-script.4.bin",
+          "bytes": 16777216,
+          "sha256": "aa8c3ad7cee5fa4de7b8fa7af15b01212667f59cf092c0bb34ec45fdccecfe5b"
+        },
+        {
+          "path": "assets/offline/descendants-script.5.bin",
+          "bytes": 16777216,
+          "sha256": "1877deaf0bc2f4ee2d2af84c84a86977e9d335a9712c607722e2ca65b31fa2c6"
+        },
+        {
+          "path": "assets/offline/descendants-script.6.bin",
+          "bytes": 16777216,
+          "sha256": "5704a2bf739a2e3c1885cc0c247a03c5664a23c3dc8892e7bed169c4b7786954"
+        },
+        {
+          "path": "assets/offline/descendants-script.7.bin",
+          "bytes": 15501331,
+          "sha256": "516adaa900d1ef954e6effce7372d30dbf4e4760eec1cd5de75d9d591c17896a"
+        }
+      ]
+    },
+    "descendants-song-01": {
+      "bytes": 68404,
+      "sha256": "b73353211c35edbbfa81b816b3717714625978c9922a726726563136fcaf12f5",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-01.0.bin",
+          "bytes": 68404,
+          "sha256": "b73353211c35edbbfa81b816b3717714625978c9922a726726563136fcaf12f5"
+        }
+      ]
+    },
+    "descendants-song-02": {
+      "bytes": 381669,
+      "sha256": "0716902720e7cf0ff48e57ff8cb1c3d19f30ffa242926c3acddee7efa98f00b5",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-02.0.bin",
+          "bytes": 381669,
+          "sha256": "0716902720e7cf0ff48e57ff8cb1c3d19f30ffa242926c3acddee7efa98f00b5"
+        }
+      ]
+    },
+    "descendants-song-03": {
+      "bytes": 2504443,
+      "sha256": "2dca0ef944b5009f6ab87bf014dcbd7f857867efd92070e1a860e0169fffc31e",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-03.0.bin",
+          "bytes": 2504443,
+          "sha256": "2dca0ef944b5009f6ab87bf014dcbd7f857867efd92070e1a860e0169fffc31e"
+        }
+      ]
+    },
+    "descendants-song-04": {
+      "bytes": 1574677,
+      "sha256": "03778f1e52a94b07d9149b31486efe3de5531e7e5c5f240b975a3978f38eaa63",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-04.0.bin",
+          "bytes": 1574677,
+          "sha256": "03778f1e52a94b07d9149b31486efe3de5531e7e5c5f240b975a3978f38eaa63"
+        }
+      ]
+    },
+    "descendants-song-05": {
+      "bytes": 79117,
+      "sha256": "e2a7227ef0b15e2fa353477a094ed3452237d39df8485d64fd71dd783e3b5a55",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-05.0.bin",
+          "bytes": 79117,
+          "sha256": "e2a7227ef0b15e2fa353477a094ed3452237d39df8485d64fd71dd783e3b5a55"
+        }
+      ]
+    },
+    "descendants-song-06": {
+      "bytes": 1881368,
+      "sha256": "238fb8e987e30aa743b508ec29575be250020c2e135b50cb6acf17f00dffe2ef",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-06.0.bin",
+          "bytes": 1881368,
+          "sha256": "238fb8e987e30aa743b508ec29575be250020c2e135b50cb6acf17f00dffe2ef"
+        }
+      ]
+    },
+    "descendants-song-07": {
+      "bytes": 1356392,
+      "sha256": "57b5797e2512efb5a438700adf6a6aa54e099b35d4ab3d0b997606a65115f10c",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-07.0.bin",
+          "bytes": 1356392,
+          "sha256": "57b5797e2512efb5a438700adf6a6aa54e099b35d4ab3d0b997606a65115f10c"
+        }
+      ]
+    },
+    "descendants-song-08": {
+      "bytes": 1651833,
+      "sha256": "9302a6d85c872d6637f828685fa584f8b92bb9d645d300a30ec2bfa27970d4f8",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-08.0.bin",
+          "bytes": 1651833,
+          "sha256": "9302a6d85c872d6637f828685fa584f8b92bb9d645d300a30ec2bfa27970d4f8"
+        }
+      ]
+    },
+    "descendants-song-09": {
+      "bytes": 213753,
+      "sha256": "26e1b67b75e3e71daa6850dced0af0326d81b719ec3550141e227405aff47924",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-09.0.bin",
+          "bytes": 213753,
+          "sha256": "26e1b67b75e3e71daa6850dced0af0326d81b719ec3550141e227405aff47924"
+        }
+      ]
+    },
+    "descendants-song-10": {
+      "bytes": 1860581,
+      "sha256": "5947bae6a721d2fe83195396a1b635fd43e2983961b1022351e8008bf8d68d77",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-10.0.bin",
+          "bytes": 1860581,
+          "sha256": "5947bae6a721d2fe83195396a1b635fd43e2983961b1022351e8008bf8d68d77"
+        }
+      ]
+    },
+    "descendants-song-11": {
+      "bytes": 1953942,
+      "sha256": "cab996b48735cc223cc076f1646e41a091e8bcd96b2858f2cde78fb2a47a3069",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-11.0.bin",
+          "bytes": 1953942,
+          "sha256": "cab996b48735cc223cc076f1646e41a091e8bcd96b2858f2cde78fb2a47a3069"
+        }
+      ]
+    },
+    "descendants-song-12": {
+      "bytes": 84954,
+      "sha256": "4813485648650fb093f5de830a35728c0f6d6408521b4fc8455640a6cbee1ca8",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-12.0.bin",
+          "bytes": 84954,
+          "sha256": "4813485648650fb093f5de830a35728c0f6d6408521b4fc8455640a6cbee1ca8"
+        }
+      ]
+    },
+    "descendants-song-13": {
+      "bytes": 69084,
+      "sha256": "17c3997c5c15a66c1545b37b967269e53d866eb7e7f54985c1f5282ba8dc302c",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-13.0.bin",
+          "bytes": 69084,
+          "sha256": "17c3997c5c15a66c1545b37b967269e53d866eb7e7f54985c1f5282ba8dc302c"
+        }
+      ]
+    },
+    "descendants-song-14": {
+      "bytes": 74091,
+      "sha256": "1e236a9956c5d3d7e39175af2a73b03309a9c7e734abfb9a6d415296f5a83e0c",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-14.0.bin",
+          "bytes": 74091,
+          "sha256": "1e236a9956c5d3d7e39175af2a73b03309a9c7e734abfb9a6d415296f5a83e0c"
+        }
+      ]
+    },
+    "descendants-song-15": {
+      "bytes": 356463,
+      "sha256": "adb2dcc9049a8d7149e48b6ee5d89329ef0330f141e7eaf08d72485f177ad815",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-15.0.bin",
+          "bytes": 356463,
+          "sha256": "adb2dcc9049a8d7149e48b6ee5d89329ef0330f141e7eaf08d72485f177ad815"
+        }
+      ]
+    },
+    "descendants-song-16": {
+      "bytes": 79737,
+      "sha256": "af694b0fc2c23c8fe7398610c2b049682181634c123318f1ba731c3677709ee4",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-16.0.bin",
+          "bytes": 79737,
+          "sha256": "af694b0fc2c23c8fe7398610c2b049682181634c123318f1ba731c3677709ee4"
+        }
+      ]
+    },
+    "descendants-song-17": {
+      "bytes": 1805338,
+      "sha256": "713dffc898fc61ac7b8832f46dfad67e9e4c7d76cdf0816f07df29df890f0517",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-17.0.bin",
+          "bytes": 1805338,
+          "sha256": "713dffc898fc61ac7b8832f46dfad67e9e4c7d76cdf0816f07df29df890f0517"
+        }
+      ]
+    },
+    "descendants-song-18": {
+      "bytes": 75259,
+      "sha256": "b81e794ea0ab46058a6a625b5011e4f44467f0f19f12af49bb5b1c916166cd31",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-18.0.bin",
+          "bytes": 75259,
+          "sha256": "b81e794ea0ab46058a6a625b5011e4f44467f0f19f12af49bb5b1c916166cd31"
+        }
+      ]
+    },
+    "descendants-song-19": {
+      "bytes": 3001438,
+      "sha256": "5ece696f0754da8d95e9ca740d312f4399d1a4c0c00aef8979fceaa1f0ee09a0",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-19.0.bin",
+          "bytes": 3001438,
+          "sha256": "5ece696f0754da8d95e9ca740d312f4399d1a4c0c00aef8979fceaa1f0ee09a0"
+        }
+      ]
+    },
+    "descendants-song-20": {
+      "bytes": 318612,
+      "sha256": "dd3e088e082ead7dcff5fdd0cad99371e4d42e46d9187aee4984e4d30587ada1",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-20.0.bin",
+          "bytes": 318612,
+          "sha256": "dd3e088e082ead7dcff5fdd0cad99371e4d42e46d9187aee4984e4d30587ada1"
+        }
+      ]
+    },
+    "descendants-song-21": {
+      "bytes": 473977,
+      "sha256": "c4763a272c620885facacb22ef4c1e24ed1a96d21efab3e98541964f288c0655",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-21.0.bin",
+          "bytes": 473977,
+          "sha256": "c4763a272c620885facacb22ef4c1e24ed1a96d21efab3e98541964f288c0655"
+        }
+      ]
+    },
+    "descendants-song-22": {
+      "bytes": 74779,
+      "sha256": "b4949cb62a43ab04989d73fd353b7f6b0c1a5723fd8235feb6342777d686704b",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-22.0.bin",
+          "bytes": 74779,
+          "sha256": "b4949cb62a43ab04989d73fd353b7f6b0c1a5723fd8235feb6342777d686704b"
+        }
+      ]
+    },
+    "descendants-song-23": {
+      "bytes": 75713,
+      "sha256": "3de62c5ef1a47095a08f32c5825f805227344bc34894532faf20809894b3021d",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-23.0.bin",
+          "bytes": 75713,
+          "sha256": "3de62c5ef1a47095a08f32c5825f805227344bc34894532faf20809894b3021d"
+        }
+      ]
+    },
+    "descendants-song-24": {
+      "bytes": 517290,
+      "sha256": "4f4bc61230cc36a4a1d65a76e75e09f420aa7baaee2136b445aa8f5568b1b9be",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-24.0.bin",
+          "bytes": 517290,
+          "sha256": "4f4bc61230cc36a4a1d65a76e75e09f420aa7baaee2136b445aa8f5568b1b9be"
+        }
+      ]
+    },
+    "descendants-song-25": {
+      "bytes": 2296560,
+      "sha256": "36e2af245065bd50ee5256afe662b6e132d113d251d846289b59e3c8993ea668",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-25.0.bin",
+          "bytes": 2296560,
+          "sha256": "36e2af245065bd50ee5256afe662b6e132d113d251d846289b59e3c8993ea668"
+        }
+      ]
+    },
+    "descendants-song-26": {
+      "bytes": 88015,
+      "sha256": "4f7fc806e86944a4d899408f6f3eafcde9f9920c38aa783633c972a213863009",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-26.0.bin",
+          "bytes": 88015,
+          "sha256": "4f7fc806e86944a4d899408f6f3eafcde9f9920c38aa783633c972a213863009"
+        }
+      ]
+    },
+    "descendants-song-27": {
+      "bytes": 432654,
+      "sha256": "8c6ebafaf35a2c4bd35d1376d190256af5acebd77fbc5322b1ac4832282163ac",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-27.0.bin",
+          "bytes": 432654,
+          "sha256": "8c6ebafaf35a2c4bd35d1376d190256af5acebd77fbc5322b1ac4832282163ac"
+        }
+      ]
+    },
+    "descendants-song-28": {
+      "bytes": 72894,
+      "sha256": "138c3b7c5d4ad08f30867a5cb8f7dbeaf8df628903384b5cbef50c5f667308c9",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-28.0.bin",
+          "bytes": 72894,
+          "sha256": "138c3b7c5d4ad08f30867a5cb8f7dbeaf8df628903384b5cbef50c5f667308c9"
+        }
+      ]
+    },
+    "descendants-song-29": {
+      "bytes": 1769568,
+      "sha256": "353d18706c0e645450669acb971f31ab4a003a62ec22d43df75672f83cdb5efc",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-29.0.bin",
+          "bytes": 1769568,
+          "sha256": "353d18706c0e645450669acb971f31ab4a003a62ec22d43df75672f83cdb5efc"
+        }
+      ]
+    },
+    "descendants-song-30": {
+      "bytes": 1441107,
+      "sha256": "840503be00cf59b52abffd150bf57708259b732dc10c4acdea570b4b564e4134",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-30.0.bin",
+          "bytes": 1441107,
+          "sha256": "840503be00cf59b52abffd150bf57708259b732dc10c4acdea570b4b564e4134"
+        }
+      ]
+    },
+    "descendants-song-31": {
+      "bytes": 3567340,
+      "sha256": "3048b0185ed640ec320e3cfae46182e588a11dd00cbd8f46e98f5dbd72dc500e",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-31.0.bin",
+          "bytes": 3567340,
+          "sha256": "3048b0185ed640ec320e3cfae46182e588a11dd00cbd8f46e98f5dbd72dc500e"
+        }
+      ]
+    },
+    "descendants-song-32": {
+      "bytes": 453564,
+      "sha256": "828fe2703af9c0a2c4f30a394923e2db08ae55b0c923d4e43b81d5f3ab9d4af9",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-32.0.bin",
+          "bytes": 453564,
+          "sha256": "828fe2703af9c0a2c4f30a394923e2db08ae55b0c923d4e43b81d5f3ab9d4af9"
+        }
+      ]
+    },
+    "descendants-song-33": {
+      "bytes": 78485,
+      "sha256": "24dd8a132d75239d64d6fc862470a2c543945c0301e7dcd75718c0119f529a4a",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-33.0.bin",
+          "bytes": 78485,
+          "sha256": "24dd8a132d75239d64d6fc862470a2c543945c0301e7dcd75718c0119f529a4a"
+        }
+      ]
+    },
+    "descendants-song-34": {
+      "bytes": 80433,
+      "sha256": "5244cf2f2f6dfbe74944e400023449adb682ccd5644e0245eafac25d5102b5b8",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-34.0.bin",
+          "bytes": 80433,
+          "sha256": "5244cf2f2f6dfbe74944e400023449adb682ccd5644e0245eafac25d5102b5b8"
+        }
+      ]
+    },
+    "descendants-song-35": {
+      "bytes": 2473735,
+      "sha256": "24b8c55cce617f5b83d171befeb7aa965907667cb0a330a0ac8b3a11ed11d5e1",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-35.0.bin",
+          "bytes": 2473735,
+          "sha256": "24b8c55cce617f5b83d171befeb7aa965907667cb0a330a0ac8b3a11ed11d5e1"
+        }
+      ]
+    },
+    "descendants-song-36": {
+      "bytes": 6195867,
+      "sha256": "6f1ef01e67612adbdd11005ef01de5c6fb58d329c410ea28a2ca31d097ee1b27",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-36.0.bin",
+          "bytes": 6195867,
+          "sha256": "6f1ef01e67612adbdd11005ef01de5c6fb58d329c410ea28a2ca31d097ee1b27"
+        }
+      ]
+    },
+    "descendants-song-37": {
+      "bytes": 74250,
+      "sha256": "ff04dd6534fbcd0e8f7e4ab30ae9520fb5afd9e2a1a8285b3effc4ae54f33dd2",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-37.0.bin",
+          "bytes": 74250,
+          "sha256": "ff04dd6534fbcd0e8f7e4ab30ae9520fb5afd9e2a1a8285b3effc4ae54f33dd2"
+        }
+      ]
+    },
+    "descendants-song-38": {
+      "bytes": 630458,
+      "sha256": "98dfc1627fe266af95f46bef96e8caba115d77aa8819a9946e1492b900495ab5",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-38.0.bin",
+          "bytes": 630458,
+          "sha256": "98dfc1627fe266af95f46bef96e8caba115d77aa8819a9946e1492b900495ab5"
+        }
+      ]
+    },
+    "descendants-song-39": {
+      "bytes": 78755,
+      "sha256": "b3e1df990da9af2d8cb8509809d1460f827dde6b469b3980fecd426354241bc0",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-39.0.bin",
+          "bytes": 78755,
+          "sha256": "b3e1df990da9af2d8cb8509809d1460f827dde6b469b3980fecd426354241bc0"
+        }
+      ]
+    },
+    "descendants-song-40": {
+      "bytes": 401741,
+      "sha256": "e416807f919f7bb640ca64c7ca2ed60bcac9b9ce633820a6586a730947bbaa55",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-40.0.bin",
+          "bytes": 401741,
+          "sha256": "e416807f919f7bb640ca64c7ca2ed60bcac9b9ce633820a6586a730947bbaa55"
+        }
+      ]
+    },
+    "descendants-song-41": {
+      "bytes": 71993,
+      "sha256": "60bed58b63cdb4c56777e7533770500f547151855c69adddb25fe53827bef071",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-41.0.bin",
+          "bytes": 71993,
+          "sha256": "60bed58b63cdb4c56777e7533770500f547151855c69adddb25fe53827bef071"
+        }
+      ]
+    },
+    "descendants-song-42": {
+      "bytes": 2061506,
+      "sha256": "dd4be52813ada499553911aeb7e3ce043f77dd8972bd90460d5d795e38a1c84d",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-42.0.bin",
+          "bytes": 2061506,
+          "sha256": "dd4be52813ada499553911aeb7e3ce043f77dd8972bd90460d5d795e38a1c84d"
+        }
+      ]
+    },
+    "descendants-song-43": {
+      "bytes": 3144913,
+      "sha256": "22c6da4ffc10db2324ce70f8b600749b3928bd21bd9829bba9a2422202aa3352",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-43.0.bin",
+          "bytes": 3144913,
+          "sha256": "22c6da4ffc10db2324ce70f8b600749b3928bd21bd9829bba9a2422202aa3352"
+        }
+      ]
+    },
+    "descendants-song-44": {
+      "bytes": 81795,
+      "sha256": "68d22166520631b7db38db99dc8e1f5f88d918d484e74ccd500889be2e8c4524",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-44.0.bin",
+          "bytes": 81795,
+          "sha256": "68d22166520631b7db38db99dc8e1f5f88d918d484e74ccd500889be2e8c4524"
+        }
+      ]
+    },
+    "descendants-song-45": {
+      "bytes": 69291,
+      "sha256": "cc8a28d973dd936f0ba5d2584df4cde36a81d044f841a1b942b325115917d1df",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-45.0.bin",
+          "bytes": 69291,
+          "sha256": "cc8a28d973dd936f0ba5d2584df4cde36a81d044f841a1b942b325115917d1df"
+        }
+      ]
+    },
+    "descendants-song-46": {
+      "bytes": 543814,
+      "sha256": "d9563c9d5c782e954a873bbbc15c98f0e93db3435fa8f9f99e6a9f13580b89ae",
+      "mimeType": "application/pdf",
+      "parts": [
+        {
+          "path": "assets/offline/descendants-song-46.0.bin",
+          "bytes": 543814,
+          "sha256": "d9563c9d5c782e954a873bbbc15c98f0e93db3435fa8f9f99e6a9f13580b89ae"
+        }
+      ]
+    },
+    "TRK-0044b175-fbbd-47d9-ba48-90d59ee603e5": {
+      "bytes": 1175321,
+      "sha256": "4b2376fc2043bf851bf056cfe26ea680a27683156a150ae850d711401921d77b",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-0044b175-fbbd-47d9-ba48-90d59ee603e5.0.bin",
+          "bytes": 1175321,
+          "sha256": "4b2376fc2043bf851bf056cfe26ea680a27683156a150ae850d711401921d77b"
+        }
+      ]
+    },
+    "TRK-00bfc454-6b28-406e-b99b-9c033fd1ac3b": {
+      "bytes": 8042394,
+      "sha256": "42af20d0d5685342f9f3e5dd78c7478f26b9c92e5d45fd23bace7d82647118e1",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-00bfc454-6b28-406e-b99b-9c033fd1ac3b.0.bin",
+          "bytes": 8042394,
+          "sha256": "42af20d0d5685342f9f3e5dd78c7478f26b9c92e5d45fd23bace7d82647118e1"
+        }
+      ]
+    },
+    "TRK-00cdf4cd-0d73-476e-bc00-d8f979ae8d0c": {
+      "bytes": 1786812,
+      "sha256": "baaef33ba3f55d564f18f04baf8d1749c878ea00d22ef0ec009a7da3aec7c138",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-00cdf4cd-0d73-476e-bc00-d8f979ae8d0c.0.bin",
+          "bytes": 1786812,
+          "sha256": "baaef33ba3f55d564f18f04baf8d1749c878ea00d22ef0ec009a7da3aec7c138"
+        }
+      ]
+    },
+    "TRK-037c0fd9-ba3d-42f4-935c-17edbcf13147": {
+      "bytes": 755278,
+      "sha256": "2495cb78a587f662183087829993f53469c48146eea31064284984ae7f6e1e65",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-037c0fd9-ba3d-42f4-935c-17edbcf13147.0.bin",
+          "bytes": 755278,
+          "sha256": "2495cb78a587f662183087829993f53469c48146eea31064284984ae7f6e1e65"
+        }
+      ]
+    },
+    "TRK-0394a78e-653c-409a-b49a-57c8544ecac7": {
+      "bytes": 419037,
+      "sha256": "a7a4d8c5a5ea3ca079fa4b92c5c44df2228eb5a79aba785e373207de0c33da45",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-0394a78e-653c-409a-b49a-57c8544ecac7.0.bin",
+          "bytes": 419037,
+          "sha256": "a7a4d8c5a5ea3ca079fa4b92c5c44df2228eb5a79aba785e373207de0c33da45"
+        }
+      ]
+    },
+    "TRK-039e186a-e600-4417-8c0f-b64c04b151ae": {
+      "bytes": 1989521,
+      "sha256": "c3cfa3cf49cfd9609c9b04f62735d753a1c9e541ef230e6dded696437aee47a3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-039e186a-e600-4417-8c0f-b64c04b151ae.0.bin",
+          "bytes": 1989521,
+          "sha256": "c3cfa3cf49cfd9609c9b04f62735d753a1c9e541ef230e6dded696437aee47a3"
+        }
+      ]
+    },
+    "TRK-0c51dd72-478b-4dc8-9eb6-3078868389ab": {
+      "bytes": 1654949,
+      "sha256": "9f77bc2e0105bcbf79a5019914e942e5f0a92d5f0a99ecc50937a2f965e1648a",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-0c51dd72-478b-4dc8-9eb6-3078868389ab.0.bin",
+          "bytes": 1654949,
+          "sha256": "9f77bc2e0105bcbf79a5019914e942e5f0a92d5f0a99ecc50937a2f965e1648a"
+        }
+      ]
+    },
+    "TRK-107ff217-a6fb-475f-8db8-f5adfba1b46f": {
+      "bytes": 1173438,
+      "sha256": "48217f01e2caa0c476f63c6af1dc818e0342e458cdf7592dfa7cea9008e5bb90",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-107ff217-a6fb-475f-8db8-f5adfba1b46f.0.bin",
+          "bytes": 1173438,
+          "sha256": "48217f01e2caa0c476f63c6af1dc818e0342e458cdf7592dfa7cea9008e5bb90"
+        }
+      ]
+    },
+    "TRK-131b0ca8-dd35-4334-8f35-1df5fe62ef50": {
+      "bytes": 1957967,
+      "sha256": "c521ccca0191fcc90a1df8c2e6dd839c2782f68c7f556dc681304fd7274470df",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-131b0ca8-dd35-4334-8f35-1df5fe62ef50.0.bin",
+          "bytes": 1957967,
+          "sha256": "c521ccca0191fcc90a1df8c2e6dd839c2782f68c7f556dc681304fd7274470df"
+        }
+      ]
+    },
+    "TRK-1518c7f9-34a6-4a02-93b9-7d2f05b5e688": {
+      "bytes": 4646685,
+      "sha256": "04f39b9895f9da2f3fb435dc41adb35f920fdcfb2069f5e3052615636a392175",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-1518c7f9-34a6-4a02-93b9-7d2f05b5e688.0.bin",
+          "bytes": 4646685,
+          "sha256": "04f39b9895f9da2f3fb435dc41adb35f920fdcfb2069f5e3052615636a392175"
+        }
+      ]
+    },
+    "TRK-1a7f3392-dd1e-49a7-9f6f-8e536b69204a": {
+      "bytes": 8200189,
+      "sha256": "30d0c67d49dd9c8ee759a1f4e5e05cca88355faf89f4f7e1cf42d31d47645ee3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-1a7f3392-dd1e-49a7-9f6f-8e536b69204a.0.bin",
+          "bytes": 8200189,
+          "sha256": "30d0c67d49dd9c8ee759a1f4e5e05cca88355faf89f4f7e1cf42d31d47645ee3"
+        }
+      ]
+    },
+    "TRK-1b1960fd-3dbd-4469-8b4d-5cbe1fa78ba8": {
+      "bytes": 1085691,
+      "sha256": "39b85e4bc2546b232d66733ad1fbd416b77b7a885898e4fb03dbe221be78dcb2",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-1b1960fd-3dbd-4469-8b4d-5cbe1fa78ba8.0.bin",
+          "bytes": 1085691,
+          "sha256": "39b85e4bc2546b232d66733ad1fbd416b77b7a885898e4fb03dbe221be78dcb2"
+        }
+      ]
+    },
+    "TRK-1bd8f2b9-e210-4a35-bda5-ab17f27c9e81": {
+      "bytes": 1063726,
+      "sha256": "25b5b90227d613519cd40d485968560522ab86f9b8c0577cc6f07633f3066300",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-1bd8f2b9-e210-4a35-bda5-ab17f27c9e81.0.bin",
+          "bytes": 1063726,
+          "sha256": "25b5b90227d613519cd40d485968560522ab86f9b8c0577cc6f07633f3066300"
+        }
+      ]
+    },
+    "TRK-1d675c47-d5a3-4369-92d9-5a621db2edb4": {
+      "bytes": 8607688,
+      "sha256": "3320633debddbecb16e9f5b22a1c8add843766226ae91336d5eb246d9602bd12",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-1d675c47-d5a3-4369-92d9-5a621db2edb4.0.bin",
+          "bytes": 8607688,
+          "sha256": "3320633debddbecb16e9f5b22a1c8add843766226ae91336d5eb246d9602bd12"
+        }
+      ]
+    },
+    "TRK-206867c4-a83f-4dcd-936b-cc3ec70445c7": {
+      "bytes": 1643451,
+      "sha256": "4dcbe46f09944f8230d3046e5ae886dae5e9d5e1d39c66a18c8fd9f9248899d6",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-206867c4-a83f-4dcd-936b-cc3ec70445c7.0.bin",
+          "bytes": 1643451,
+          "sha256": "4dcbe46f09944f8230d3046e5ae886dae5e9d5e1d39c66a18c8fd9f9248899d6"
+        }
+      ]
+    },
+    "TRK-20d4ef5d-a9ec-4d6a-a849-55383d9aae6d": {
+      "bytes": 4413675,
+      "sha256": "f73f20b86bf7d01cc630cf35e925bf321fc85e13ca69c11ab210a4be85d8d208",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-20d4ef5d-a9ec-4d6a-a849-55383d9aae6d.0.bin",
+          "bytes": 4413675,
+          "sha256": "f73f20b86bf7d01cc630cf35e925bf321fc85e13ca69c11ab210a4be85d8d208"
+        }
+      ]
+    },
+    "TRK-290108b7-079c-4e33-8259-ac4fe8f92abb": {
+      "bytes": 939184,
+      "sha256": "0680ffbb146deeaffe73598fe5024cc18491ce40ce08f6901925c3e9e09dc3b0",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-290108b7-079c-4e33-8259-ac4fe8f92abb.0.bin",
+          "bytes": 939184,
+          "sha256": "0680ffbb146deeaffe73598fe5024cc18491ce40ce08f6901925c3e9e09dc3b0"
+        }
+      ]
+    },
+    "TRK-303a514c-a008-4585-af22-3dec93030006": {
+      "bytes": 848497,
+      "sha256": "b6ee06a35b2f09f281348af290f32b6ff994d41ac35afa9cc88917945a050af2",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-303a514c-a008-4585-af22-3dec93030006.0.bin",
+          "bytes": 848497,
+          "sha256": "b6ee06a35b2f09f281348af290f32b6ff994d41ac35afa9cc88917945a050af2"
+        }
+      ]
+    },
+    "TRK-30e20ee3-ebb4-4e38-9607-e5c0a5392016": {
+      "bytes": 2970481,
+      "sha256": "5123389ffca181c3fb51cfb329df75f63769df18fd7fada91121fc48c92e3bd9",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-30e20ee3-ebb4-4e38-9607-e5c0a5392016.0.bin",
+          "bytes": 2970481,
+          "sha256": "5123389ffca181c3fb51cfb329df75f63769df18fd7fada91121fc48c92e3bd9"
+        }
+      ]
+    },
+    "TRK-35571ae1-2163-473b-84d2-1cdd2764e3d8": {
+      "bytes": 4594248,
+      "sha256": "a0bc1c13c958f43787432f79d9b2c243f75e1e6fee6a47583035d88b934b3fa9",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-35571ae1-2163-473b-84d2-1cdd2764e3d8.0.bin",
+          "bytes": 4594248,
+          "sha256": "a0bc1c13c958f43787432f79d9b2c243f75e1e6fee6a47583035d88b934b3fa9"
+        }
+      ]
+    },
+    "TRK-367547ab-fbce-462a-b301-130106ab4a32": {
+      "bytes": 1956084,
+      "sha256": "ffea93b4265d2121e6a80ce30dd5bebebeca62415399f98a8130d0698df4b733",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-367547ab-fbce-462a-b301-130106ab4a32.0.bin",
+          "bytes": 1956084,
+          "sha256": "ffea93b4265d2121e6a80ce30dd5bebebeca62415399f98a8130d0698df4b733"
+        }
+      ]
+    },
+    "TRK-3790bbb6-5376-4b24-a261-1252a0309671": {
+      "bytes": 1828401,
+      "sha256": "9e750eb7b2bde0caf0a4b5e5d46f993573e894c347d96172207cc70d647c65df",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-3790bbb6-5376-4b24-a261-1252a0309671.0.bin",
+          "bytes": 1828401,
+          "sha256": "9e750eb7b2bde0caf0a4b5e5d46f993573e894c347d96172207cc70d647c65df"
+        }
+      ]
+    },
+    "TRK-379770b7-32a6-4a7c-afab-0fecb16a3230": {
+      "bytes": 8040511,
+      "sha256": "c3bee66aa135a2f9792736a91ae5aee498db4c1154a571021e320007753469a8",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-379770b7-32a6-4a7c-afab-0fecb16a3230.0.bin",
+          "bytes": 8040511,
+          "sha256": "c3bee66aa135a2f9792736a91ae5aee498db4c1154a571021e320007753469a8"
+        }
+      ]
+    },
+    "TRK-3a2683b1-3ae3-4485-8d73-da5d84bd1349": {
+      "bytes": 1788695,
+      "sha256": "ecd79bbfae1c202621402343e4466756dbda09412661a2a16deb22706059add6",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-3a2683b1-3ae3-4485-8d73-da5d84bd1349.0.bin",
+          "bytes": 1788695,
+          "sha256": "ecd79bbfae1c202621402343e4466756dbda09412661a2a16deb22706059add6"
+        }
+      ]
+    },
+    "TRK-40fa7624-032b-428d-8c7b-182e71957962": {
+      "bytes": 773040,
+      "sha256": "73a2ac1c7de650c0e688c17f298e138b3596ffbf6590fdb6214e11c196ee0e54",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-40fa7624-032b-428d-8c7b-182e71957962.0.bin",
+          "bytes": 773040,
+          "sha256": "73a2ac1c7de650c0e688c17f298e138b3596ffbf6590fdb6214e11c196ee0e54"
+        }
+      ]
+    },
+    "TRK-4299e194-8fbe-4f3e-b714-d4b75a81fd43": {
+      "bytes": 8198306,
+      "sha256": "4d5b37c8a803931b46f34121cc217238b76225ac7feeee137717fc3a8a113c70",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-4299e194-8fbe-4f3e-b714-d4b75a81fd43.0.bin",
+          "bytes": 8198306,
+          "sha256": "4d5b37c8a803931b46f34121cc217238b76225ac7feeee137717fc3a8a113c70"
+        }
+      ]
+    },
+    "TRK-43119bca-4b50-4aaa-9f63-254466cd8b9e": {
+      "bytes": 6091563,
+      "sha256": "23d96df16da3162455715a9cbe5a5394dd906c30e21a4b351b5ec65e5d736f5d",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-43119bca-4b50-4aaa-9f63-254466cd8b9e.0.bin",
+          "bytes": 6091563,
+          "sha256": "23d96df16da3162455715a9cbe5a5394dd906c30e21a4b351b5ec65e5d736f5d"
+        }
+      ]
+    },
+    "TRK-48e1cd14-e235-4852-9d95-96bfa6395417": {
+      "bytes": 6089680,
+      "sha256": "803ce7aa4228d7f0c3720442e9a9e82a389ff192b4b1df37aa81022d44349d64",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-48e1cd14-e235-4852-9d95-96bfa6395417.0.bin",
+          "bytes": 6089680,
+          "sha256": "803ce7aa4228d7f0c3720442e9a9e82a389ff192b4b1df37aa81022d44349d64"
+        }
+      ]
+    },
+    "TRK-4f0a2e31-df71-42bd-8aec-2eff8e34b730": {
+      "bytes": 2037585,
+      "sha256": "11f3a5a5d2730d76cbcaa83f825597f713ba727f66db693fcb634fc8b1effddf",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-4f0a2e31-df71-42bd-8aec-2eff8e34b730.0.bin",
+          "bytes": 2037585,
+          "sha256": "11f3a5a5d2730d76cbcaa83f825597f713ba727f66db693fcb634fc8b1effddf"
+        }
+      ]
+    },
+    "TRK-5131e75b-03fb-4c20-b711-0136b33e9b86": {
+      "bytes": 2514910,
+      "sha256": "273a6479d9f2e11157140e9c1dc64d2f6d52c5193df6ff52ffeb8c4e00173b6f",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-5131e75b-03fb-4c20-b711-0136b33e9b86.0.bin",
+          "bytes": 2514910,
+          "sha256": "273a6479d9f2e11157140e9c1dc64d2f6d52c5193df6ff52ffeb8c4e00173b6f"
+        }
+      ]
+    },
+    "TRK-5fa5e500-9d40-4eeb-9b97-e14d98dacae4": {
+      "bytes": 771157,
+      "sha256": "5200db1e7a47057037ee63e60f73c3aef43f6d9db8eabab2053f77ab86518709",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-5fa5e500-9d40-4eeb-9b97-e14d98dacae4.0.bin",
+          "bytes": 771157,
+          "sha256": "5200db1e7a47057037ee63e60f73c3aef43f6d9db8eabab2053f77ab86518709"
+        }
+      ]
+    },
+    "TRK-62bdec96-2184-4ef1-af3f-03f0e219592d": {
+      "bytes": 420921,
+      "sha256": "438c60957ce378ef8de82d14cf6a0922293c3b2329eb74816c852f5bd54e44a9",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-62bdec96-2184-4ef1-af3f-03f0e219592d.0.bin",
+          "bytes": 420921,
+          "sha256": "438c60957ce378ef8de82d14cf6a0922293c3b2329eb74816c852f5bd54e44a9"
+        }
+      ]
+    },
+    "TRK-65071eba-6b0b-483f-999c-9c91badcadd2": {
+      "bytes": 779521,
+      "sha256": "9a1365342d9e6d7d8e855a808d20808a17d5e34373f44b98e6b6435644b4b403",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-65071eba-6b0b-483f-999c-9c91badcadd2.0.bin",
+          "bytes": 779521,
+          "sha256": "9a1365342d9e6d7d8e855a808d20808a17d5e34373f44b98e6b6435644b4b403"
+        }
+      ]
+    },
+    "TRK-67977a38-744f-4d6f-88f3-8a80143a01bc": {
+      "bytes": 1206692,
+      "sha256": "8a5e39a8ff6524cd68f46d9ae131a8e186dd3441537d6eeca68b6095611a2fbc",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-67977a38-744f-4d6f-88f3-8a80143a01bc.0.bin",
+          "bytes": 1206692,
+          "sha256": "8a5e39a8ff6524cd68f46d9ae131a8e186dd3441537d6eeca68b6095611a2fbc"
+        }
+      ]
+    },
+    "TRK-6873b310-52f0-45ab-a97e-aa9b4eea62cf": {
+      "bytes": 420920,
+      "sha256": "551a5ded53e7c1ed17d8078fd8a84df7c3b64d5233144a674ec119e8ecad31f5",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-6873b310-52f0-45ab-a97e-aa9b4eea62cf.0.bin",
+          "bytes": 420920,
+          "sha256": "551a5ded53e7c1ed17d8078fd8a84df7c3b64d5233144a674ec119e8ecad31f5"
+        }
+      ]
+    },
+    "TRK-68ffb6a7-554c-414f-9d30-7cf5dceee95d": {
+      "bytes": 1790990,
+      "sha256": "a574b4ebd27e7caedeae379fc8120b7a779267d1b63805f8b9a6641882b12f78",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-68ffb6a7-554c-414f-9d30-7cf5dceee95d.0.bin",
+          "bytes": 1790990,
+          "sha256": "a574b4ebd27e7caedeae379fc8120b7a779267d1b63805f8b9a6641882b12f78"
+        }
+      ]
+    },
+    "TRK-6ad528cf-00df-4c2f-8497-df7b7f6b8c1a": {
+      "bytes": 2637346,
+      "sha256": "c55b4d3119934ac264ca0a2b424bd4de495061e1ba25cbda12be9ccc1a50a1f5",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-6ad528cf-00df-4c2f-8497-df7b7f6b8c1a.0.bin",
+          "bytes": 2637346,
+          "sha256": "c55b4d3119934ac264ca0a2b424bd4de495061e1ba25cbda12be9ccc1a50a1f5"
+        }
+      ]
+    },
+    "TRK-6b378de2-ff8b-4030-a56c-c5ed47357669": {
+      "bytes": 419038,
+      "sha256": "2e81bf32ed6e50e9599c93239a34997716af2b1feb767e66a65a4bdb0e235f9c",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-6b378de2-ff8b-4030-a56c-c5ed47357669.0.bin",
+          "bytes": 419038,
+          "sha256": "2e81bf32ed6e50e9599c93239a34997716af2b1feb767e66a65a4bdb0e235f9c"
+        }
+      ]
+    },
+    "TRK-6ea2a78b-8928-421f-a366-c90b767cecee": {
+      "bytes": 9705040,
+      "sha256": "4411e8867fc935ec024297455a072f7efd2a395a5f32e9f3eae607f5fcbb49b1",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-6ea2a78b-8928-421f-a366-c90b767cecee.0.bin",
+          "bytes": 9705040,
+          "sha256": "4411e8867fc935ec024297455a072f7efd2a395a5f32e9f3eae607f5fcbb49b1"
+        }
+      ]
+    },
+    "TRK-70ad8df0-6f5d-4514-8017-30f4f467742c": {
+      "bytes": 6795014,
+      "sha256": "597ef36e039c90176dbdb11bdf59ddab73dd6dff5c50439ff37f5da8ec4326e9",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-70ad8df0-6f5d-4514-8017-30f4f467742c.0.bin",
+          "bytes": 6795014,
+          "sha256": "597ef36e039c90176dbdb11bdf59ddab73dd6dff5c50439ff37f5da8ec4326e9"
+        }
+      ]
+    },
+    "TRK-77c6fb02-1d2a-4c9e-9947-ab3db60f0371": {
+      "bytes": 1292363,
+      "sha256": "c0fbe7973d394fa07cf7823afc797a3e4f9c488bf3f8e4bba09e78f31ddfe820",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-77c6fb02-1d2a-4c9e-9947-ab3db60f0371.0.bin",
+          "bytes": 1292363,
+          "sha256": "c0fbe7973d394fa07cf7823afc797a3e4f9c488bf3f8e4bba09e78f31ddfe820"
+        }
+      ]
+    },
+    "TRK-7daeba47-0f60-45c4-8c16-8c5b3e183f4b": {
+      "bytes": 1653066,
+      "sha256": "246ac9b483de95328d35076fd4b836a394df979b5b7a998e323ff2cb47d4eb6a",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-7daeba47-0f60-45c4-8c16-8c5b3e183f4b.0.bin",
+          "bytes": 1653066,
+          "sha256": "246ac9b483de95328d35076fd4b836a394df979b5b7a998e323ff2cb47d4eb6a"
+        }
+      ]
+    },
+    "TRK-7e8807d9-987d-43c2-8a04-a049da1aa082": {
+      "bytes": 726040,
+      "sha256": "8675db18993e7f5b0ab43c5cd59d3d6b89b242ac9eb1f86e45d0b336a96eb7b6",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-7e8807d9-987d-43c2-8a04-a049da1aa082.0.bin",
+          "bytes": 726040,
+          "sha256": "8675db18993e7f5b0ab43c5cd59d3d6b89b242ac9eb1f86e45d0b336a96eb7b6"
+        }
+      ]
+    },
+    "TRK-80011982-3555-4e27-87d4-97e0a4e1f01a": {
+      "bytes": 8674554,
+      "sha256": "495bda7820ba759f665a5bcd215463abd9a7b671a6856910ea90c3327cb82a0c",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-80011982-3555-4e27-87d4-97e0a4e1f01a.0.bin",
+          "bytes": 8674554,
+          "sha256": "495bda7820ba759f665a5bcd215463abd9a7b671a6856910ea90c3327cb82a0c"
+        }
+      ]
+    },
+    "TRK-8ab44841-c76d-4224-9cf1-a1ccf5b7a713": {
+      "bytes": 735437,
+      "sha256": "678e0679875d174f0af49f1320e5e9ca91f9c5ae7324de9944c37cbd75fdfa3c",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-8ab44841-c76d-4224-9cf1-a1ccf5b7a713.0.bin",
+          "bytes": 735437,
+          "sha256": "678e0679875d174f0af49f1320e5e9ca91f9c5ae7324de9944c37cbd75fdfa3c"
+        }
+      ]
+    },
+    "TRK-8eb0c1cd-5938-49af-980e-c79d96830688": {
+      "bytes": 480687,
+      "sha256": "f35210e1605036ebfbc81f72090ed0244d0d48c4e3991f71f8ac859567e74ad6",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-8eb0c1cd-5938-49af-980e-c79d96830688.0.bin",
+          "bytes": 480687,
+          "sha256": "f35210e1605036ebfbc81f72090ed0244d0d48c4e3991f71f8ac859567e74ad6"
+        }
+      ]
+    },
+    "TRK-8fba99f2-0864-4406-baeb-9d4ca68959bb": {
+      "bytes": 3108614,
+      "sha256": "953c3a9f34b2156ccdd5c97b744dd71e1e78d185d9933af2371d287e010bdb6c",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-8fba99f2-0864-4406-baeb-9d4ca68959bb.0.bin",
+          "bytes": 3108614,
+          "sha256": "953c3a9f34b2156ccdd5c97b744dd71e1e78d185d9933af2371d287e010bdb6c"
+        }
+      ]
+    },
+    "TRK-8fe89fa5-ec67-4437-a8c3-04ae359e15f8": {
+      "bytes": 1932875,
+      "sha256": "8f3275ac361bd3029f0bd4d2cc8f21438d869fb5302523b2bc3c02c281695b87",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-8fe89fa5-ec67-4437-a8c3-04ae359e15f8.0.bin",
+          "bytes": 1932875,
+          "sha256": "8f3275ac361bd3029f0bd4d2cc8f21438d869fb5302523b2bc3c02c281695b87"
+        }
+      ]
+    },
+    "TRK-900f373c-7040-4511-a7f2-10c509d0103e": {
+      "bytes": 3298781,
+      "sha256": "6eeb354184aae7324d859e472c461dd8b2c832a98b2ea69a7261918bf5276484",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-900f373c-7040-4511-a7f2-10c509d0103e.0.bin",
+          "bytes": 3298781,
+          "sha256": "6eeb354184aae7324d859e472c461dd8b2c832a98b2ea69a7261918bf5276484"
+        }
+      ]
+    },
+    "TRK-955fe08e-7524-45e2-af44-6cfc91514831": {
+      "bytes": 4592365,
+      "sha256": "b986799a50e7797c6b6541d3b382eec601b1f9f34d76f3b5bb1c0d4097476937",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-955fe08e-7524-45e2-af44-6cfc91514831.0.bin",
+          "bytes": 4592365,
+          "sha256": "b986799a50e7797c6b6541d3b382eec601b1f9f34d76f3b5bb1c0d4097476937"
+        }
+      ]
+    },
+    "TRK-97c20b9b-bcc0-4242-8342-ccec675d2990": {
+      "bytes": 9706923,
+      "sha256": "0821185306c540d1aa98d47d0359257c245e2db870e518df06e4338b400edf28",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-97c20b9b-bcc0-4242-8342-ccec675d2990.0.bin",
+          "bytes": 9706923,
+          "sha256": "0821185306c540d1aa98d47d0359257c245e2db870e518df06e4338b400edf28"
+        }
+      ]
+    },
+    "TRK-98addc3c-93fc-4aa4-be39-48ca1586c7ad": {
+      "bytes": 8672671,
+      "sha256": "c4297ee3d47e5effa46d3bb3029e9f0fbb5ae3394117409d20bb8568a1da9769",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-98addc3c-93fc-4aa4-be39-48ca1586c7ad.0.bin",
+          "bytes": 8672671,
+          "sha256": "c4297ee3d47e5effa46d3bb3029e9f0fbb5ae3394117409d20bb8568a1da9769"
+        }
+      ]
+    },
+    "TRK-9b03f315-00db-439e-a094-55c5f619c664": {
+      "bytes": 4415558,
+      "sha256": "a2aecb7fcf81a476b38a4a43b93c0a76d2d20b49e951e6ab426474cc0431df94",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-9b03f315-00db-439e-a094-55c5f619c664.0.bin",
+          "bytes": 4415558,
+          "sha256": "a2aecb7fcf81a476b38a4a43b93c0a76d2d20b49e951e6ab426474cc0431df94"
+        }
+      ]
+    },
+    "TRK-9c92bc5a-0723-4bfd-8c22-168979d63af5": {
+      "bytes": 1312205,
+      "sha256": "5004c210b4dfe2f2f39a2340d1cb241bd281672e243465e784f173f93fa2e01b",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-9c92bc5a-0723-4bfd-8c22-168979d63af5.0.bin",
+          "bytes": 1312205,
+          "sha256": "5004c210b4dfe2f2f39a2340d1cb241bd281672e243465e784f173f93fa2e01b"
+        }
+      ]
+    },
+    "TRK-9e2e0ede-b4fb-4c84-b457-5874bb4016cc": {
+      "bytes": 6796897,
+      "sha256": "39ba9ed1ea84c0af7dab426e00c669f3b1b039cafc74b530046a61106d327e99",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-9e2e0ede-b4fb-4c84-b457-5874bb4016cc.0.bin",
+          "bytes": 6796897,
+          "sha256": "39ba9ed1ea84c0af7dab426e00c669f3b1b039cafc74b530046a61106d327e99"
+        }
+      ]
+    },
+    "TRK-a259c60c-540e-489e-b47b-450c63b4346b": {
+      "bytes": 2008336,
+      "sha256": "59a909b812b2582c9dfaa8cef2436ba0a6325d5792ab6d9938ad69a21b3422f2",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-a259c60c-540e-489e-b47b-450c63b4346b.0.bin",
+          "bytes": 2008336,
+          "sha256": "59a909b812b2582c9dfaa8cef2436ba0a6325d5792ab6d9938ad69a21b3422f2"
+        }
+      ]
+    },
+    "TRK-ab162a91-b783-4734-97b9-98eb9319525a": {
+      "bytes": 781404,
+      "sha256": "936009a62961bd0abb50ca54e9f60d5088da101c9c7e546802031b1298e68024",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-ab162a91-b783-4734-97b9-98eb9319525a.0.bin",
+          "bytes": 781404,
+          "sha256": "936009a62961bd0abb50ca54e9f60d5088da101c9c7e546802031b1298e68024"
+        }
+      ]
+    },
+    "TRK-af0f8678-acac-4573-bc91-cc932bc2ca9a": {
+      "bytes": 1065609,
+      "sha256": "b45e63b95e1229013c9301c5338cae81fad1caec64e36d814e634fb74eb6a803",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-af0f8678-acac-4573-bc91-cc932bc2ca9a.0.bin",
+          "bytes": 1065609,
+          "sha256": "b45e63b95e1229013c9301c5338cae81fad1caec64e36d814e634fb74eb6a803"
+        }
+      ]
+    },
+    "TRK-b08d99bb-22bf-4f95-9e2a-c8f4d5b990cf": {
+      "bytes": 482570,
+      "sha256": "0ae4d215d6e76d7ddcffb4bf8b69f7065a3c9133922cf4b34570aa11e5b4e5bb",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-b08d99bb-22bf-4f95-9e2a-c8f4d5b990cf.0.bin",
+          "bytes": 482570,
+          "sha256": "0ae4d215d6e76d7ddcffb4bf8b69f7065a3c9133922cf4b34570aa11e5b4e5bb"
+        }
+      ]
+    },
+    "TRK-b37d5c3e-6825-4906-9ca0-08c9f8707307": {
+      "bytes": 1756305,
+      "sha256": "1e98ad6d3dbfff4f0f15718c94df3752a4d9757dc65e3613706cd41a6d31a9f8",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-b37d5c3e-6825-4906-9ca0-08c9f8707307.0.bin",
+          "bytes": 1756305,
+          "sha256": "1e98ad6d3dbfff4f0f15718c94df3752a4d9757dc65e3613706cd41a6d31a9f8"
+        }
+      ]
+    },
+    "TRK-b8c70b86-83fc-4315-b51d-59aa893d6141": {
+      "bytes": 822167,
+      "sha256": "d43872bf60a3e20b7437433cfa8364d64ecef5753fa935f0f951c9ebe9afb668",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-b8c70b86-83fc-4315-b51d-59aa893d6141.0.bin",
+          "bytes": 822167,
+          "sha256": "d43872bf60a3e20b7437433cfa8364d64ecef5753fa935f0f951c9ebe9afb668"
+        }
+      ]
+    },
+    "TRK-be95f439-d53a-4405-89b1-01bccb90d165": {
+      "bytes": 1792873,
+      "sha256": "dd9e203fecf0f7f4f4f50fef11530848265ebe1320c184933d3bebb00f78ec33",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-be95f439-d53a-4405-89b1-01bccb90d165.0.bin",
+          "bytes": 1792873,
+          "sha256": "dd9e203fecf0f7f4f4f50fef11530848265ebe1320c184933d3bebb00f78ec33"
+        }
+      ]
+    },
+    "TRK-c23978d9-e800-476f-bb53-d424bba977d1": {
+      "bytes": 1428400,
+      "sha256": "aa37b42d4370b49770e9445aa5d7ecd6159d65f418feaeee747c63736fe6d81a",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-c23978d9-e800-476f-bb53-d424bba977d1.0.bin",
+          "bytes": 1428400,
+          "sha256": "aa37b42d4370b49770e9445aa5d7ecd6159d65f418feaeee747c63736fe6d81a"
+        }
+      ]
+    },
+    "TRK-c298b71e-924d-4d1e-870f-5b1715ce8e80": {
+      "bytes": 6088644,
+      "sha256": "3fede5e73190856e06e40f2ee7e9c501ab990b4a9660920d3432972f3783c62c",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-c298b71e-924d-4d1e-870f-5b1715ce8e80.0.bin",
+          "bytes": 6088644,
+          "sha256": "3fede5e73190856e06e40f2ee7e9c501ab990b4a9660920d3432972f3783c62c"
+        }
+      ]
+    },
+    "TRK-c53c45a5-d71e-4457-bb6f-adb4185032c0": {
+      "bytes": 903657,
+      "sha256": "563c73635784b5de9c4bcfbf439b889c0a5099660a7b95b7add3238afd27a614",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-c53c45a5-d71e-4457-bb6f-adb4185032c0.0.bin",
+          "bytes": 903657,
+          "sha256": "563c73635784b5de9c4bcfbf439b889c0a5099660a7b95b7add3238afd27a614"
+        }
+      ]
+    },
+    "TRK-c588eef4-ee34-49a1-9dbb-7010f76553fa": {
+      "bytes": 1315557,
+      "sha256": "5520c804c80fabbe838bdb45912cd01f740d5e020cb639e2fcbe6afae726e1ae",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-c588eef4-ee34-49a1-9dbb-7010f76553fa.0.bin",
+          "bytes": 1315557,
+          "sha256": "5520c804c80fabbe838bdb45912cd01f740d5e020cb639e2fcbe6afae726e1ae"
+        }
+      ]
+    },
+    "TRK-c916a193-7974-4cad-948e-2734f07e58bd": {
+      "bytes": 893411,
+      "sha256": "882d7aa02b734f00f8b784d3de015ca00974a7a0ad14c0f60fc8b6fbf73e674d",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-c916a193-7974-4cad-948e-2734f07e58bd.0.bin",
+          "bytes": 893411,
+          "sha256": "882d7aa02b734f00f8b784d3de015ca00974a7a0ad14c0f60fc8b6fbf73e674d"
+        }
+      ]
+    },
+    "TRK-cb4634cb-2144-42d8-865b-b3876bef5acc": {
+      "bytes": 3300664,
+      "sha256": "61bacfaa6b59024a92fc46c5cd8359abb1d404b9ba938b33f86da542edb8c5a4",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-cb4634cb-2144-42d8-865b-b3876bef5acc.0.bin",
+          "bytes": 3300664,
+          "sha256": "61bacfaa6b59024a92fc46c5cd8359abb1d404b9ba938b33f86da542edb8c5a4"
+        }
+      ]
+    },
+    "TRK-ce4f9a25-cab5-4713-a85c-cc048f04cfb2": {
+      "bytes": 820284,
+      "sha256": "c95b4754e988992b48d3e98e2c52a4efcafec3df4b5bf46d341c36d07a0a3bb9",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-ce4f9a25-cab5-4713-a85c-cc048f04cfb2.0.bin",
+          "bytes": 820284,
+          "sha256": "c95b4754e988992b48d3e98e2c52a4efcafec3df4b5bf46d341c36d07a0a3bb9"
+        }
+      ]
+    },
+    "TRK-cff9d9d5-cdfc-4f73-a0b4-a10764705783": {
+      "bytes": 1930992,
+      "sha256": "1a8f9d4681c2f60655212cf917be3bd14c836e16922cad0887ca6e46c6b86df3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-cff9d9d5-cdfc-4f73-a0b4-a10764705783.0.bin",
+          "bytes": 1930992,
+          "sha256": "1a8f9d4681c2f60655212cf917be3bd14c836e16922cad0887ca6e46c6b86df3"
+        }
+      ]
+    },
+    "TRK-d0b6b74c-ebac-4329-a40c-36a0f762885e": {
+      "bytes": 937301,
+      "sha256": "0e5af01277c4ff63cfcb06ecbc752b90604384363da974725f8ce45a287ed989",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-d0b6b74c-ebac-4329-a40c-36a0f762885e.0.bin",
+          "bytes": 937301,
+          "sha256": "0e5af01277c4ff63cfcb06ecbc752b90604384363da974725f8ce45a287ed989"
+        }
+      ]
+    },
+    "TRK-d1c81ae5-b775-47da-9b10-17564bae4766": {
+      "bytes": 8605805,
+      "sha256": "b2aababfa75390dc3de0c3b0bed42bba7eb1e75dcbfdcb534a9aa65a0f0e828d",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-d1c81ae5-b775-47da-9b10-17564bae4766.0.bin",
+          "bytes": 8605805,
+          "sha256": "b2aababfa75390dc3de0c3b0bed42bba7eb1e75dcbfdcb534a9aa65a0f0e828d"
+        }
+      ]
+    },
+    "TRK-d91cb689-c42f-45fe-8ee7-b3edda9a12bc": {
+      "bytes": 895294,
+      "sha256": "4e15e2604f7048e441655d589bd15bef33c2e3906da4b9295e9d5054bf89a283",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-d91cb689-c42f-45fe-8ee7-b3edda9a12bc.0.bin",
+          "bytes": 895294,
+          "sha256": "4e15e2604f7048e441655d589bd15bef33c2e3906da4b9295e9d5054bf89a283"
+        }
+      ]
+    },
+    "TRK-df621a93-bc4f-414d-8a58-c6fdd6a085d4": {
+      "bytes": 850380,
+      "sha256": "dfedb3c1520cd8aa1e430812af9608c7076ea3be43e18777d106013f61c6d580",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-df621a93-bc4f-414d-8a58-c6fdd6a085d4.0.bin",
+          "bytes": 850380,
+          "sha256": "dfedb3c1520cd8aa1e430812af9608c7076ea3be43e18777d106013f61c6d580"
+        }
+      ]
+    },
+    "TRK-e013afcb-a682-4ebe-a276-28bd0c814d2a": {
+      "bytes": 1610205,
+      "sha256": "5f8d0bbb10e825e6b0e3301bb8f8de365eddb9f080bd742276d440f81dd7c9f8",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e013afcb-a682-4ebe-a276-28bd0c814d2a.0.bin",
+          "bytes": 1610205,
+          "sha256": "5f8d0bbb10e825e6b0e3301bb8f8de365eddb9f080bd742276d440f81dd7c9f8"
+        }
+      ]
+    },
+    "TRK-e03d7a39-6980-4523-ba0b-ac6f8216102b": {
+      "bytes": 1204809,
+      "sha256": "b0059585ca23d7f94e21d6b1f0da71265be36fc2138ba9b861a153434c100807",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e03d7a39-6980-4523-ba0b-ac6f8216102b.0.bin",
+          "bytes": 1204809,
+          "sha256": "b0059585ca23d7f94e21d6b1f0da71265be36fc2138ba9b861a153434c100807"
+        }
+      ]
+    },
+    "TRK-e0e6e67d-94ba-454e-bbb5-b8f3abc936a6": {
+      "bytes": 1430283,
+      "sha256": "5d0cf39614904aa873c6a8b86e06aa655e3964faea82bfa24b22049189708c61",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e0e6e67d-94ba-454e-bbb5-b8f3abc936a6.0.bin",
+          "bytes": 1430283,
+          "sha256": "5d0cf39614904aa873c6a8b86e06aa655e3964faea82bfa24b22049189708c61"
+        }
+      ]
+    },
+    "TRK-e2e9dc66-ecca-445d-b39c-8ea76964c373": {
+      "bytes": 420921,
+      "sha256": "e3749cb0b8db9f74d335378ac1895eda39d3778970dc0c3f87922a7b2c463783",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e2e9dc66-ecca-445d-b39c-8ea76964c373.0.bin",
+          "bytes": 420921,
+          "sha256": "e3749cb0b8db9f74d335378ac1895eda39d3778970dc0c3f87922a7b2c463783"
+        }
+      ]
+    },
+    "TRK-e57cf8ec-94c1-4a31-baaf-5683acce07a9": {
+      "bytes": 4621400,
+      "sha256": "5c34eb261d6b519cc513be9546966561a20424eccca049f381d8c81140ddff05",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e57cf8ec-94c1-4a31-baaf-5683acce07a9.0.bin",
+          "bytes": 4621400,
+          "sha256": "5c34eb261d6b519cc513be9546966561a20424eccca049f381d8c81140ddff05"
+        }
+      ]
+    },
+    "TRK-e887dcca-6f8f-4d90-ba8f-4dd6f2280eac": {
+      "bytes": 1754422,
+      "sha256": "fb1e8113b2b992fb104ffc94e21d93555fc11592e4bcdc72fedb1e60919c45d3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-e887dcca-6f8f-4d90-ba8f-4dd6f2280eac.0.bin",
+          "bytes": 1754422,
+          "sha256": "fb1e8113b2b992fb104ffc94e21d93555fc11592e4bcdc72fedb1e60919c45d3"
+        }
+      ]
+    },
+    "TRK-eaa9a3d8-4182-4e3b-9f8b-000ed9ebe496": {
+      "bytes": 6090527,
+      "sha256": "ea39aceff1567b63d0e09eaaaea8183fe79000ea0d74b47be94df9035d214221",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-eaa9a3d8-4182-4e3b-9f8b-000ed9ebe496.0.bin",
+          "bytes": 6090527,
+          "sha256": "ea39aceff1567b63d0e09eaaaea8183fe79000ea0d74b47be94df9035d214221"
+        }
+      ]
+    },
+    "TRK-eb02060a-2532-42bb-a125-402fd58e67a3": {
+      "bytes": 1310322,
+      "sha256": "4ff56161942433fc6663fb3f557096e6969fef2e2308cf301c7a1d17b38e1c4a",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-eb02060a-2532-42bb-a125-402fd58e67a3.0.bin",
+          "bytes": 1310322,
+          "sha256": "4ff56161942433fc6663fb3f557096e6969fef2e2308cf301c7a1d17b38e1c4a"
+        }
+      ]
+    },
+    "TRK-eb4bd560-2df5-4e5d-bd89-08cb9184cc41": {
+      "bytes": 753395,
+      "sha256": "38382d677e9690680cbc6f197e3f432565591ef5fe18f672dd6854599a05c1a0",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-eb4bd560-2df5-4e5d-bd89-08cb9184cc41.0.bin",
+          "bytes": 753395,
+          "sha256": "38382d677e9690680cbc6f197e3f432565591ef5fe18f672dd6854599a05c1a0"
+        }
+      ]
+    },
+    "TRK-efdf5691-6f5f-4c0e-a434-c49b4d9879bf": {
+      "bytes": 2639229,
+      "sha256": "25fb48b76a12fe9d542e4cb28715ca13cbdf0dfc62a4267fd29322f06ed3a84e",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-efdf5691-6f5f-4c0e-a434-c49b4d9879bf.0.bin",
+          "bytes": 2639229,
+          "sha256": "25fb48b76a12fe9d542e4cb28715ca13cbdf0dfc62a4267fd29322f06ed3a84e"
+        }
+      ]
+    },
+    "TRK-f37664ce-31ef-43de-95e5-fd473efa25ab": {
+      "bytes": 977848,
+      "sha256": "291107eb5d06447923e7e40b0f3a3b2ef3f1385ee2c9a9dddecb40c76378cae4",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f37664ce-31ef-43de-95e5-fd473efa25ab.0.bin",
+          "bytes": 977848,
+          "sha256": "291107eb5d06447923e7e40b0f3a3b2ef3f1385ee2c9a9dddecb40c76378cae4"
+        }
+      ]
+    },
+    "TRK-f5a1c414-bdb5-409e-a3b2-73b85314e119": {
+      "bytes": 901774,
+      "sha256": "a9cd688091d55abf96d32f22fa98b64bdf2b86b562e0ab605cb6bdc3f305c330",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f5a1c414-bdb5-409e-a3b2-73b85314e119.0.bin",
+          "bytes": 901774,
+          "sha256": "a9cd688091d55abf96d32f22fa98b64bdf2b86b562e0ab605cb6bdc3f305c330"
+        }
+      ]
+    },
+    "TRK-f681ba3c-38bd-4df2-89e6-5cd0741d4a03": {
+      "bytes": 2341647,
+      "sha256": "82b25cf9d6dc87148db5756ccf9d0bcbfb6127d4301789d132f12bea5324ada3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f681ba3c-38bd-4df2-89e6-5cd0741d4a03.0.bin",
+          "bytes": 2341647,
+          "sha256": "82b25cf9d6dc87148db5756ccf9d0bcbfb6127d4301789d132f12bea5324ada3"
+        }
+      ]
+    },
+    "TRK-f6ab4169-e804-4ef8-9b86-51d60326dc65": {
+      "bytes": 1826518,
+      "sha256": "8189fa5264c38ead02b60cfec7a287a1d64c78f9b93dc6c66e13a4bc60cb07dd",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f6ab4169-e804-4ef8-9b86-51d60326dc65.0.bin",
+          "bytes": 1826518,
+          "sha256": "8189fa5264c38ead02b60cfec7a287a1d64c78f9b93dc6c66e13a4bc60cb07dd"
+        }
+      ]
+    },
+    "TRK-f9031907-bde7-49f4-ba6a-f67647936d2d": {
+      "bytes": 1612088,
+      "sha256": "06cfc964dd5a7e40e5945cd7d9dd880a3e5269f9c97fe24dd5d5f8bd45f7369d",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f9031907-bde7-49f4-ba6a-f67647936d2d.0.bin",
+          "bytes": 1612088,
+          "sha256": "06cfc964dd5a7e40e5945cd7d9dd880a3e5269f9c97fe24dd5d5f8bd45f7369d"
+        }
+      ]
+    },
+    "TRK-f9ed5efb-fa08-4cea-ae61-34ff82437b86": {
+      "bytes": 1087574,
+      "sha256": "0dc26705a881aa223258e14c5e9d81e4ec473246dc18911554f31ea2df5e3cc6",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-f9ed5efb-fa08-4cea-ae61-34ff82437b86.0.bin",
+          "bytes": 1087574,
+          "sha256": "0dc26705a881aa223258e14c5e9d81e4ec473246dc18911554f31ea2df5e3cc6"
+        }
+      ]
+    },
+    "TRK-faa157a2-5d14-4bce-8028-015973af8f67": {
+      "bytes": 2513027,
+      "sha256": "0f4f253469d75a3f046d0092de264daccb1e533dd27fbe982b40da89bf8796a3",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-faa157a2-5d14-4bce-8028-015973af8f67.0.bin",
+          "bytes": 2513027,
+          "sha256": "0f4f253469d75a3f046d0092de264daccb1e533dd27fbe982b40da89bf8796a3"
+        }
+      ]
+    },
+    "TRK-fd65810b-4f25-46c6-a158-2cd7478f724c": {
+      "bytes": 419038,
+      "sha256": "22b76e6003fbb72106ac33d63b1a96f05390a4d661b4088a6bb7090bb4013655",
+      "mimeType": "audio/mpeg",
+      "parts": [
+        {
+          "path": "assets/offline/TRK-fd65810b-4f25-46c6-a158-2cd7478f724c.0.bin",
+          "bytes": 419038,
+          "sha256": "22b76e6003fbb72106ac33d63b1a96f05390a4d661b4088a6bb7090bb4013655"
+        }
+      ]
+    }
+  }
+}

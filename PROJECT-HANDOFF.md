@@ -13,12 +13,12 @@ keys, or private keys**.
 
 - Website: <https://bedfordroadtheatre.ca>
 - Neocities site: `bedfordroadtheatre`
-- Android/ScoreFlow: `2.17.0+64`
-- Current APK: <https://bedfordroadtheatre.ca/downloads/BedfordRoadMusical-2.17.0.apk>
+- Android/ScoreFlow: `2.18.0+65`
+- Current Android download: <https://bedfordroadtheatre.ca/install.html#android> (Firebase-hosted offline APK; pinned in `downloads/android-release.json`)
 - iOS bundle ID: `ca.sk.bedfordroad.musical`
-- iOS 2.17.0 source is ready for the next Codemagic/TestFlight build.
+- iOS 2.18.0 source is ready for the next Codemagic/TestFlight build.
 - Firebase rules and Cloud Functions are deployed to `brpa-digital-hub-dev`.
-- Previous application release commit: `227718b`
+- Previous application release commit: `2c06570`
 - Working tree should be clean when this document is committed.
 
 Recent important commits:
@@ -28,6 +28,19 @@ Recent important commits:
 - `634d3c4` — complete user-record cleanup on deletion
 - `c4f055d` — repaired permissions for newly registered students
 - `3c6e753` — repaired invalid task date handling
+
+## Offline native music release (2.18.0)
+
+Music & Tracks and ScoreFlow are native. All 92 tracks and all 49 production
+PDFs are included in the installer. Sign in online once; music and scores then
+open without website downloads. See `docs/offline-music-release.md`.
+
+Before building a clean checkout, run `python scripts/prepare-offline-media.py`
+from the root. Codemagic restores and verifies the same bundled media before
+building iOS. Large binary parts remain outside Git; the manifest is tracked.
+The large APK is hosted in the existing Firebase Storage bucket and linked
+from Neocities. `scripts/publish-android-release.mjs` uploads and verifies it;
+`downloads/android-release.json` records its exact download and hashes.
 
 ## Native profile editing (2.17.0)
 
@@ -60,8 +73,8 @@ npm run check
 npm run deploy:neocities
 ```
 
-The deploy script publishes public files and only the APK matching the version
-in `mobile-app/pubspec.yaml`.
+The deploy script publishes public files and the current release descriptor.
+The offline APK is hosted separately in Firebase Storage.
 
 ### ScoreFlow Flutter application
 
@@ -86,13 +99,15 @@ readable and migrate on the next successful save. See
 Android build:
 
 ```powershell
+python scripts/prepare-offline-media.py
 cd mobile-app
 flutter test
 flutter build apk --release
 ```
 
-Copy the release APK to `downloads/BedfordRoadMusical-{version}.apk`, update any
-website version references, bump the service-worker `BUILD_ID`, then deploy
+Copy the release APK to `downloads/BedfordRoadMusical-{version}.apk`, run
+`node scripts/publish-android-release.mjs`, update the install link from the
+verified release descriptor, bump the service-worker `BUILD_ID`, then deploy
 Neocities.
 
 ### Firebase backend

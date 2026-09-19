@@ -47,6 +47,11 @@ workflows:
           flutter pub get
           grep -Eq '"swift_package_manager_enabled":\{"ios":false' .flutter-plugins-dependencies
 
+      - name: Restore verified offline tracks and scores
+        script: |
+          set -euo pipefail
+          python3 ../scripts/prepare-offline-media.py
+
       - name: Install CocoaPods dependencies when present
         script: |
           set -euo pipefail

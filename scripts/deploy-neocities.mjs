@@ -12,6 +12,9 @@ const pubspec = fs.readFileSync(path.join(root, 'mobile-app', 'pubspec.yaml'), '
 const appVersion = pubspec.match(/^version:\s*([^+\s]+)/m)?.[1];
 if (!appVersion) throw new Error('Could not determine the mobile app version from mobile-app/pubspec.yaml.');
 const currentApk = `downloads/BedfordRoadMusical-${appVersion}.apk`;
+const releasePath = path.join(root, 'downloads', 'android-release.json');
+const release = fs.existsSync(releasePath) ? JSON.parse(fs.readFileSync(releasePath, 'utf8')) : null;
+const externalRelease = release?.version === appVersion && new URL(release.url).hostname === 'firebasestorage.googleapis.com';
 const rootFiles = fs.readdirSync(root, { withFileTypes: true })
   .filter(entry => entry.isFile() && (/\.html$/i.test(entry.name) || ['manifest.webmanifest', 'robots.txt', 'service-worker.js'].includes(entry.name)))
   .map(entry => entry.name);
@@ -29,10 +32,10 @@ const files = [...rootFiles, ...roots.flatMap(walk)]
   .filter(file => !/(?:^|\/)desktop\.ini$/i.test(file))
   .filter(file => !/\.idsig$/i.test(file))
   .filter(file => !/^downloads\/live-.*-check\.html$/i.test(file))
-  .filter(file => !/^downloads\/.*\.apk$/i.test(file) || file === currentApk)
+  .filter(file => !/^downloads\/.*\.apk$/i.test(file) || (!externalRelease && file === currentApk))
   .sort();
 
-if (!files.includes(currentApk)) throw new Error(`Missing current Android release: ${currentApk}`);
+if (!externalRelease && !files.includes(currentApk)) throw new Error(`Missing current Android release: ${currentApk}`);
 
 async function neocities(endpoint, options = {}) {
   const response = await fetch(`https://neocities.org/api/${endpoint}`, {

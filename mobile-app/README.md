@@ -7,7 +7,7 @@ Mac or physical iPhone is not required to create and upload the IPA.
 
 ## Current release configuration
 
-- App version: `2.17.0+64`
+- App version: `2.18.0+65`
 - iOS deployment target: 15.0
 - Firebase iOS configuration: `ios/Runner/GoogleService-Info.plist`
 - APNs entitlement: production
@@ -19,6 +19,14 @@ Mac or physical iPhone is not required to create and upload the IPA.
 The app does not capture microphone input, so it intentionally has no
 `NSMicrophoneUsageDescription`. Add that description before introducing any
 recording feature.
+
+## Bundled music and scores
+
+Version 2.18.0 includes 92 tracks and 49 PDFs directly in the app. Before
+building a clean checkout, run `python scripts/prepare-offline-media.py` from
+the repository root. Codemagic does this automatically. Binary assets are
+restored from the checksum-pinned release APK, not committed to Git.
+See `../docs/offline-music-release.md` for export, verification and publishing.
 
 ## Windows to GitHub
 
@@ -99,7 +107,7 @@ declares `distribution_type: app_store` and the exact bundle identifier. The
    TestFlight**.
 4. Start the build.
 
-The workflow verifies the iOS configuration, restores Flutter packages,
+The workflow verifies the iOS configuration, restores Flutter packages and bundled media,
 installs CocoaPods when applicable, analyzes the Dart code, runs tests when
 present, applies signing, assigns a unique CI build number, builds the signed
 IPA, and uploads it to TestFlight. IPA, XCArchive, dSYM, and build logs are

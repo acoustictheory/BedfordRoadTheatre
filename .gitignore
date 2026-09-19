@@ -25,3 +25,6 @@ android-twa/local.properties
 *.aab
 *.idsig
 downloads/live-*-check.html
+
+# Large offline media is restored from the verified release APK at build time.
+mobile-app/assets/offline/*.bin

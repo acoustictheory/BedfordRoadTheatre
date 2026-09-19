@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../offline_media.dart';
 import 'music_notation_symbols.dart';
 import 'practice_notes_store.dart';
 import 'score_annotation_layer.dart';
@@ -120,7 +121,7 @@ class DocumentLibraryScreen extends StatelessWidget {
   const DocumentLibraryScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Script & music')),
+    appBar: AppBar(title: const Text('ScoreFlow')),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -131,7 +132,7 @@ class DocumentLibraryScreen extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Read offline inside the app and keep private page-anchored annotations on this device.',
+          'All scores and rehearsal tracks are included in this app. Read, listen and annotate offline.',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -152,12 +153,40 @@ class DocumentLibraryScreen extends StatelessWidget {
                 document.title,
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
-              subtitle: const Text('App-private reader - Annotation Studio'),
+              subtitle: const Text('Included offline ? Annotation Studio'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AnnotatedDocumentScreen(document: document),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Songs & rehearsal player',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        ...scoreFlowSongTitles.asMap().entries.map(
+          (entry) => Card(
+            child: ListTile(
+              leading: CircleAvatar(child: Text('${entry.key + 1}')),
+              title: Text(entry.value),
+              subtitle: const Text(
+                'Score + guide and practice audio ? Offline',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AnnotatedDocumentScreen(
+                    document: productionSongDocument(
+                      entry.key + 1,
+                      entry.value,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -433,27 +462,13 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
 
   Future<void> loadTracks() async {
     try {
-      const productionId = 'PROD-b0d6edc6-c518-404c-a0a8-29b8a7369ba1';
-      final production = FirebaseFirestore.instance
-          .collection('productions')
-          .doc(productionId);
-      var result = await production.collection('tracks').get();
-      // Releases made before the sync casing repair wrote the collection as
-      // `Tracks`. Administrators can read it during rollout; normal members
-      // will simply continue with the correctly cased collection.
-      if (result.docs.isEmpty) {
-        try {
-          result = await production.collection('Tracks').get();
-        } catch (_) {}
-      }
+      final bundled = await OfflineMedia.instance.tracks();
       final songNumber = int.tryParse(
         RegExp(r'(\d+)$').firstMatch(widget.document.id)?.group(1) ?? '',
       );
       String normalized(String value) =>
           value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-      final allTracks = result.docs
-          .map((doc) => {...doc.data(), '_id': doc.id})
-          .toList();
+      final allTracks = bundled.map((track) => track.readerRecord).toList();
       final tracks =
           allTracks.where((track) {
             if (!widget.document.id.startsWith('descendants-song-'))
@@ -470,11 +485,14 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
             if (order != null && songNumber != null) return order == songNumber;
             return normalized('${track['title'] ?? track['Title'] ?? ''}') ==
                 normalized(songTitle);
-          }).toList()..sort(
-            (a, b) => '${a['trackType'] ?? a['TrackType']}'.compareTo(
-              '${b['trackType'] ?? b['TrackType']}',
-            ),
-          );
+          }).toList()..sort((a, b) {
+            final order = (a['sortOrder'] as int).compareTo(
+              b['sortOrder'] as int,
+            );
+            return order != 0
+                ? order
+                : '${a['trackType']}'.compareTo('${b['trackType']}');
+          });
       if (!mounted) return;
       Map<String, dynamic>? guide;
       Map<String, dynamic>? practice;
@@ -497,9 +515,13 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         );
         final initial = tracks.where((t) => '${t['_id']}' == wanted);
         if (guide != null || practice != null) {
-          await prepareTrackPair(
-            preferred: initial.isNotEmpty ? initial.first : null,
-          );
+          if (initial.isNotEmpty) {
+            await selectTrackVariant(initial.first);
+            if (audioDuration == Duration.zero)
+              await prepareTrackPair(preferred: initial.first);
+          } else {
+            await prepareTrackPair();
+          }
         } else {
           await selectTrack(initial.isNotEmpty ? initial.first : tracks.first);
         }
@@ -511,55 +533,16 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   }
 
   Future<File> validatedTrackFile(Map<String, dynamic> track) async {
-    final id = '${track['_id']}';
-    final driveId = '${track['driveFileID'] ?? track['DriveFileID'] ?? ''}';
-    if (driveId.isEmpty)
-      throw StateError('This track has no storage reference.');
-    const productionId = 'PROD-b0d6edc6-c518-404c-a0a8-29b8a7369ba1';
-    final metadata = await FirebaseFirestore.instance
-        .collection('productions')
-        .doc(productionId)
-        .collection('storageAssets')
-        .doc(driveId)
-        .get();
-    final data = metadata.data();
-    final storagePath = '${data?['storagePath'] ?? ''}';
-    final expectedBytes = (data?['bytes'] as num?)?.toInt() ?? 0;
-    if (storagePath.isEmpty) {
-      throw StateError('The Firebase audio index is missing for this track.');
-    }
-    final directory = await getApplicationDocumentsDirectory();
-    final target = File(
-      '${directory.path}${Platform.pathSeparator}rehearsal-$id.mp3',
+    return OfflineMedia.instance.file(
+      '${track['_id']}',
+      onProgress: (progress) {
+        if (!mounted) return;
+        setState(() {
+          trackDownloadProgress = progress;
+          trackLoadStatus = 'Opening included audio';
+        });
+      },
     );
-    final valid =
-        await target.exists() &&
-        await target.length() >= 10000 &&
-        (expectedBytes <= 0 || await target.length() == expectedBytes);
-    if (valid) return target;
-    if (await target.exists()) await target.delete();
-    final partial = File('${target.path}.partial');
-    if (await partial.exists()) await partial.delete();
-    final task = FirebaseStorage.instance.ref(storagePath).writeToFile(partial);
-    final subscription = task.snapshotEvents.listen((snapshot) {
-      if (!mounted || snapshot.totalBytes <= 0) return;
-      setState(() {
-        trackDownloadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
-        trackLoadStatus =
-            'Downloading ${track['trackType'] ?? track['TrackType'] ?? 'track'}';
-      });
-    });
-    try {
-      await task;
-    } finally {
-      await subscription.cancel();
-    }
-    final received = await partial.length();
-    if (received < 10000 || (expectedBytes > 0 && received != expectedBytes)) {
-      await partial.delete();
-      throw StateError('The audio download was incomplete. Tap retry.');
-    }
-    return partial.rename(target.path);
   }
 
   Future<void> prepareTrackPair({Map<String, dynamic>? preferred}) async {
@@ -574,6 +557,10 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
       trackDownloadProgress = 0;
       trackLoadStatus = 'Preparing rehearsal audio';
       activeTrackId = '${preferred?['_id'] ?? primary['_id']}';
+      if (preferred != null)
+        trackBlend = '${preferred['trackType']}'.toLowerCase().contains('guide')
+            ? 0
+            : 1;
     });
     try {
       final companion = guideTrack != null && practiceTrack != null
@@ -632,7 +619,7 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         await audio.seek(resumePosition);
       }
       await loadAutoTrack(id);
-      if (wasPlaying) await audio.play();
+      if (wasPlaying) unawaited(audio.play());
       if (mounted)
         setState(() {
           audioPosition = resumePosition < (audio.duration ?? Duration.zero)
@@ -648,6 +635,25 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   }
 
   Future<void> selectTrackVariant(Map<String, dynamic> track) async {
+    if (audioLoading) return;
+    final primary = guideTrack ?? practiceTrack;
+    if (primary?['sortOrder'] != track['sortOrder']) {
+      setState(() {
+        audioPosition = Duration.zero;
+        guideTrack = null;
+        practiceTrack = null;
+        for (final candidate in audioTracks.where(
+          (row) => row['sortOrder'] == track['sortOrder'],
+        )) {
+          final variant = '${candidate['trackType']}'.toLowerCase();
+          if (variant.contains('guide')) guideTrack = candidate;
+          if (variant.contains('practice') || variant.contains('instrumental'))
+            practiceTrack = candidate;
+        }
+      });
+      await prepareTrackPair(preferred: track);
+      return;
+    }
     final type = '${track['trackType'] ?? track['TrackType'] ?? ''}'
         .toLowerCase();
     if (guideTrack != null && practiceTrack != null) {
@@ -693,15 +699,36 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   }
 
   Future<void> loadAutoTrack(String trackId) async {
-    const productionId = 'PROD-b0d6edc6-c518-404c-a0a8-29b8a7369ba1';
+    final catalog = await OfflineMedia.instance.catalog();
+    final included = (catalog['sync'] as Map?)?[trackId];
+    await applyAutoTrack(
+      trackId,
+      included is Map ? Map<String, dynamic>.from(included) : null,
+    );
+    unawaited(refreshAutoTrack(trackId));
+  }
+
+  Future<void> refreshAutoTrack(String trackId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('productions')
-          .doc(productionId)
+          .doc('PROD-b0d6edc6-c518-404c-a0a8-29b8a7369ba1')
           .collection('scoreFlowSync')
           .doc(trackId)
-          .get();
-      final data = snapshot.data();
+          .get()
+          .timeout(const Duration(seconds: 4));
+      if (!mounted || activeTrackId != trackId || !snapshot.exists) return;
+      await applyAutoTrack(trackId, snapshot.data());
+    } catch (_) {
+      /* Included playback works without cloud maps. */
+    }
+  }
+
+  Future<void> applyAutoTrack(
+    String trackId,
+    Map<String, dynamic>? data,
+  ) async {
+    try {
       final raw = data?['keyframes'];
       final frames = raw is List
           ? (raw
@@ -1008,10 +1035,19 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
   Future<void> load() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final target = File(
-        '${directory.path}${Platform.pathSeparator}${widget.document.id}.pdf',
+      final included = await OfflineMedia.instance.document(
+        widget.document.id,
+        onProgress: (value) {
+          if (mounted) setState(() => progress = value);
+        },
       );
-      if (!await target.exists() || await target.length() < 100000) {
+      final target =
+          included ??
+          File(
+            '${directory.path}${Platform.pathSeparator}${widget.document.id}.pdf',
+          );
+      if (included == null &&
+          (!await target.exists() || await target.length() == 0)) {
         if (widget.document.remoteUrl.isNotEmpty) {
           final request = http.Request(
             'GET',
@@ -1045,7 +1081,10 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
           await task;
         }
       }
-      final loaded = await Future.wait([store.loadInk(), store.loadLayers()]);
+      final loaded = await Future.wait([
+        store.loadInk(localOnly: true),
+        store.loadLayers(localOnly: true),
+      ]);
       if (!mounted) return;
       setState(() {
         file = target;
@@ -1054,6 +1093,11 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
         progress = 1;
       });
       startCloudAnnotationSync();
+      unawaited(
+        store.loadLayers().then((value) {
+          if (mounted && !annotate) setState(() => layers = value);
+        }),
+      );
     } catch (e) {
       if (mounted) setState(() => error = '$e');
     }
@@ -2019,7 +2063,11 @@ class _AnnotatedDocumentScreenState extends State<AnnotatedDocumentScreen>
                                               (track) => DropdownMenuItem(
                                                 value: '${track['_id']}',
                                                 child: Text(
-                                                  '${track['trackType'] ?? track['TrackType'] ?? 'Track'}',
+                                                  widget.document.id.startsWith(
+                                                        'descendants-song-',
+                                                      )
+                                                      ? '${track['trackType']}'
+                                                      : '${track['title']} ? ${track['trackType']}',
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                 ),

@@ -342,8 +342,14 @@ class PracticeNotesStore {
     }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return 'local';
+    final preferences = await SharedPreferences.getInstance();
+    final cachedPrincipal = preferences.getString('brmPrincipal.${user.uid}');
+    if (cachedPrincipal != null && cachedPrincipal.isNotEmpty)
+      return cachedPrincipal;
     try {
-      final token = await user.getIdTokenResult();
+      final token = await user.getIdTokenResult().timeout(
+        const Duration(seconds: 3),
+      );
       final principal = '${token.claims?['legacyUserId'] ?? ''}'.trim();
       if (principal.isNotEmpty) return principal;
     } catch (_) {
@@ -417,73 +423,75 @@ class PracticeNotesStore {
     }
   }
 
-  Future<List<ScoreInkMark>> loadInk() async {
+  Future<List<ScoreInkMark>> loadInk({bool localOnly = false}) async {
     final owner = await resolveOwner();
     final prefix = _prefix(owner);
     var text = await _prefs.getString('$prefix.ink.v2');
-    try {
-      var snapshot = await _cloud(owner)?.get();
-      List? remote;
-      final markSnapshot = await _cloudMarks(owner)?.get();
-      final pageSnapshot = await _cloudPages(owner)?.get();
-      if (markSnapshot != null && markSnapshot.docs.isNotEmpty) {
-        _knownCloudMarkIds = markSnapshot.docs
-            .map((document) => document.id)
-            .toSet();
-        remote = decodeMarkDocuments(markSnapshot.docs)
-            .map((mark) => mark.toJson())
-            .toList();
-      } else if (pageSnapshot != null && pageSnapshot.docs.isNotEmpty) {
-        _knownCloudPages = pageSnapshot.docs
-            .map((document) => int.tryParse(document.id))
-            .whereType<int>()
-            .toSet();
-        remote = pageSnapshot.docs
-            .expand(
-              (document) => (document.data()['marks'] as List?) ?? const [],
-            )
-            .toList();
-      } else {
-        remote = snapshot?.data()?['marks'] as List?;
-      }
-      final authUid = FirebaseAuth.instance.currentUser?.uid;
-      if (remote == null &&
-          ownerUserId == null &&
-          authUid != null &&
-          authUid != owner) {
-        // Recover annotations written by releases that incorrectly keyed the
-        // document to Firebase uid instead of the portal account id.
-        snapshot = await _cloud(authUid)?.get();
-        final legacyMarks = await _cloudMarks(authUid)?.get();
-        final legacyPages = await _cloudPages(authUid)?.get();
-        remote = legacyMarks != null && legacyMarks.docs.isNotEmpty
-            ? decodeMarkDocuments(legacyMarks.docs)
-                  .map((mark) => mark.toJson())
-                  .toList()
-            : legacyPages != null && legacyPages.docs.isNotEmpty
-            ? legacyPages.docs
-                  .expand(
-                    (document) =>
-                        (document.data()['marks'] as List?) ?? const [],
-                  )
-                  .toList()
-            : snapshot?.data()?['marks'] as List?;
-        if (remote != null) {
-          await _cloud(owner)?.set({
-            ...?snapshot?.data(),
-            'ownerUserId': owner,
-            'migratedFromAuthUid': authUid,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+    if (!localOnly) {
+      try {
+        var snapshot = await _cloud(owner)?.get();
+        List? remote;
+        final markSnapshot = await _cloudMarks(owner)?.get();
+        final pageSnapshot = await _cloudPages(owner)?.get();
+        if (markSnapshot != null && markSnapshot.docs.isNotEmpty) {
+          _knownCloudMarkIds = markSnapshot.docs
+              .map((document) => document.id)
+              .toSet();
+          remote = decodeMarkDocuments(markSnapshot.docs)
+              .map((mark) => mark.toJson())
+              .toList();
+        } else if (pageSnapshot != null && pageSnapshot.docs.isNotEmpty) {
+          _knownCloudPages = pageSnapshot.docs
+              .map((document) => int.tryParse(document.id))
+              .whereType<int>()
+              .toSet();
+          remote = pageSnapshot.docs
+              .expand(
+                (document) => (document.data()['marks'] as List?) ?? const [],
+              )
+              .toList();
+        } else {
+          remote = snapshot?.data()?['marks'] as List?;
         }
+        final authUid = FirebaseAuth.instance.currentUser?.uid;
+        if (remote == null &&
+            ownerUserId == null &&
+            authUid != null &&
+            authUid != owner) {
+          // Recover annotations written by releases that incorrectly keyed the
+          // document to Firebase uid instead of the portal account id.
+          snapshot = await _cloud(authUid)?.get();
+          final legacyMarks = await _cloudMarks(authUid)?.get();
+          final legacyPages = await _cloudPages(authUid)?.get();
+          remote = legacyMarks != null && legacyMarks.docs.isNotEmpty
+              ? decodeMarkDocuments(legacyMarks.docs)
+                    .map((mark) => mark.toJson())
+                    .toList()
+              : legacyPages != null && legacyPages.docs.isNotEmpty
+              ? legacyPages.docs
+                    .expand(
+                      (document) =>
+                          (document.data()['marks'] as List?) ?? const [],
+                    )
+                    .toList()
+              : snapshot?.data()?['marks'] as List?;
+          if (remote != null) {
+            await _cloud(owner)?.set({
+              ...?snapshot?.data(),
+              'ownerUserId': owner,
+              'migratedFromAuthUid': authUid,
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+          }
+        }
+        if (remote != null) {
+          text = jsonEncode(remote);
+          await _prefs.setString('$prefix.ink.v2', text);
+        }
+      } catch (_) {
+        // Cloud errors are surfaced by explicit saves. Loading still falls back
+        // to the device copy so ScoreFlow remains usable offline.
       }
-      if (remote != null) {
-        text = jsonEncode(remote);
-        await _prefs.setString('$prefix.ink.v2', text);
-      }
-    } catch (_) {
-      // Cloud errors are surfaced by explicit saves. Loading still falls back
-      // to the device copy so ScoreFlow remains usable offline.
     }
     if (text == null) {
       final authUid = FirebaseAuth.instance.currentUser?.uid;
@@ -651,14 +659,18 @@ class PracticeNotesStore {
     }
   }
 
-  Future<List<ScoreAnnotationLayerDefinition>> loadLayers() async {
+  Future<List<ScoreAnnotationLayerDefinition>> loadLayers({
+    bool localOnly = false,
+  }) async {
     final owner = await resolveOwner();
     final prefix = _prefix(owner);
     var text = await _prefs.getString('$prefix.annotationLayers.v1');
-    try {
-      final remote = (await _cloud(owner)?.get())?.data()?['layers'] as List?;
-      if (remote != null) text = jsonEncode(remote);
-    } catch (_) {}
+    if (!localOnly) {
+      try {
+        final remote = (await _cloud(owner)?.get())?.data()?['layers'] as List?;
+        if (remote != null) text = jsonEncode(remote);
+      } catch (_) {}
+    }
     final custom = <ScoreAnnotationLayerDefinition>[];
     if (text != null && text.isNotEmpty) {
       try {
