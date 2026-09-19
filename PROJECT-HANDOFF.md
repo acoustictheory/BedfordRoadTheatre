@@ -1,6 +1,6 @@
 # Bedford Road Theatre — project handoff and access log
 
-Last updated: 2026-09-11  
+Last updated: 2026-09-19
 Workspace: `C:\NDrive\BedfordRoadTheatre`  
 Git branch: `master`
 
@@ -119,7 +119,7 @@ are used for the faster mobile and web features.
 - `.clasp.json` points `clasp` at that mirror.
 - Live web-app deployment ID:
   `AKfycbw2hM9wqpgvlRlQVEUr-h19GpTeXoVe3fwZb2CsR0bjIDdi9idHEEUtgLPne0YJ0HtHMQ`
-- Current deployment version at handoff: `88`
+- Current deployment version at handoff: `90`
 - Master spreadsheet ID:
   `1Qbj_-F6rsn6PYhEnE4sda7XK8REKVPMPxquQIiEv4PU`
 - Public API URL is recorded in `assets/config.js`.

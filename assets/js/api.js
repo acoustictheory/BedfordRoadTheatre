@@ -373,7 +373,7 @@ window.BRM = window.BRM || {};
     const token = options.public ? '' : (BRM.getSessionValue?.('brmToken') || localStorage.getItem('brmToken') || '');
     let response;
     const controller = new AbortController();
-    const timeout = options.timeoutMs ? window.setTimeout(() => controller.abort(), options.timeoutMs) : 0;
+    const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs || 30000);
 
     try {
       response = await fetch(config.API_URL, {
@@ -744,7 +744,7 @@ window.BRM = window.BRM || {};
   BRM.api = async function api(action, payload = {}, options = {}) {
     if (BRM.isDemo()) return BRM.demoApi(action, payload);
 
-    const publicAction = options.public || ['login', 'register', 'registrationOptions', 'publicRecruitmentConfig', 'submitAuditionBooking', 'submitMusicalInterest'].includes(action);
+    const publicAction = options.public || ['login', 'register', 'registrationOptions'].includes(action);
     const neverCache = options.noCache || ['bootstrap', 'trackAudioInfo', 'trackAudioChunk', 'logout'].includes(action);
     const fastCacheKey = `api:${requestKey(action, payload)}`;
 
@@ -770,7 +770,7 @@ window.BRM = window.BRM || {};
       if (cached) return cached;
     }
 
-    const result = await rawApi(action, payload, { public: publicAction });
+    const result = await rawApi(action, payload, { ...options, public: publicAction });
 
     if (!publicAction && CACHEABLE_ACTIONS.has(action) && !neverCache) {
       setCachedResponse(action, payload, result);

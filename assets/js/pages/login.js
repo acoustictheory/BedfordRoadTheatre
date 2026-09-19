@@ -53,7 +53,7 @@ async function registerWithFirebase(form) {
   const url = window.BRM_CONFIG?.FIREBASE_REGISTRATION_URL;
   if (!url) throw new Error("Firebase registration is not configured.");
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeout = window.setTimeout(() => controller.abort(), 65000);
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -65,6 +65,11 @@ async function registerWithFirebase(form) {
     if (!response.ok || !result.success)
       throw new Error(result.error || "Registration could not be completed.");
     return result;
+  } catch (error) {
+    if (error.name === "AbortError" || error instanceof TypeError) {
+      throw new Error("Your account request may still be finishing. Retry with the same username and password; your saved request will be reused.");
+    }
+    throw error;
   } finally {
     window.clearTimeout(timeout);
   }
@@ -117,22 +122,12 @@ document.addEventListener("DOMContentLoaded", () => {
         : "Create account";
   };
 
-  async function waitForRegistration(requestId) {
-    for (let attempt = 0; attempt < 30; attempt += 1) {
-      await new Promise((resolve) => window.setTimeout(resolve, 3000));
-      const status = await BRM.api(
-        "registrationStatus",
-        { registrationRequestId: requestId },
-        { public: true, noCache: true, timeoutMs: 12000 },
-      ).catch(() => null);
-      if (status?.userId) return status;
-    }
-    throw new Error(
-      "Registration is taking unusually long. Your request is saved—do not create another account. Ask an administrator to check People & Access.",
-    );
-  }
-
+  let departmentsRequested = false;
   const switchTab = (id) => {
+    if (id === "register" && !departmentsRequested) {
+      departmentsRequested = true;
+      loadRegistrationDepartments();
+    }
     tabs.forEach((tab) =>
       tab.classList.toggle("active", tab.dataset.authTab === id),
     );
@@ -278,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
       pending?.username === username && pending?.requestId
         ? pending.requestId
         : crypto.randomUUID?.() ||
-          `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+          `${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, "0")).join("")}`;
     form.registrationRequestId = requestId;
     localStorage.setItem(
       registrationPendingKey,
@@ -297,7 +292,9 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         { public: true, noCache: true, timeoutMs: 45000 },
       );
-      await signInToFirebase(form.username, form.password);
+      // The portal account is complete even if Firebase's browser SDK is unavailable.
+      try { await signInToFirebase(form.username, form.password); }
+      catch (error) { console.warn("Account created; Firebase browser sign-in will need reconnecting.", error.code); }
       localStorage.removeItem(registrationPendingKey);
       BRM.setSession(result.token, result.user);
       BRM.applyTheme(
@@ -320,5 +317,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  loadRegistrationDepartments();
+  if (params.get("tab") === "register") switchTab("register");
 });

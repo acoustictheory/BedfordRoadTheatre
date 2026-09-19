@@ -170,10 +170,14 @@ window.BRM = window.BRM || {};
       : appModule.initializeApp(firebaseConfig);
     await authModule.signOut(authModule.getAuth(app));
   };
+  let firebaseReconnectPromise = null;
   BRM.firebaseIdToken = async function (forceRefresh = false) {
     const nativeToken = sessionStorage.getItem("brmFirebaseIdToken");
-    if (nativeToken && localStorage.getItem("brmAppInstall") === "flutter") {
-      return nativeToken;
+    if (nativeToken && !forceRefresh && localStorage.getItem("brmAppInstall") === "flutter") {
+      try {
+        const claims = JSON.parse(atob(nativeToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (Number(claims.exp) * 1000 > Date.now() + 60000) return nativeToken;
+      } catch {}
     }
     const firebaseConfig = window.BRM_CONFIG?.FIREBASE;
     if (!firebaseConfig || window.BRM_CONFIG?.FIREBASE_MODE === "off") throw new Error("Firebase is unavailable.");
@@ -183,7 +187,26 @@ window.BRM = window.BRM || {};
     ]);
     const app = appModule.getApps().length ? appModule.getApp() : appModule.initializeApp(firebaseConfig);
     const auth = authModule.getAuth(app); await auth.authStateReady();
-    if (!auth.currentUser) throw new Error("Please sign in.");
+    const expectedUserId = BRM.getStoredContext()?.userId;
+    if (!auth.currentUser || (expectedUserId && auth.currentUser.uid !== expectedUserId)) {
+      firebaseReconnectPromise ||= (async () => {
+        const portalToken = BRM.getSessionValue('brmToken');
+        if (!portalToken) throw new Error("Please sign in again to reconnect your production tools.");
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), 35000);
+        try {
+          const response = await fetch(CONFIG.FIREBASE_APP_SIGN_IN_URL, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({token: portalToken}), signal: controller.signal,
+          });
+          const result = await response.json();
+          if (!response.ok || !result.customToken) throw new Error(result.error || 'Please sign in again to reconnect your production tools.');
+          await authModule.signInWithCustomToken(auth, result.customToken);
+        } finally { window.clearTimeout(timer); }
+      })();
+      try { await firebaseReconnectPromise; }
+      finally { firebaseReconnectPromise = null; }
+    }
     const token = await auth.currentUser.getIdToken(forceRefresh);
     sessionStorage.setItem("brmFirebaseIdToken", token);
     return token;
@@ -733,7 +756,7 @@ window.BRM = window.BRM || {};
     context = BRM.context,
   ) {
     if (!context) return false;
-    if (page === "admin" || page === "recruitment-review") return BRM.isAdmin();
+    if (["admin", "recruitment-review", "audition", "musical-interest"].includes(page)) return BRM.isAdmin();
     if (page === "journal-review") return hasAnyPermission("journal.review");
     if (page === "blocking")
       return hasAnyPermission(

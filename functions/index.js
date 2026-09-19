@@ -440,6 +440,7 @@ export const recruitment = onRequest({region:'northamerica-northeast2',timeoutSe
   if(request.method==='OPTIONS'){response.status(204).send('');return;}if(request.method!=='POST'){response.status(405).json({success:false,error:'POST required.'});return;}
   try{
     const body=request.body||{},action=clean(body.action,50),productionDocument=await activeProductionDocument(),productionId=productionDocument.id,production=productionDocument.ref;
+    const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,''),decoded=await getAuth().verifyIdToken(bearer),administratorId=principalId(decoded),administrator=(await db.collection('users').doc(administratorId).get()).data();if(!isFullAdministrator(administrator))throw new Error('Full administrator access is required.');
     const configRef=production.collection('recruitmentConfig').doc('active');
     const configured=await configRef.get(),slots=Array.isArray(configured.data()?.slots)?configured.data().slots:defaultRecruitmentSlots();
     if(action==='publicRecruitmentConfig'){
@@ -458,7 +459,6 @@ export const recruitment = onRequest({region:'northamerica-northeast2',timeoutSe
       const interestId=uuid('INT');await production.collection('musicalInterest').doc(interestId).create({musicalInterestID:interestId,productionID:productionId,...identity,interestAreasJSON:JSON.stringify(interestAreas),topChoice:clean(body.topChoice,100),experience:clean(body.experience,1500),skills:clean(body.skills,1500),certifications:clean(body.certifications,500),availability:clean(body.availability,1500),accessNeeds:clean(body.accessNeeds,1000),notes:clean(body.notes,1500),status:'New',submittedAt:FieldValue.serverTimestamp(),reviewedByUserID:'',reviewedAt:null,adminNotes:''});
       response.json({success:true,interestId,whatsappUrl:recruitmentDetails.whatsappUrl});return;
     }
-    const bearer=String(request.get('authorization')||'').replace(/^Bearer\s+/i,''),decoded=await getAuth().verifyIdToken(bearer),administratorId=principalId(decoded),administrator=(await db.collection('users').doc(administratorId).get()).data();if(!isFullAdministrator(administrator))throw new Error('Full administrator access is required.');
     if(action==='recruitmentAdminData'){
       const [auditions,interests]=await Promise.all([production.collection('auditionBookings').get(),production.collection('musicalInterest').get()]);
       const occupied=new Set(auditions.docs.filter(document=>String(document.data().status||'')!=='Cancelled').map(document=>String(document.data().slotKey||'')));
@@ -675,6 +675,7 @@ export const registerStudent = onRequest({ region:'northamerica-northeast2', sec
     const registrationExpiry = registration.expiresAt ?? registration.ExpiresAt;
     if (registrationStatus !== 'Active' || (registrationExpiry && new Date(registrationExpiry) <= new Date())) throw new Error('That registration code is unavailable or expired.');
     const uid = uuid('USR');
+    let registrationCommitted = false;
     const profileId = uuid('PROF');
     const syntheticEmail = `${username}@users.bedford-musical.invalid`;
     await getAuth().createUser({uid,email:syntheticEmail,password,displayName:clean(`${body.firstName || ''} ${body.lastName || ''}`,120),emailVerified:false});
@@ -721,9 +722,12 @@ export const registerStudent = onRequest({ region:'northamerica-northeast2', sec
         codeUpdate[usesKey === 'uses' ? 'updatedAt' : 'UpdatedAt'] = now;
         writeRegistration(transaction,codeUpdate);
       });
-      await reconcileCommunicationMember(productionId,uid);
+      registrationCommitted = true;
+      // A community-sync failure must never delete an already committed account.
+      try { await reconcileCommunicationMember(productionId,uid); }
+      catch (error) { console.error('Registration community sync pending', {userId:uid, message:error.message}); }
       response.json(publicResult);
-    } catch (error) { await getAuth().deleteUser(uid).catch(()=>{}); throw error; }
+    } catch (error) { if (!registrationCommitted) await getAuth().deleteUser(uid).catch(()=>{}); throw error; }
   } catch (error) {
     const duplicate = error.code === 'auth/email-already-exists' || error.code === 'auth/uid-already-exists';
     response.status(duplicate ? 409 : 400).json({success:false,error:duplicate?'That username is already registered. Sign in or ask an administrator for help.':error.message});
