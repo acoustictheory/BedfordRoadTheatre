@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:musical/portal_models.dart';
 import 'package:musical/production_time.dart';
 
+// Test double only; no platform or Firebase connection is required.
+// ignore: subtype_of_sealed_class
 class _EventReference implements DocumentReference<Map<String, dynamic>> {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

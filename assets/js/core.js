@@ -437,7 +437,15 @@ window.BRM = window.BRM || {};
       ]);
       const app = appApi.getApps().length ? appApi.getApp() : appApi.initializeApp(CONFIG.FIREBASE), auth = authApi.getAuth(app);
       await auth.authStateReady(); if (!auth.currentUser) return;
-      const profileRef = storeApi.doc(storeApi.getFirestore(app), "profiles", auth.currentUser.uid);
+      const claims = await auth.currentUser.getIdTokenResult();
+      const userId = claims.claims.legacyUserId || auth.currentUser.uid;
+      const profiles = storeApi.collection(storeApi.getFirestore(app), "profiles");
+      let profileRef;
+      for (const field of ["userID", "userId"]) {
+        const matches = await storeApi.getDocs(storeApi.query(profiles, storeApi.where(field, "==", userId), storeApi.limit(1)));
+        if (!matches.empty) { profileRef = matches.docs[0].ref; break; }
+      }
+      if (!profileRef) return;
       const snapshot = await storeApi.getDoc(profileRef);
       if (!snapshot.exists()) return;
       const data = snapshot.data(), theme = data.theme || data.Theme;
@@ -460,14 +468,7 @@ window.BRM = window.BRM || {};
   BRM.saveAccountTheme = async function (theme, preferences) {
     if (!CONFIG.FIREBASE || CONFIG.FIREBASE_MODE === "off") return;
     try {
-      const [appApi, authApi, storeApi] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js"),
-        import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js"),
-      ]);
-      const app = appApi.getApps().length ? appApi.getApp() : appApi.initializeApp(CONFIG.FIREBASE), auth = authApi.getAuth(app);
-      await auth.authStateReady(); if (!auth.currentUser) return;
-      await storeApi.setDoc(storeApi.doc(storeApi.getFirestore(app), "profiles", auth.currentUser.uid), {theme, ...(preferences ? {themePreferences: preferences} : {}), updatedAt: storeApi.serverTimestamp()}, {merge:true});
+      await BRM.api("updateProfile", {theme, ...(preferences ? {themePreferences: preferences} : {})});
     } catch (error) { console.warn("Account theme could not be saved:", error); }
   };
   const hexRgb = (hex) => {

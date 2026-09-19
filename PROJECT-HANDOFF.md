@@ -13,12 +13,12 @@ keys, or private keys**.
 
 - Website: <https://bedfordroadtheatre.ca>
 - Neocities site: `bedfordroadtheatre`
-- Android/ScoreFlow: `2.16.3+63`
-- Current APK: <https://bedfordroadtheatre.ca/downloads/BedfordRoadMusical-2.16.3.apk>
+- Android/ScoreFlow: `2.17.0+64`
+- Current APK: <https://bedfordroadtheatre.ca/downloads/BedfordRoadMusical-2.17.0.apk>
 - iOS bundle ID: `ca.sk.bedfordroad.musical`
-- iOS 2.16.3 source is ready for the next Codemagic/TestFlight build.
+- iOS 2.17.0 source is ready for the next Codemagic/TestFlight build.
 - Firebase rules and Cloud Functions are deployed to `brpa-digital-hub-dev`.
-- Latest application commit before this handoff document: `d8c45ca`
+- Previous application release commit: `227718b`
 - Working tree should be clean when this document is committed.
 
 Recent important commits:
@@ -28,6 +28,15 @@ Recent important commits:
 - `634d3c4` — complete user-record cleanup on deletion
 - `c4f055d` — repaired permissions for newly registered students
 - `3c6e753` — repaired invalid task date handling
+
+## Native profile editing (2.17.0)
+
+Account > Edit profile is a native Flutter form for the same editable profile
+fields as the website. Photo selection, resizing, upload/removal, department
+requests and Theme Studio stay in the app. All changes use the existing
+Firebase portalData service and canonical profile; community display names and
+photos update too. Username/account email remain account metadata, not editable
+profile fields. See `docs/native-profile-editor.md` for validation and rollout.
 
 ## What the project includes
 

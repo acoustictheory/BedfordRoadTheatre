@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {profilePatch} from '../functions/profile-fields.js';
+assert.deepEqual(profilePatch({theme:'bedford-light'}), {theme:'bedford-light'});
+assert.deepEqual(profilePatch({displayName:'  New name  ',bio:'',userId:'other',isFullAdmin:true,photoURL:'https://invalid'}), {displayName:'New name',bio:''});
+assert.throws(()=>profilePatch({firstName:'  '}), /required/);
+assert.throws(()=>profilePatch({displayName:'a'.repeat(121)}), /Invalid/);
+assert.throws(()=>profilePatch({visibility:'Everyone'}), /visibility/);
+assert.throws(()=>profilePatch({themePreferences:[]}), /preferences/);
+assert.deepEqual(profilePatch({themePreferences:{radius:16,colors:{primary:'#112233'}}}), {themePreferences:{radius:16,colors:{primary:'#112233'}}});
+console.log('Profile patch checks passed: partial saves, validation, field allowlist.');

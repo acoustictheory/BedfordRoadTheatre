@@ -25,6 +25,8 @@ import 'package:open_filex/open_filex.dart';
 import 'annotation/document_reader.dart';
 import 'portal_models.dart';
 import 'production_time.dart';
+import 'profile_api.dart';
+import 'profile_screen.dart';
 
 const site = 'https://bedfordroadtheatre.ca';
 const appsScriptUrl =
@@ -1002,20 +1004,21 @@ class PortalLoader extends StatelessWidget {
             ? preferredProductionId
             : migratedProductionId);
     final d = production?.data() ?? <String, dynamic>{};
-    var profile =
-        (await db.collection('profiles').doc(a.uid).get()).data() ?? {};
-    if (profile.isEmpty) {
-      for (final field in ['userId', 'userID', 'UserID']) {
-        final profiles = await db
-            .collection('profiles')
-            .where(field, isEqualTo: a.uid)
-            .limit(1)
-            .get();
-        if (profiles.docs.isNotEmpty) {
-          profile = profiles.docs.first.data();
-          break;
-        }
+    Map<String, dynamic> profile = {};
+    for (final field in ['userID', 'userId', 'UserID']) {
+      final profiles = await db
+          .collection('profiles')
+          .where(field, isEqualTo: userId)
+          .limit(1)
+          .get();
+      if (profiles.docs.isNotEmpty) {
+        profile = profiles.docs.first.data();
+        break;
       }
+    }
+    if (profile.isEmpty) {
+      profile =
+          (await db.collection('profiles').doc(userId).get()).data() ?? {};
     }
     final av = u['isFullAdmin'] ?? u['IsFullAdmin'];
     unawaited(registerDevice(a));
@@ -1114,7 +1117,7 @@ class _ShellState extends State<PortalShell> {
   bool navigationVisible = true;
   late String themeId;
   late Map<String, dynamic> themePreferences;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? themeSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? themeSubscription;
 
   @override
   void initState() {
@@ -1125,10 +1128,17 @@ class _ShellState extends State<PortalShell> {
     if (uid.isNotEmpty) {
       themeSubscription = FirebaseFirestore.instance
           .collection('profiles')
-          .doc(uid)
+          .where(
+            Filter.or(
+              Filter('userID', isEqualTo: uid),
+              Filter('userId', isEqualTo: uid),
+            ),
+          )
           .snapshots()
           .listen((snapshot) {
-            final data = snapshot.data();
+            final data = snapshot.docs.isEmpty
+                ? null
+                : snapshot.docs.first.data();
             if (data == null || !mounted) return;
             final nextId = '${data['theme'] ?? data['Theme'] ?? themeId}';
             final nextPreferences = data['themePreferences'] is Map
@@ -1148,11 +1158,15 @@ class _ShellState extends State<PortalShell> {
   Future<void> saveTheme(String id, Map<String, dynamic> preferences) async {
     final uid = widget.portal.userId;
     if (uid.isEmpty) return;
-    await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
-      'theme': id,
-      'themePreferences': preferences,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    final api = ProfileApi();
+    try {
+      await api.request('updateProfile', {
+        'theme': id,
+        'themePreferences': preferences,
+      });
+    } finally {
+      api.close();
+    }
     if (mounted)
       setState(() {
         themeId = id;
@@ -5225,8 +5239,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         Row(
           children: [
             IconButton(
-              onPressed: () =>
-                  setState(() => month = DateTime.utc(month.year, month.month - 1)),
+              onPressed: () => setState(
+                () => month = DateTime.utc(month.year, month.month - 1),
+              ),
               icon: const Icon(Icons.chevron_left),
             ),
             Expanded(
@@ -5240,8 +5255,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
             IconButton(
-              onPressed: () =>
-                  setState(() => month = DateTime.utc(month.year, month.month + 1)),
+              onPressed: () => setState(
+                () => month = DateTime.utc(month.year, month.month + 1),
+              ),
               icon: const Icon(Icons.chevron_right),
             ),
           ],
@@ -5743,7 +5759,7 @@ class _ThemeStudioScreenState extends State<ThemeStudioScreen> {
                         setState(() => saving = true);
                         try {
                           await widget.onSave(themeId, state);
-                          if (mounted)
+                          if (c.mounted) {
                             ScaffoldMessenger.of(c).showSnackBar(
                               const SnackBar(
                                 content: Text(
@@ -5751,6 +5767,17 @@ class _ThemeStudioScreenState extends State<ThemeStudioScreen> {
                                 ),
                               ),
                             );
+                          }
+                        } catch (error) {
+                          if (c.mounted) {
+                            ScaffoldMessenger.of(c).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Theme could not be saved: $error',
+                                ),
+                              ),
+                            );
+                          }
                         } finally {
                           if (mounted) setState(() => saving = false);
                         }
@@ -6044,10 +6071,9 @@ class AccountScreen extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             child: Row(
               children: [
-                ProfileAvatar(
+                UserProfileAvatar(
                   name: portal.name,
-                  fileId: portal.photoFileId,
-                  url: portal.photoUrl,
+                  userId: portal.userId,
                   radius: 32,
                 ),
                 const SizedBox(width: 15),
@@ -6055,8 +6081,9 @@ class AccountScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        portal.name,
+                      CommunityMemberName(
+                        userId: portal.userId,
+                        fallback: portal.name,
                         style: const TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w900,
@@ -6103,16 +6130,32 @@ class AccountScreen extends StatelessWidget {
           child: ListTile(
             leading: const Icon(Icons.manage_accounts_outlined),
             title: const Text(
-              'Website profile',
+              'Edit profile',
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             subtitle: const Text('Photo, contact details and preferences'),
-            trailing: const Icon(Icons.open_in_new),
+            trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    const WebWorkspace('Your profile', 'profile.html'),
+                builder: (_) => ProfileScreen(
+                  avatarBuilder: (name, fileId, url) => ProfileAvatar(
+                    name: name,
+                    fileId: fileId,
+                    url: url,
+                    radius: 48,
+                  ),
+                  onOpenTheme: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ThemeStudioScreen(
+                        initialThemeId: themeId,
+                        initialPreferences: themePreferences,
+                        onSave: onSaveTheme,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
