@@ -31,3 +31,20 @@ day grouping across daylight-saving transitions elsewhere, and legacy values.
 Release version: `2.16.3+63`. Both native platforms require installing a new
 build. The iOS build uses `bedford-ios-testflight` on Codemagic; editing shared
 source or publishing the website does not update an installed TestFlight app.
+
+## Release validation
+
+- Flutter tests: all seven pass, including five schedule regressions. The
+  integration check constructs a `PortalEvent` and verifies start/end/call times.
+- `flutter analyze --no-pub --no-fatal-infos`: passes with existing informational
+  lints; no errors or warnings.
+- `flutter build apk --release --no-pub`: successful, version `2.16.3`, build 63.
+- APK signature verified and matches 2.16.2, with the same application ID.
+- Android APK and updated installation page published to Neocities.
+- Downloaded the public APK and verified its SHA-256 matches the built file:
+  `ac150343e56b922ddac412561431a7e736d8a0f7dea0b1a6d9e58e7c7b331902`.
+  Live installation page, configuration and service worker match local source.
+- Shared iOS source pushed to GitHub `master`. Codemagic credentials are not
+  available in this session, so no iOS build was started. Run workflow
+  `bedford-ios-testflight` from `master` to publish the TestFlight update.
+- No physical Android/iOS device acceptance test was performed.
