@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'production_time.dart';
+
 dynamic field(Map<String, dynamic> data, List<String> names) {
   for (final name in names) {
     final value = data[name];
@@ -31,6 +33,13 @@ DateTime? dateField(Map<String, dynamic> data, List<String> names) {
   if (value is DateTime) return value;
   if (value is num) return DateTime.fromMillisecondsSinceEpoch(value.toInt());
   return DateTime.tryParse('$value');
+}
+
+DateTime? productionDateField(Map<String, dynamic> data, List<String> names) {
+  final value = field(data, names);
+  if (value is String) return parseProductionTime(value);
+  final instant = dateField(data, names);
+  return instant == null ? null : productionTime(instant);
 }
 
 bool visibleRecord(Map<String, dynamic> data) {
@@ -117,9 +126,14 @@ class PortalEvent {
         'audience',
         'Audience',
       ], 'Company'),
-      start = dateField(data, const ['startAt', 'StartAt', 'date', 'Date']),
-      end = dateField(data, const ['endAt', 'EndAt']),
-      call = dateField(data, const ['callTime', 'CallTime']),
+      start = productionDateField(data, const [
+        'startAt',
+        'StartAt',
+        'date',
+        'Date',
+      ]),
+      end = productionDateField(data, const ['endAt', 'EndAt']),
+      call = productionDateField(data, const ['callTime', 'CallTime']),
       changed = boolField(data, const [
         'scheduleChanged',
         'ScheduleChanged',

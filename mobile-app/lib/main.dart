@@ -24,6 +24,7 @@ import 'package:open_filex/open_filex.dart';
 
 import 'annotation/document_reader.dart';
 import 'portal_models.dart';
+import 'production_time.dart';
 
 const site = 'https://bedfordroadtheatre.ca';
 const appsScriptUrl =
@@ -1301,8 +1302,8 @@ class EnhancedDashboardScreen extends StatelessWidget {
               final event = events.first, when = event.start;
               final days = when == null
                   ? null
-                  : DateUtils.dateOnly(when)
-                        .difference(DateUtils.dateOnly(DateTime.now()))
+                  : productionCalendarDate(when)
+                        .difference(productionCalendarDate(productionNow()))
                         .inDays;
               return Container(
                 decoration: BoxDecoration(
@@ -5077,12 +5078,12 @@ class ScheduleScreen extends StatefulWidget {
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
   int mode = 1;
-  DateTime month = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime month = DateTime.utc(productionNow().year, productionNow().month);
 
   @override
   Widget build(BuildContext c) => PortalPage(
     title: 'Schedule',
-    subtitle: 'Calendar, upcoming calls, and full production list',
+    subtitle: 'Calendar and calls · Saskatchewan time',
     child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('productions/${widget.portal.productionId}/events')
@@ -5178,8 +5179,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       );
     String section(PortalEvent event) {
       if (!grouped || event.start == null) return '';
-      final difference = DateUtils.dateOnly(event.start!)
-          .difference(DateUtils.dateOnly(DateTime.now()))
+      final difference = productionCalendarDate(event.start!)
+          .difference(productionCalendarDate(productionNow()))
           .inDays;
       if (difference <= 0) return 'TODAY';
       if (difference == 1) return 'TOMORROW';
@@ -5216,7 +5217,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _calendar(List<PortalEvent> events) {
-    final first = DateTime(month.year, month.month, 1);
+    final first = DateTime.utc(month.year, month.month, 1);
     final gridStart = first.subtract(Duration(days: first.weekday % 7));
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 28),
@@ -5225,7 +5226,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           children: [
             IconButton(
               onPressed: () =>
-                  setState(() => month = DateTime(month.year, month.month - 1)),
+                  setState(() => month = DateTime.utc(month.year, month.month - 1)),
               icon: const Icon(Icons.chevron_left),
             ),
             Expanded(
@@ -5240,7 +5241,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
             IconButton(
               onPressed: () =>
-                  setState(() => month = DateTime(month.year, month.month + 1)),
+                  setState(() => month = DateTime.utc(month.year, month.month + 1)),
               icon: const Icon(Icons.chevron_right),
             ),
           ],
@@ -5315,7 +5316,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: DateUtils.isSameDay(day, DateTime.now())
+                  color: DateUtils.isSameDay(day, productionNow())
                       ? Theme.of(context).colorScheme.primaryContainer
                       : null,
                   border: Border.all(

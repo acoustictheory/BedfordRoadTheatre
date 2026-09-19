@@ -13,10 +13,10 @@ keys, or private keys**.
 
 - Website: <https://bedfordroadtheatre.ca>
 - Neocities site: `bedfordroadtheatre`
-- Android/ScoreFlow: `2.16.2+62`
-- Current APK: <https://bedfordroadtheatre.ca/downloads/BedfordRoadMusical-2.16.2.apk>
+- Android/ScoreFlow: `2.16.3+63`
+- Current APK: <https://bedfordroadtheatre.ca/downloads/BedfordRoadMusical-2.16.3.apk>
 - iOS bundle ID: `ca.sk.bedfordroad.musical`
-- iOS 2.16.2 source is ready for the next Codemagic/TestFlight build.
+- iOS 2.16.3 source is ready for the next Codemagic/TestFlight build.
 - Firebase rules and Cloud Functions are deployed to `brpa-digital-hub-dev`.
 - Latest application commit before this handoff document: `d8c45ca`
 - Working tree should be clean when this document is committed.
