@@ -18,16 +18,72 @@ keys, or private keys**.
 - iOS bundle ID: `ca.sk.bedfordroad.musical`
 - iOS 2.18.0 source is ready for the next Codemagic/TestFlight build.
 - Firebase rules and Cloud Functions are deployed to `brpa-digital-hub-dev`.
-- Previous application release commit: `2c06570`
+- Current application release commit: `4f9153a` (committed and pushed to `origin/master`).
 - Working tree should be clean when this document is committed.
 
-Recent important commits:
+## Resume here - latest session checkpoint
 
-- `d8c45ca` — installation page and cache updated to ScoreFlow 2.16.2
-- `da34a6c` — repaired ScoreFlow annotation cloud synchronization
-- `634d3c4` — complete user-record cleanup on deletion
-- `c4f055d` — repaired permissions for newly registered students
-- `3c6e753` — repaired invalid task date handling
+The requested implementation and Android publication are complete. This
+checkpoint is documentation work only; it does not require rebuilding or
+republishing the already verified Android release.
+
+| Item | Confirmed state |
+|---|---|
+| Android | 2.18.0, build 65, published and downloadable from the install page |
+| APK | `downloads/BedfordRoadMusical-2.18.0.apk` locally; 575,357,763 bytes / 548.7 MiB |
+| APK SHA-256 | `9e126cce39fc59ab3ac402510b53f891b827435ac805b1af100f3ff89af0c13b` |
+| Media | 92 MP3 tracks (46 guide/practice pairs), 49 PDFs, all included in the APK |
+| Public delivery | Existing Firebase Storage bucket, object `app-releases/BedfordRoadMusical-2.18.0.apk`; URL and hashes in `downloads/android-release.json` |
+| Website | Install page, current release descriptor, Android QR, config and service worker published and verified |
+| Web cache ID | `bedford-frontend-20260919-offline-2180` |
+| iOS | Shared 2.18.0 code and media-restoration workflow pushed; no signed 2.18.0 IPA or TestFlight publication performed in this session |
+| Verification | 19 Flutter tests pass; analysis has no warnings/errors; APK identity/signature, all packaged media, public download hash and clean-directory media restoration pass |
+
+Next work, when resuming:
+
+1. Start Codemagic workflow `bedford-ios-testflight` on `master`, containing
+   application commit `4f9153a` or later. The configured environment group is
+   `appstore_credentials`. This Windows environment has no Codemagic API
+   credentials and cannot build/sign iOS locally. Confirm the resulting build
+   in TestFlight; do not assume a Git push published an iOS update.
+2. Perform physical Android/iOS acceptance: install/update, sign in online once,
+   stay signed in, enable airplane mode and reopen the app. Try both audio
+   variants, seeking/speed/repeat, a song score and a full PDF in ScoreFlow.
+   Check guide/practice switching, interruptions/backgrounding, and annotations
+   reconnecting after returning online. These checks have not been performed.
+3. Check native profile/photo changes against the website and confirm schedule
+   times match the correct website times on both platforms.
+4. If `kekebirdy3` still reports a problem, obtain the actual device symptom and
+   reproduce it. The account/track-access audit passed; that individual's
+   successful on-device playback has not been confirmed. Music & Tracks now
+   opens natively and uses included files rather than the website session.
+
+Completed changes carried into 2.18.0:
+
+- Registration failure/timeout and legacy password/session bridge fixes;
+  Apps Script version 90 and Firebase registration/recruitment fixes deployed.
+- Audition and interest forms removed from public navigation and restricted to
+  administrators. Admin review remains available; submissions were preserved.
+- Shared Android/iOS schedule formatting uses Saskatchewan (`America/Regina`)
+  time. The correct website schedule and stored event times were not changed.
+- Native profile details, photo upload/removal, department requests and theme
+  editing use shared website data. Username/account email remain admin-managed.
+- Native Music & Tracks and ScoreFlow include all current tracks and production
+  PDFs. Future track additions/replacements require another media/app release.
+
+Detailed evidence: `docs/registration-access-audit-20260919.md`,
+`docs/schedule-timezone-fix.md`, `docs/native-profile-editor.md`, and
+`docs/offline-music-release.md`. Older release versions/test counts in those
+individual historical audits describe their original releases, not the latest
+Android version above.
+
+Recent important application commits:
+
+- `4f9153a` - native Music & Tracks, bundled offline audio/scores, Android 2.18.0.
+- `2c06570` - native profile/photo editing and website synchronization, 2.17.0.
+- `227718b` - verified Android 2.16.3 schedule release.
+- `27c2c91` - shared Saskatchewan schedule-time fix.
+- `1955c54` - registration/access fixes and administrator-only recruitment.
 
 ## Offline native music release (2.18.0)
 
@@ -203,7 +259,8 @@ Workflow: `bedford-ios-testflight` in `codemagic.yaml`.
 The workflow:
 
 1. verifies App Store Connect environment variables and iOS configuration;
-2. installs Flutter/CocoaPods dependencies;
+2. installs Flutter/CocoaPods dependencies and restores/verifies bundled media
+   through `scripts/prepare-offline-media.py`;
 3. runs `flutter analyze --no-fatal-infos` and Flutter tests;
 4. applies the App Store provisioning profile;
 5. assigns a unique build number;
@@ -239,6 +296,13 @@ node scripts/deploy-neocities.mjs --check
 npm run check
 ```
 
+For a clean checkout that will be built, restore the existing media with
+`python scripts/prepare-offline-media.py`. Do not re-export live Firebase media
+for an ordinary rebuild: the published APK and checked-in manifest already
+provide the verified bundle. Re-export only when intentionally preparing a new
+media snapshot. Preserve the existing Android signing identity so updates
+install over the current app.
+
 Then verify:
 
 - `mobile-app/pubspec.yaml` contains the intended app version;
@@ -249,6 +313,15 @@ Then verify:
 - no secret or private backup appears in `git status`.
 
 ## Known operational notes
+
+- Flutter on this workstation: `C:\Users\justi\develop\flutter\bin\flutter.bat`.
+- Local raw media/export reports and the clean-build restoration check are in
+  ignored `backups/` folders. These are development artifacts, not website or
+  Git content. `backups/offline-ci-smoke/` remains from the successful restore
+  check; automatic review blocked an optional recursive-cleanup command.
+- APK binaries and `mobile-app/assets/offline/*.bin` are ignored. The catalog
+  and release descriptor are tracked with LF line endings because their bytes
+  are checksum-pinned across Windows and macOS builds.
 
 - Neocities/browser service-worker caching can make an old release label appear.
   Update the install page, all APK references and `BUILD_ID`, then redeploy.

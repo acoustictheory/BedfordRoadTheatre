@@ -5,6 +5,10 @@ production application ID and iOS bundle ID are both
 `ca.sk.bedfordroad.musical`. iOS builds run on Codemagic's hosted Mac; a local
 Mac or physical iPhone is not required to create and upload the IPA.
 
+For the latest session checkpoint and remaining release work, read
+[`PROJECT-HANDOFF.md`](../PROJECT-HANDOFF.md). Android 2.18.0 is published;
+iOS 2.18.0 still needs its Codemagic/TestFlight build and device acceptance.
+
 ## Current release configuration
 
 - App version: `2.18.0+65`
