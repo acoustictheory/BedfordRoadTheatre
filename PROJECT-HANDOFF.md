@@ -16,7 +16,7 @@ keys, or private keys**.
 - Android/ScoreFlow: `2.18.0+65`
 - Current Android download: <https://bedfordroadtheatre.ca/install.html#android> (Firebase-hosted offline APK; pinned in `downloads/android-release.json`)
 - iOS bundle ID: `ca.sk.bedfordroad.musical`
-- iOS 2.18.0 source is ready for the next Codemagic/TestFlight build.
+- iOS 2.18.0 Codemagic build `6aaf33d31c7c27da103a38d2` queued on 2026-09-19; completion and TestFlight availability remain unverified. See `docs/codemagic-access.md`.
 - Firebase rules and Cloud Functions are deployed to `brpa-digital-hub-dev`.
 - Current application release commit: `4f9153a` (committed and pushed to `origin/master`).
 - Working tree should be clean when this document is committed.
@@ -24,8 +24,8 @@ keys, or private keys**.
 ## Resume here - latest session checkpoint
 
 The requested implementation and Android publication are complete. This
-checkpoint is documentation work only; it does not require rebuilding or
-republishing the already verified Android release.
+checkpoint includes a queued iOS build and configured Codemagic API access.
+The already verified Android release does not require rebuilding.
 
 | Item | Confirmed state |
 |---|---|
@@ -36,16 +36,16 @@ republishing the already verified Android release.
 | Public delivery | Existing Firebase Storage bucket, object `app-releases/BedfordRoadMusical-2.18.0.apk`; URL and hashes in `downloads/android-release.json` |
 | Website | Install page, current release descriptor, Android QR, config and service worker published and verified |
 | Web cache ID | `bedford-frontend-20260919-offline-2180` |
-| iOS | Shared 2.18.0 code and media-restoration workflow pushed; no signed 2.18.0 IPA or TestFlight publication performed in this session |
+| iOS | 2.18.0 build `6aaf33d31c7c27da103a38d2` queued through API; signed IPA and TestFlight publication not yet verified |
 | Verification | 19 Flutter tests pass; analysis has no warnings/errors; APK identity/signature, all packaged media, public download hash and clean-directory media restoration pass |
 
 Next work, when resuming:
 
-1. Start Codemagic workflow `bedford-ios-testflight` on `master`, containing
-   application commit `4f9153a` or later. The configured environment group is
-   `appstore_credentials`. This Windows environment has no Codemagic API
-   credentials and cannot build/sign iOS locally. Confirm the resulting build
-   in TestFlight; do not assume a Git push published an iOS update.
+1. Check queued Codemagic build `6aaf33d31c7c27da103a38d2` before starting
+   another. API access is now configured; see `docs/codemagic-access.md` for
+   encrypted credential location, status commands and future build requests.
+   The workflow uses `appstore_credentials`. Confirm signing/upload and
+   TestFlight processing; the accepted build request does not prove publication.
 2. Perform physical Android/iOS acceptance: install/update, sign in online once,
    stay signed in, enable airplane mode and reopen the app. Try both audio
    variants, seeking/speed/repeat, a song score and a full PDF in ScoreFlow.
@@ -227,7 +227,7 @@ clasp deploy -i AKfycbw2hM9wqpgvlRlQVEUr-h19GpTeXoVe3fwZb2CsR0bjIDdi9idHEEUtgLPn
 | GitHub repository | GitHub owner/account `acoustictheory`; repository `BedfordRoadTheatre` | Remote: `https://github.com/acoustictheory/BedfordRoadTheatre.git`. Authentication is handled by the machine's Git credential mechanism; no GitHub token is stored in this repository. |
 | Git commit identity | `Justin La <jcncpt92@gmail.com>` | Local Git configuration. This is commit attribution and may differ from the account used to authenticate a push. |
 | Neocities | Site name `bedfordroadtheatre`; account email not exposed by the API | API key is in the ignored root file `.neocities-api-key`. Re-authenticate/generate a key in the Neocities dashboard if missing. Never commit the key. |
-| Codemagic | Account email not stored locally—verify in the Codemagic dashboard | GitHub-connected workflow `bedford-ios-testflight` in `codemagic.yaml`. App Store credentials come from Codemagic environment group `appstore_credentials`. |
+| Codemagic | Account email not stored locally—verify in the Codemagic dashboard | API token encrypted outside Git at `%LOCALAPPDATA%\BedfordRoadTheatre\codemagic-token.dpapi`; see `docs/codemagic-access.md`. Workflow `bedford-ios-testflight`; signing group `appstore_credentials`. |
 | Apple App Store Connect | Account email/team not stored locally—verify in App Store Connect/Codemagic | Codemagic variables: `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, and `APP_STORE_CONNECT_PRIVATE_KEY`. Do not place their values in Git. |
 
 ## Application user login model
@@ -268,12 +268,14 @@ The workflow:
 7. uploads to TestFlight, but not directly to the public App Store.
 
 Required Codemagic environment group: `appstore_credentials`. Required bundle
-identifier: `ca.sk.bedfordroad.musical`. Start the next build manually in
-Codemagic after confirming the GitHub commit and branch. A signed iOS binary
-cannot be built on this Windows workstation.
+identifier: `ca.sk.bedfordroad.musical`. Builds can now be queued and checked
+through the API from this workstation; see `docs/codemagic-access.md`. Check
+the existing queued build before starting another. Signing runs on Codemagic,
+not locally on Windows.
 
 ## Local secrets and files that must remain private
 
+- `%LOCALAPPDATA%\BedfordRoadTheatre\codemagic-token.dpapi`
 - `.neocities-api-key`
 - `C:\Users\justi\.clasprc.json`
 - `C:\Users\justi\.config\configstore\firebase-tools.json`
